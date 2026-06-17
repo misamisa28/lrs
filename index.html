@@ -53,16 +53,14 @@
           <button type="button" class="wolf-mode-btn active" data-vote-mode="badge">警徽票</button>
           <button type="button" class="wolf-mode-btn" data-vote-mode="exile">放逐票</button>
         </div>
-        <div id="survivalSubControls" class="wolf-sub-controls" style="display: none;">
-          <button type="button" class="wolf-mode-btn active" data-survival-mode="avg">平均存活天数</button>
-          <button type="button" class="wolf-mode-btn" data-survival-mode="camp">不同阵营存活天数</button>
-        </div>
         <div id="otherSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-other-mode="blind">被盲毒次数</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="first">被首验次数</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="model">混血儿榜样次数</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="fake">接狼人金水次数</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="rate">好人警下率</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="avg">平均存活天数</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="camp">不同阵营存活天数</button>
         </div>
         <div id="skillSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-skill-mode="witch">女巫毒师数据</button>
@@ -84,7 +82,8 @@
         <label for="nameSelect">选择选手</label>
         <select id="nameSelect"></select>
         <div id="radarSubControls" class="wolf-sub-controls">
-          <button type="button" class="wolf-mode-btn active" data-radar-mode="chart">图表数据</button>
+          <button type="button" class="wolf-mode-btn active" data-radar-mode="table">详细数据</button>
+          <button type="button" class="wolf-mode-btn" data-radar-mode="radar">雷达图</button>
           <button type="button" class="wolf-mode-btn" data-radar-mode="games">参与场次</button>
         </div>
       </div>
@@ -103,6 +102,14 @@
       </div>
     </div>
     <div id="visualPanel" class="visual-panel">
+      <div id="radarMetricControls" class="radar-metric-controls" style="display: none;">
+        <div class="radar-game-filters">
+          <div class="radar-filter-group">
+            <span class="radar-filter-label">雷达指标</span>
+            <div id="radarMetricFilters" class="radar-filter-checkboxes"></div>
+          </div>
+        </div>
+      </div>
       <div id="chartWrap" class="chart-wrap">
         <div id="chart"></div>
       </div>
@@ -250,7 +257,7 @@
       return '';
     }
 
-    const RULES_HIDDEN_SECTIONS = new Set(['说明', '数据来源与处理流程', '原始数据导出']);
+    const RULES_HIDDEN_SECTIONS = new Set(['说明', '数据来源与处理流程', '原始数据导出', '角色常量']);
 
     function renderRulesDocument(rules) {
       let html = '';
@@ -341,7 +348,7 @@
     const WIN_KEY = '胜利';
 
     const PERCENT_COLUMNS = new Set([
-      '狼人率', '身份率', '总胜率', '好人警下率',
+      '狼人率', '身份率', '预通率', '总胜率', '好人警下率',
       '放逐票正确率', '警徽票正确率', '毒药技能正确率', '狼人胜率', '好人胜率', '悍跳率',
       '盲毒狼人率'
     ]);
@@ -360,11 +367,14 @@
     const APPEARANCE_DATA_KEY = '身份数据';
     const APPEARANCE_COMBO_TOTAL = '出场次数';
     const APPEARANCE_COMBO_WOLF = '狼次数';
+    const APPEARANCE_COMBO_SKILL_WOLF = '技能狼次数';
     const APPEARANCE_COMBO_IDENTITY = '身份次数';
     const APPEARANCE_COMBO_YUTONG = '预通次数';
+    const YUTONG_RATE_COL = '预通率';
     const APPEARANCE_COMBO_IDENTITY_SEG = '神职次数';
     const APPEARANCE_COMBO_OTHER = '其余';
     const APPEARANCE_WOLF_COLOR = '#ef4444';
+    const APPEARANCE_SKILL_WOLF_COLOR = '#991b1b';
     const APPEARANCE_YUTONG_COLOR = '#eab308';
     const APPEARANCE_IDENTITY_COLOR = '#22c55e';
     const WOLF_DATA_KEY = '狼人数据';
@@ -376,7 +386,6 @@
     const WIN_RATE_DATA_KEY = '胜率数据';
     const WOLF_WIN_RATE_COL = '狼人胜率';
     const GOOD_WIN_RATE_COL = '好人胜率';
-    const SURVIVAL_DATA_KEY = '存活天数数据';
     const AVG_SURVIVAL_COL = '平均存活天数';
     const GOOD_AVG_SURVIVAL_COL = '好人平均存活天数';
     const WOLF_AVG_SURVIVAL_COL = '狼人平均存活天数';
@@ -427,7 +436,7 @@
     const COMPARE_METRIC_COLUMNS = [
       '狼人率', '总胜率', '狼人胜率', '好人胜率',
       '警徽票正确率', '放逐票正确率', '毒药技能正确率',
-      '平均存活天数', '好人警下率'
+      '好人警下率'
     ];
 
     const PROPHET_FIRST_CHECK_COL = '首验';
@@ -439,22 +448,45 @@
       PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL, BLIND_POISON_WOLVES_COL
     ]);
 
-    const RADAR_COLUMNS = ['总胜率', '放逐票正确率', '警徽票正确率', '毒药技能正确率', '狼人率', '狼人胜率', '好人胜率'];
-    const RADAR_TABLE_EXTRA_COLUMNS = [
+    const RADAR_METRIC_OPTIONS = [
+      '总胜率', '放逐票正确率', '警徽票正确率', '毒药技能正确率',
+      '狼人率', '狼人胜率', '好人胜率', '好人警下率',
+      '出场次数', AVG_SURVIVAL_COL,
+    ];
+    const RADAR_MIN_METRICS = 3;
+    const RADAR_METRIC_DEFAULT = [
+      '放逐票正确率', '警徽票正确率', '毒药技能正确率', '狼人胜率', '好人胜率',
+    ];
+    const RADAR_TABLE_GROUP_DEFS = [
+      {
+        title: '预言家相关',
+        columns: [
+          APPEARANCE_COMBO_YUTONG, YUTONG_RATE_COL,
+          PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL,
+          FAKE_GOLD_COL, FAKE_GOLD_GIVER_COL,
+        ],
+      },
+      {
+        title: '技能相关',
+        columns: [
+          BLIND_POISON_USE_COL, BLIND_POISON_WOLF_RATE_COL, BLIND_POISON_WOLVES_COL,
+          WITCH_POISON_WITCH_COL, '毒药技能正确率',
+        ],
+      },
+      {
+        title: '投票相关',
+        columns: [VOTE_BADGE_COUNT, VOTE_BADGE_RATE, VOTE_EXILE_COUNT, VOTE_EXILE_RATE],
+      },
+    ];
+    const RADAR_TABLE_OTHER_COLUMN_ORDER = [
+      '总胜率', '狼人率', '狼人胜率', '好人胜率',
       '出场次数',
-      FAKE_GOLD_COL,
-      WITCH_POISON_WITCH_COL,
-      AVG_SURVIVAL_COL,
-      GOOD_AVG_SURVIVAL_COL,
-      WOLF_AVG_SURVIVAL_COL,
+      AVG_SURVIVAL_COL, GOOD_AVG_SURVIVAL_COL, WOLF_AVG_SURVIVAL_COL,
       GOOD_SHERIFF_BELOW_RATE_COL,
-      VOTE_BADGE_COUNT,
-      VOTE_EXILE_COUNT
     ];
     const RADAR_TABLE_COLUMNS = [
-      PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL,
-      BLIND_POISON_USE_COL, BLIND_POISON_WOLF_RATE_COL, BLIND_POISON_WOLVES_COL,
-      ...RADAR_COLUMNS, ...RADAR_TABLE_EXTRA_COLUMNS
+      ...RADAR_TABLE_GROUP_DEFS.flatMap(g => g.columns),
+      ...RADAR_TABLE_OTHER_COLUMN_ORDER,
     ];
 
     const CHART_TEXT = '#1a1a1a';
@@ -462,7 +494,7 @@
     const CHART_LINE = '#e0e0e0';
     // 普通数据视图可选指标（按顺序）
     const RANKING_COLUMNS = [
-      APPEARANCE_DATA_KEY, WOLF_DATA_KEY, VOTE_DATA_KEY, WIN_RATE_DATA_KEY, SURVIVAL_DATA_KEY,
+      APPEARANCE_DATA_KEY, WOLF_DATA_KEY, VOTE_DATA_KEY, WIN_RATE_DATA_KEY,
       SKILL_DATA_KEY, OTHER_DATA_KEY,
     ];
     let seasonStats = { S20: [],S21: [], S22: [], S1: [], S2: [] };
@@ -478,10 +510,9 @@
     let currentView = 'bar';
     let wolfSubMode = 'hjt';
     let voteSubMode = 'badge';
-    let survivalSubMode = 'avg';
     let otherSubMode = 'blind';
     let skillSubMode = 'witch';
-    let radarSubMode = 'chart';
+    let radarSubMode = 'table';
     let lastRadarGamesPlayer = '';
     let currentSeason = DEFAULT_SEASON;
     let resizeTimer = null;
@@ -512,7 +543,6 @@
     const BAR_SUB_CONTROL_ROWS = [
       [WOLF_DATA_KEY, 'wolfSubControls', hasWolfComboData],
       [VOTE_DATA_KEY, 'voteSubControls', hasVoteData],
-      [SURVIVAL_DATA_KEY, 'survivalSubControls', hasSurvivalData],
       [OTHER_DATA_KEY, 'otherSubControls', hasOtherData],
       [SKILL_DATA_KEY, 'skillSubControls', hasSkillData],
     ];
@@ -528,7 +558,6 @@
     const MODE_BUTTON_BINDINGS = [
       ['wolf-mode', 'wolfMode'],
       ['vote-mode', 'voteMode'],
-      ['survival-mode', 'survivalMode'],
       ['other-mode', 'otherMode'],
       ['skill-mode', 'skillMode'],
       ['banxing-mode', 'banxingMode'],
@@ -550,8 +579,9 @@
         gridBottom: mobile ? 12 : 32,
         showBarLabel: !mobile,
         barMaxWidth: mobile ? 16 : 28,
-        radarRadius: mobile ? '50%' : '62%',
-        radarCenter: mobile ? ['50%', '46%'] : ['50%', '52%'],
+        radarRadius: mobile ? '45%' : '55%',
+        radarCenter: mobile ? ['50%', '44%'] : ['50%', '50%'],
+        radarSideRadius: '48%',
         radarNameFontSize: mobile ? 10 : 13,
         legendBottom: mobile ? 0 : 16,
         legendFontSize: mobile ? 11 : 12,
@@ -748,6 +778,10 @@
       return Number.isInteger(value) ? String(value) : Number(value).toFixed(1);
     }
 
+    function hasCompareSeasonPlayer(season, name) {
+      return Boolean(getPlayerInSeason(season, name));
+    }
+
     function getCompareSeasonDetail(season, name, column) {
       const player = getPlayerInSeason(season, name);
       const raw = player ? parseValue(player[column], column) : 0;
@@ -763,10 +797,14 @@
       setChartHeight(isMobile() ? 8 : 0);
 
       const playerData = compareSeasons.map(season => {
+        if (!hasCompareSeasonPlayer(season, name)) return null;
         const player = getPlayerInSeason(season, name);
-        return player ? parseValue(player[metric], metric) : 0;
+        return parseValue(player[metric], metric);
       });
-      const avgData = compareSeasons.map(season => getSeasonAverage(season, metric));
+      const avgData = compareSeasons.map(season => {
+        if (!(seasonStats[season] || []).length) return null;
+        return getSeasonAverage(season, metric);
+      });
       const yAxisFormatter = metric.includes('率') ? (v) => formatPercent(v) : '{value}';
       const tooltipFormatter = (params) => {
         const season = params[0]?.axisValue;
@@ -820,6 +858,7 @@
           {
             name,
             type: 'line',
+            connectNulls: false,
             data: playerData,
             symbol: 'circle',
             symbolSize: 8,
@@ -829,6 +868,7 @@
           {
             name: avgLabel,
             type: 'line',
+            connectNulls: false,
             data: avgData,
             symbol: 'circle',
             symbolSize: 8,
@@ -1147,6 +1187,11 @@
         .map(item => {
           const total = parseValue(item[APPEARANCE_COMBO_TOTAL], APPEARANCE_COMBO_TOTAL);
           const wolf = parseValue(item[APPEARANCE_COMBO_WOLF], APPEARANCE_COMBO_WOLF);
+          const skillWolf = APPEARANCE_COMBO_SKILL_WOLF in item
+            ? parseValue(item[APPEARANCE_COMBO_SKILL_WOLF], APPEARANCE_COMBO_SKILL_WOLF)
+            : 0;
+          const skillWolfSeg = Math.min(skillWolf, wolf);
+          const wolfOther = Math.max(0, wolf - skillWolfSeg);
           const identity = parseValue(item[APPEARANCE_COMBO_IDENTITY], APPEARANCE_COMBO_IDENTITY);
           const yutong = APPEARANCE_COMBO_YUTONG in item
             ? parseValue(item[APPEARANCE_COMBO_YUTONG], APPEARANCE_COMBO_YUTONG)
@@ -1159,6 +1204,8 @@
             name: item[NAME_KEY],
             total,
             wolf,
+            skillWolf: skillWolfSeg,
+            wolfOther,
             identity,
             yutong: yutongSeg,
             identitySeg,
@@ -1314,6 +1361,7 @@
 
     function hasOtherData() {
       if (!rawData.length) return false;
+      if (hasSurvivalData()) return true;
       const row = rawData[0];
       return BLIND_POISON_COL in row
         || FIRST_CHECK_COL in row
@@ -1348,21 +1396,24 @@
     function updateRadarPanelsVisibility() {
       const view = currentView;
       const isRadar = view === 'radar';
-      const showRadarChart = isRadar && radarSubMode === 'chart';
+      const showRadarChartView = isRadar && radarSubMode === 'radar';
+      const showRadarTableView = isRadar && radarSubMode === 'table';
       const showRadarGames = isRadar && radarSubMode === 'games';
       const hideVisual = ['table', 'banxing', 'tongbian'].includes(view);
+      const visualPanel = $('visualPanel');
 
       $show('radarSubControls', isRadar);
+      $show('radarMetricControls', showRadarChartView, 'block');
       $show('radarGamesWrap', showRadarGames, 'block');
-      $show('radarTableWrap', showRadarChart, 'block');
+      $show('radarTableWrap', showRadarTableView, 'block');
 
-      const visualPanel = $('visualPanel');
       const showVisual = !hideVisual && !showRadarGames;
       visualPanel.style.display = showVisual ? '' : 'none';
-      visualPanel.classList.toggle('radar-layout', showRadarChart);
+      visualPanel.classList.remove('radar-layout');
+      visualPanel.classList.toggle('radar-chart-view', showRadarChartView);
 
-      $show('chartWrap', showVisual && (view !== 'radar' || showRadarChart), 'block');
-      $show('chartDataNotice', view === 'bar' || view === 'compare' || showRadarChart, 'block');
+      $show('chartWrap', showVisual && (view !== 'radar' || showRadarChartView), 'block');
+      $show('chartDataNotice', view === 'bar' || view === 'compare' || showRadarChartView || showRadarTableView, 'block');
     }
 
     const setWolfSubMode = makeBarSubModeSetter(
@@ -1370,9 +1421,6 @@
     );
     const setVoteSubMode = makeBarSubModeSetter(
       m => { voteSubMode = m; }, '[data-vote-mode]', 'voteMode', VOTE_DATA_KEY
-    );
-    const setSurvivalSubMode = makeBarSubModeSetter(
-      m => { survivalSubMode = m; }, '[data-survival-mode]', 'survivalMode', SURVIVAL_DATA_KEY
     );
     const setOtherSubMode = makeBarSubModeSetter(
       m => { otherSubMode = m; }, '[data-other-mode]', 'otherMode', OTHER_DATA_KEY
@@ -1387,7 +1435,11 @@
       updateRadarPanelsVisibility();
       if (currentView !== 'radar') return;
       const name = $('nameSelect').value;
-      if (mode === 'chart') renderRadarChart(name);
+      if (mode === 'radar') {
+        refreshRadarMetricFilters();
+        renderRadarChart(name);
+      }
+      else if (mode === 'table') renderRadarPersonalTable(name);
       else renderRadarGamesSection(name);
     }
 
@@ -1680,6 +1732,14 @@
     }
 
     function renderOtherDataChart() {
+      if (otherSubMode === 'avg' && hasSurvivalData()) {
+        renderAvgSurvivalBarChart();
+        return;
+      }
+      if (otherSubMode === 'camp' && hasSurvivalData()) {
+        renderCampSurvivalScatterChart();
+        return;
+      }
       if (otherSubMode === 'blind' && hasBlindPoisonedComboData()) {
         renderBlindPoisonedComboChart();
         return;
@@ -1844,21 +1904,9 @@
       chart.resize();
     }
 
-    function renderSurvivalDataChart() {
-      if (survivalSubMode === 'camp') {
-        renderCampSurvivalScatterChart();
-      } else {
-        renderAvgSurvivalBarChart();
-      }
-    }
-
     function renderChart(column) {
       if (column === OTHER_DATA_KEY && hasOtherData()) {
         renderOtherDataChart();
-        return;
-      }
-      if (column === SURVIVAL_DATA_KEY && hasSurvivalData()) {
-        renderSurvivalDataChart();
         return;
       }
       if (column === WIN_RATE_DATA_KEY && hasWinRateData()) {
@@ -2315,6 +2363,7 @@
         backgroundColor: 'transparent',
         legend: {
           data: [
+            APPEARANCE_COMBO_SKILL_WOLF,
             APPEARANCE_COMBO_WOLF,
             APPEARANCE_COMBO_YUTONG,
             APPEARANCE_COMBO_IDENTITY_SEG,
@@ -2337,6 +2386,7 @@
               name,
               `${APPEARANCE_COMBO_TOTAL}：${row.total}`,
               `${APPEARANCE_COMBO_WOLF}：${row.wolf}`,
+              `${APPEARANCE_COMBO_SKILL_WOLF}：${row.skillWolf}`,
               `${APPEARANCE_COMBO_IDENTITY}：${row.identity}`,
               `${APPEARANCE_COMBO_YUTONG}：${row.yutong}`,
               `${APPEARANCE_COMBO_IDENTITY_SEG}：${row.identitySeg}`,
@@ -2360,14 +2410,36 @@
         yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
         series: [
           {
+            name: APPEARANCE_COMBO_SKILL_WOLF,
+            type: 'bar',
+            stack: 'appearance',
+            data: items.map(d => d.skillWolf),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: {
+              color: APPEARANCE_SKILL_WOLF_COLOR,
+              borderRadius: [4, 0, 0, 4]
+            },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
             name: APPEARANCE_COMBO_WOLF,
             type: 'bar',
             stack: 'appearance',
-            data: items.map(d => d.wolf),
+            data: items.map(d => ({
+              value: d.wolfOther,
+              itemStyle: {
+                borderRadius: d.skillWolf > 0 ? 0 : [4, 0, 0, 4]
+              }
+            })),
             barMaxWidth: layout.barMaxWidth,
             itemStyle: {
-              color: APPEARANCE_WOLF_COLOR,
-              borderRadius: [4, 0, 0, 4]
+              color: APPEARANCE_WOLF_COLOR
             },
             label: {
               show: layout.showBarLabel,
@@ -2769,25 +2841,139 @@
       chart.resize();
     }
 
-    function getAverageValues() {
+    function getAvailableRadarColumns() {
+      const row = rawData[0] || {};
+      return RADAR_METRIC_OPTIONS.filter(col => col in row);
+    }
+
+    function getRadarIndicatorMax(column) {
+      if (PERCENT_COLUMNS.has(column) || column.includes('率')) return 100;
       const rows = getMinAppearanceRows();
-      if (!rows.length) return RADAR_COLUMNS.map(() => 0);
-      return RADAR_COLUMNS.map(col => {
+      if (!rows.length) return column === '出场次数' ? 30 : 5;
+      const peak = Math.max(...rows.map(item => parseValue(item[column], column)), 0);
+      if (column === '出场次数') return Math.ceil(Math.max(peak * 1.05, 10));
+      if (SURVIVAL_DAY_COLUMNS.has(column)) return Math.ceil(Math.max(peak * 1.1, 3));
+      return Math.ceil(Math.max(peak * 1.1, 1));
+    }
+
+    function buildRadarIndicators(columns) {
+      return columns.map(col => ({ name: col, max: getRadarIndicatorMax(col) }));
+    }
+
+    function getSelectedRadarColumns() {
+      const available = getAvailableRadarColumns();
+      const selection = getRadarCheckboxSelection('radarMetricFilters');
+      if (selection === null) return available;
+      return available.filter(col => selection.has(col));
+    }
+
+    function getDefaultRadarMetricSelection(available) {
+      const selected = RADAR_METRIC_DEFAULT.filter(col => available.includes(col));
+      return selected.length ? new Set(selected) : null;
+    }
+
+    function refreshRadarMetricFilters() {
+      const available = getAvailableRadarColumns();
+      const boxes = getRadarItemCheckboxes('radarMetricFilters');
+      let selection;
+      if (!boxes.length) {
+        selection = getDefaultRadarMetricSelection(available);
+      } else {
+        const prev = getRadarCheckboxSelection('radarMetricFilters');
+        if (prev === null) {
+          selection = null;
+        } else {
+          selection = new Set([...prev].filter(c => available.includes(c)));
+          if (selection.size === 0) selection = getDefaultRadarMetricSelection(available);
+        }
+      }
+      renderRadarCheckboxGroup('radarMetricFilters', available, selection);
+    }
+
+    function handleRadarMetricFilterChange(e) {
+      if (currentView !== 'radar' || radarSubMode !== 'radar') return;
+      if (e.target.classList.contains('radar-filter-all-cb')) {
+        if (!e.target.checked) {
+          e.target.checked = true;
+          return;
+        }
+        getRadarItemCheckboxes('radarMetricFilters').forEach(cb => { cb.checked = true; });
+      } else if (e.target.classList.contains('radar-filter-item-cb')) {
+        const items = getRadarItemCheckboxes('radarMetricFilters');
+        const checkedCount = items.filter(cb => cb.checked).length;
+        if (!e.target.checked && checkedCount < RADAR_MIN_METRICS) {
+          e.target.checked = true;
+          return;
+        }
+        syncRadarSelectAllCheckbox('radarMetricFilters');
+      }
+      renderRadarChart($('nameSelect').value);
+    }
+
+    function getAverageValues(columns = RADAR_METRIC_OPTIONS) {
+      const rows = getMinAppearanceRows();
+      if (!rows.length) return columns.map(() => 0);
+      return columns.map(col => {
         const sum = rows.reduce((acc, item) => acc + parseValue(item[col], col), 0);
         return sum / rows.length;
       });
     }
 
-    function getPlayerValues(name) {
+    function getPlayerValues(name, columns = RADAR_METRIC_OPTIONS) {
       const player = getMinAppearanceRows().find(item => item[NAME_KEY] === name)
         || rawData.find(item => item[NAME_KEY] === name);
-      if (!player) return RADAR_COLUMNS.map(() => 0);
-      return RADAR_COLUMNS.map(col => parseValue(player[col], col));
+      if (!player) return columns.map(() => 0);
+      return columns.map(col => parseValue(player[col], col));
     }
 
     function getRadarTableColumns() {
       const row = rawData[0] || {};
       return RADAR_TABLE_COLUMNS.filter(col => col in row);
+    }
+
+    function getRadarTableGroupedColumns() {
+      const available = new Set(getRadarTableColumns());
+      const assigned = new Set();
+      const groups = [];
+
+      RADAR_TABLE_GROUP_DEFS.forEach(({ title, columns }) => {
+        const cols = columns.filter(col => available.has(col));
+        cols.forEach(col => assigned.add(col));
+        if (cols.length) groups.push({ title, columns: cols });
+      });
+
+      const otherCols = [
+        ...RADAR_TABLE_OTHER_COLUMN_ORDER.filter(col => available.has(col) && !assigned.has(col)),
+        ...getRadarTableColumns().filter(col => !assigned.has(col)
+          && !RADAR_TABLE_OTHER_COLUMN_ORDER.includes(col)),
+      ];
+      otherCols.forEach(col => assigned.add(col));
+      if (otherCols.length) groups.push({ title: '其他', columns: otherCols });
+
+      return groups;
+    }
+
+    function renderRadarTableRow(name, col) {
+      if (RADAR_TABLE_TEXT_COLUMNS.has(col)) {
+        const textVal = getRadarTablePlayer(name, col);
+        return `<tr>
+          <td class="col-metric">${col}</td>
+          <td colspan="2" class="col-text">${formatRadarDetailText(textVal)}</td>
+        </tr>`;
+      }
+      const playerVal = getRadarTablePlayer(name, col);
+      const avgVal = getRadarTableAverage(col);
+      const { rankMap } = getMetricRankMap(col);
+      const bottomRanks = getBottomRankSet(rankMap);
+      const rankEligible = getMetricRankEligibleRows().some(item => item[NAME_KEY] === name);
+      const rank = rankEligible ? rankMap.get(name) : null;
+      const rankClass = getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, col);
+      const rankText = rank != null ? rank : '-';
+      return `<tr>
+        <td class="col-metric">${col}</td>
+        <td class="${rankClass}">${formatValue(playerVal, col)}(${rankText})</td>
+        <td>${formatRadarTableAverage(avgVal, col)}</td>
+      </tr>`;
     }
 
     function getRadarTableAverage(column) {
@@ -2865,44 +3051,43 @@
     }
 
     function renderRadarPersonalTable(name) {
-      const columns = getRadarTableColumns();
+      const groups = getRadarTableGroupedColumns();
       const thead = document.getElementById('radarTableHead');
       const tbody = document.getElementById('radarTableBody');
 
       thead.innerHTML =
         `<tr><th class="col-metric"></th><th>${name}</th><th>平均值</th></tr>`;
-      tbody.innerHTML = columns.map(col => {
-        if (RADAR_TABLE_TEXT_COLUMNS.has(col)) {
-          const textVal = getRadarTablePlayer(name, col);
-          return `<tr>
-          <td class="col-metric">${col}</td>
-          <td colspan="2" class="col-text">${formatRadarDetailText(textVal)}</td>
-        </tr>`;
-        }
-        const playerVal = getRadarTablePlayer(name, col);
-        const avgVal = getRadarTableAverage(col);
-        const { rankMap } = getMetricRankMap(col);
-        const bottomRanks = getBottomRankSet(rankMap);
-        const rankEligible = getMetricRankEligibleRows().some(item => item[NAME_KEY] === name);
-        const rank = rankEligible ? rankMap.get(name) : null;
-        const rankClass = getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, col);
-        const rankText = rank != null ? rank : '-';
-        return `<tr>
-          <td class="col-metric">${col}</td>
-          <td class="${rankClass}">${formatValue(playerVal, col)}(${rankText})</td>
-          <td>${formatRadarTableAverage(avgVal, col)}</td>
-        </tr>`;
-      }).join('');
+      tbody.innerHTML = groups.map(({ title, columns }) =>
+        `<tr class="radar-group-row"><td colspan="3">${escapeHtml(title)}</td></tr>` +
+        columns.map(col => renderRadarTableRow(name, col)).join('')
+      ).join('');
     }
 
     function renderRadarChart(name) {
-      const playerValues = getPlayerValues(name);
-      const avgValues = getAverageValues();
+      const columns = getSelectedRadarColumns();
       const avgLabel = '平均值';
       const layout = getChartLayout();
       const radarSideLayout = currentView === 'radar' && !isMobile();
 
-      setChartHeight(isMobile() ? 10 : 0);
+      document.getElementById('chart').style.height = isMobile() ? '300px' : '480px';
+
+      if (columns.length < RADAR_MIN_METRICS) {
+        chart.setOption({
+          backgroundColor: 'transparent',
+          title: {
+            subtext: `请至少选择 ${RADAR_MIN_METRICS} 项雷达指标`,
+            left: 'center',
+            top: 'center',
+            subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+          },
+          series: []
+        }, true);
+        chart.resize();
+        return;
+      }
+
+      const playerValues = getPlayerValues(name, columns);
+      const avgValues = getAverageValues(columns);
 
       const option = {
         backgroundColor: 'transparent',
@@ -2918,19 +3103,19 @@
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const lines = params.value.map((v, i) =>
-              `${RADAR_COLUMNS[i]}：${formatPercent(v)}`
+              `${columns[i]}：${formatValue(v, columns[i])}`
             );
             return `${params.name}<br/>${lines.join('<br/>')}`;
           }
         },
         radar: {
-          center: radarSideLayout ? ['50%', '52%'] : layout.radarCenter,
-          radius: radarSideLayout ? '62%' : layout.radarRadius,
+          center: radarSideLayout ? ['50%', '50%'] : layout.radarCenter,
+          radius: radarSideLayout ? layout.radarSideRadius : layout.radarRadius,
           axisName: { color: CHART_TEXT, fontSize: layout.radarNameFontSize },
           splitLine: { lineStyle: { color: CHART_LINE } },
           splitArea: { areaStyle: { color: ['rgba(0,0,0,0.02)', 'rgba(0,0,0,0.04)'] } },
           axisLine: { lineStyle: { color: CHART_LINE } },
-          indicator: RADAR_COLUMNS.map(col => ({ name: col, max: 100 }))
+          indicator: buildRadarIndicators(columns)
         },
         series: [{
           type: 'radar',
@@ -2960,7 +3145,6 @@
 
       chart.setOption(option, true);
       chart.resize();
-      renderRadarPersonalTable(name);
     }
 
     function escapeHtml(text) {
@@ -3219,7 +3403,6 @@
     const MODE_SETTERS = {
       'wolf-mode': setWolfSubMode,
       'vote-mode': setVoteSubMode,
-      'survival-mode': setSurvivalSubMode,
       'other-mode': setOtherSubMode,
       'skill-mode': setSkillSubMode,
       'banxing-mode': setBanxingSubMode,
@@ -3377,11 +3560,11 @@
         renderChart(document.getElementById('columnSelect').value);
       } else if (currentView === 'radar') {
         const name = document.getElementById('nameSelect').value;
-        if (radarSubMode === 'chart') {
+        if (radarSubMode === 'radar') {
+          if (!getRadarItemCheckboxes('radarMetricFilters').length) refreshRadarMetricFilters();
           renderRadarChart(name);
-        } else {
-          renderRadarGamesSection(name);
-        }
+        } else if (radarSubMode === 'table') renderRadarPersonalTable(name);
+        else renderRadarGamesSection(name);
       }
     }
 
@@ -3448,7 +3631,6 @@
         if (col === APPEARANCE_DATA_KEY) return hasAppearanceComboData();
         if (col === VOTE_DATA_KEY) return hasVoteData();
         if (col === WIN_RATE_DATA_KEY) return hasWinRateData();
-        if (col === SURVIVAL_DATA_KEY) return hasSurvivalData();
         if (col === OTHER_DATA_KEY) return hasOtherData();
         return col in rawData[0];
       });
@@ -3485,6 +3667,7 @@
 
       refreshTableControls();
       refreshCompareControls();
+      refreshRadarMetricFilters();
       updateRadarGamesVisibility();
       updateChartFootnotes();
     }
@@ -3527,6 +3710,7 @@
         });
       });
       $('nameSelect').addEventListener('change', updateChart);
+      $('radarMetricFilters').addEventListener('change', handleRadarMetricFilterChange);
       $('radarGameFilters').addEventListener('change', (e) => {
         if (e.target.type !== 'checkbox' || currentView !== 'radar') return;
         if (e.target.classList.contains('radar-filter-all-cb')) {
