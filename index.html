@@ -1,0 +1,3682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大师赛数据统计</title>
+  <script src="js/echarts.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-row">
+        <div class="header-text">
+          <h1>大师赛数据统计</h1>
+          <p class="subtitle">按指标、选手或原始数据切换查看</p>
+        </div>
+        <button type="button" id="rulesBtn" class="rules-btn" aria-label="统计规则" title="统计规则">
+          <svg class="rules-btn-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4ZM11 10.2a1 1 0 0 1 2 0v5.6a1 1 0 1 1-2 0v-5.6Zm0-3.4a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <div class="toolbar-main">
+        <select id="seriesSelect" class="series-select" aria-label="选择系列">
+          <option value="jingcheng" selected>京城大师赛</option>
+          <option value="yuexiao">粤小</option>
+        </select>
+        <select id="seasonSelect" class="season-select" aria-label="选择赛季"></select>
+        <button type="button" class="view-btn active" data-view="bar">可视化图表</button>
+        <button type="button" class="view-btn" data-view="radar">个人数据</button>
+        <button type="button" class="view-btn" data-view="tongbian">同边数据</button>
+        <button type="button" class="view-btn" data-view="table">原始数据</button>
+        <div class="view-btn-compare-group">
+          <button type="button" class="view-btn" data-view="compare">个人赛季数据对比</button>
+          <button type="button" class="view-btn" data-view="banxing">版型数据</button>
+        </div>
+      </div>
+    
+      <div id="barControls" class="control-group bar-controls-wrap">
+        <label for="columnSelect">选择指标：</label>
+        <select id="columnSelect"></select>
+        <div id="wolfSubControls" class="wolf-sub-controls" style="display: none;">
+          <button type="button" class="wolf-mode-btn active" data-wolf-mode="hjt">悍跳数据</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="self">自爆数据</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="knife">自刀数据</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="jixie">机械狼数据</button>
+        </div>
+        <div id="voteSubControls" class="wolf-sub-controls" style="display: none;">
+          <button type="button" class="wolf-mode-btn active" data-vote-mode="badge">警徽票</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="exile">放逐票</button>
+        </div>
+        <div id="survivalSubControls" class="wolf-sub-controls" style="display: none;">
+          <button type="button" class="wolf-mode-btn active" data-survival-mode="avg">平均存活天数</button>
+          <button type="button" class="wolf-mode-btn" data-survival-mode="camp">不同阵营存活天数</button>
+        </div>
+        <div id="otherSubControls" class="wolf-sub-controls" style="display: none;">
+          <button type="button" class="wolf-mode-btn active" data-other-mode="blind">被盲毒次数</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="first">被首验次数</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="model">混血儿榜样次数</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="fake">接狼人金水次数</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="rate">好人警下率</button>
+        </div>
+        <div id="skillSubControls" class="wolf-sub-controls" style="display: none;">
+          <button type="button" class="wolf-mode-btn active" data-skill-mode="witch">女巫毒师数据</button>
+          <button type="button" class="wolf-mode-btn" data-skill-mode="dream">摄梦人首摄数据</button>
+          <button type="button" class="wolf-mode-btn" data-skill-mode="blindwolf">盲毒狼人率</button>
+        </div>
+      </div>
+      <div id="tongbianControls" class="control-group" style="display: none;">
+        <label for="tongbianNameSelect">选择姓名</label>
+        <select id="tongbianNameSelect"></select>
+      </div>
+      <div id="banxingControls" class="wolf-sub-controls" style="display: none;">
+        <button type="button" class="wolf-mode-btn active" data-banxing-mode="all">全部版型</button>
+        <button type="button" class="wolf-mode-btn" data-banxing-mode="jixie">机械狼版型</button>
+        <button type="button" class="wolf-mode-btn" data-banxing-mode="daobao">盗宝大师版型</button>
+        <button type="button" class="wolf-mode-btn" data-banxing-mode="yvlhb">预女猎白混版型</button>
+      </div>
+      <div id="radarControls" class="control-group" style="display: none;">
+        <label for="nameSelect">选择选手</label>
+        <select id="nameSelect"></select>
+        <div id="radarSubControls" class="wolf-sub-controls">
+          <button type="button" class="wolf-mode-btn active" data-radar-mode="chart">图表数据</button>
+          <button type="button" class="wolf-mode-btn" data-radar-mode="games">参与场次</button>
+        </div>
+      </div>
+      <div id="compareControls" class="control-group" style="display: none;">
+        <label for="compareNameSelect">选择选手</label>
+        <select id="compareNameSelect"></select>
+        <label for="compareMetricSelect">选择指标</label>
+        <select id="compareMetricSelect"></select>
+      </div>
+      <div id="tableControls" class="table-controls" style="display: none;">
+        <div class="control-group">
+          <label for="dateSelect">选择日期</label>
+          <select id="dateSelect"></select>
+        </div>
+        <p id="rawTableGameInfo" class="raw-table-game-info"></p>
+      </div>
+    </div>
+    <div id="visualPanel" class="visual-panel">
+      <div id="chartWrap" class="chart-wrap">
+        <div id="chart"></div>
+      </div>
+      <div id="radarTableWrap" class="data-table-wrap radar-table-wrap" style="display: none;">
+        <div class="table-scroll radar-table-scroll">
+          <table class="raw-table radar-stats-table">
+            <thead id="radarTableHead"></thead>
+            <tbody id="radarTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="radarGamesWrap" class="data-table-wrap radar-games-wrap" style="display: none;">
+      <div class="radar-games-header">
+        <span class="radar-games-title">参与场次</span>
+        <div id="radarGameFilters" class="radar-game-filters">
+          <div class="radar-filter-group">
+            <span class="radar-filter-label">版型</span>
+            <div id="radarBanxingFilters" class="radar-filter-checkboxes"></div>
+          </div>
+          <div class="radar-filter-group">
+            <span class="radar-filter-label">身份</span>
+            <div id="radarIdentityFilters" class="radar-filter-checkboxes"></div>
+          </div>
+        </div>
+      </div>
+      <div id="radarGamesContent" class="radar-games-content"></div>
+      <p class="radar-games-legend">
+        <span class="radar-games-legend-item">
+          <span class="radar-games-legend-swatch is-win" aria-hidden="true"></span>
+          淡蓝色底为胜利场次
+        </span>
+        <span class="radar-games-legend-item">
+          <span class="radar-games-legend-swatch is-other" aria-hidden="true"></span>
+          淡灰色底为其他场次
+        </span>
+      </p>
+    </div>
+    <p id="chartDataNotice" class="chart-footnote" style="display: none;">注：仅显示出场次数>=9的选手</p>
+    <div id="dataTable" class="data-table-wrap" style="display: none;">
+      <div class="table-scroll">
+        <table class="raw-table">
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="banxingTable" class="data-table-wrap" style="display: none;">
+      <div class="table-scroll">
+        <table class="raw-table banxing-table">
+          <thead id="banxingHead"></thead>
+          <tbody id="banxingBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="tongbianTable" class="data-table-wrap" style="display: none;">
+      <p id="tongbianEmptyNotice" class="empty-notice" style="display: none;"></p>
+      <div class="table-scroll">
+        <table class="raw-table tongbian-table">
+          <thead id="tongbianHead"></thead>
+          <tbody id="tongbianBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="error" class="error" style="display: none;"></div>
+  </div>
+
+  <div id="rulesModal" class="rules-modal" aria-hidden="true">
+    <div class="rules-modal-backdrop" data-rules-close></div>
+    <div class="rules-modal-panel" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
+      <div class="rules-modal-header">
+        <h2 id="rulesModalTitle">统计规则</h2>
+        <button type="button" class="rules-close-btn" data-rules-close aria-label="关闭">×</button>
+      </div>
+      <div id="rulesContent" class="rules-modal-body">
+        <p class="rules-loading">加载中…</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SEASON_PREFIX = {
+      S20: '京城大师赛',
+      S21: '京城大师赛',
+      S22: '京城大师赛',
+      S1: '粤小',
+      S2: '粤小',
+    };
+    const SEASONS = ['S20','S21', 'S22', 'S1', 'S2'];
+    const DEFAULT_SEASON = 'S22';
+    const COMPARE_SERIES = {
+      jingcheng: { label: '京城大师赛', seasons: ['S20','S21', 'S22'] },
+      yuexiao: { label: '粤小', seasons: ['S1', 'S2'] },
+    };
+    const SERIES_DEFAULT_SEASON = { jingcheng: 'S22', yuexiao: 'S2' };
+
+    function getSeasonTag(season) {
+      const prefix = SEASON_PREFIX[season];
+      return prefix ? `${prefix}${season}` : season;
+    }
+
+    const DATA_DIR = 'data';
+    const RULES_FILE = '规则.json';
+
+    function getSeasonFiles(season) {
+      const tag = getSeasonTag(season);
+      return {
+        stats: `${DATA_DIR}/${tag}玩家统计.json`,
+        raw: `${DATA_DIR}/${tag}原始数据.json`,
+        banxing: `${DATA_DIR}/${tag}版型数据.json`,
+        tongbian: `${DATA_DIR}/${tag}同边数据.json`,
+      };
+    }
+
+    function getSeriesTag(seriesKey) {
+      const seasons = COMPARE_SERIES[seriesKey]?.seasons || [];
+      return seasons.length ? SEASON_PREFIX[seasons[0]] : '';
+    }
+
+    function getTotalBanxingFile(seriesKey) {
+      const tag = getSeriesTag(seriesKey);
+      return `${DATA_DIR}/${tag}总版型数据.json`;
+    }
+
+    let rulesDocumentCache = null;
+
+    function renderRulesValue(value) {
+      if (value == null) return '';
+      if (typeof value === 'string') {
+        return `<p class="rules-text">${escapeHtml(value)}</p>`;
+      }
+      if (Array.isArray(value)) {
+        return `<ul class="rules-list">${value.map(item =>
+          `<li>${escapeHtml(String(item))}</li>`
+        ).join('')}</ul>`;
+      }
+      if (typeof value === 'object') {
+        return `<dl class="rules-dl">${Object.entries(value).map(([key, item]) => {
+          if (typeof item === 'string') {
+            return `<div class="rules-item"><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(item)}</dd></div>`;
+          }
+          return `<div class="rules-subblock"><dt class="rules-subblock-title">${escapeHtml(key)}</dt><dd>${renderRulesValue(item)}</dd></div>`;
+        }).join('')}</dl>`;
+      }
+      return '';
+    }
+
+    const RULES_HIDDEN_SECTIONS = new Set(['说明', '数据来源与处理流程', '原始数据导出']);
+
+    function renderRulesDocument(rules) {
+      let html = '';
+      Object.entries(rules).forEach(([section, content]) => {
+        if (RULES_HIDDEN_SECTIONS.has(section)) return;
+        html += `<section class="rules-section"><h3>${escapeHtml(section)}</h3>${renderRulesValue(content)}</section>`;
+      });
+      return html;
+    }
+
+    async function loadRulesDocument() {
+      if (rulesDocumentCache) return rulesDocumentCache;
+      rulesDocumentCache = await fetchJson(RULES_FILE);
+      return rulesDocumentCache;
+    }
+
+    function setRulesModalOpen(open) {
+      const modal = document.getElementById('rulesModal');
+      modal.classList.toggle('is-open', open);
+      modal.setAttribute('aria-hidden', open ? 'false' : 'true');
+      document.body.classList.toggle('rules-modal-open', open);
+    }
+
+    async function openRulesModal() {
+      const contentEl = document.getElementById('rulesContent');
+      setRulesModalOpen(true);
+      if (contentEl.dataset.loaded === '1') return;
+      contentEl.innerHTML = '<p class="rules-loading">加载中…</p>';
+      try {
+        const rules = await loadRulesDocument();
+        contentEl.innerHTML = renderRulesDocument(rules);
+        contentEl.dataset.loaded = '1';
+      } catch (err) {
+        contentEl.innerHTML = `<p class="rules-error">无法加载统计规则：${escapeHtml(err.message)}<br>请确认 <strong>${escapeHtml(RULES_FILE)}</strong> 存在。</p>`;
+      }
+    }
+
+    function bindRulesModal() {
+      document.getElementById('rulesBtn').addEventListener('click', openRulesModal);
+      document.querySelectorAll('[data-rules-close]').forEach(el => {
+        el.addEventListener('click', () => setRulesModalOpen(false));
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('rulesModal').classList.contains('is-open')) {
+          setRulesModalOpen(false);
+        }
+      });
+    }
+
+    async function fetchJson(url) {
+      const bustUrl = `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`;
+      const res = await fetch(bustUrl, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
+      return res.json();
+    }
+    const NAME_A_KEY = '姓名A';
+    const NAME_B_KEY = '姓名B';
+    const TONGBIAN_METRIC_COLUMNS = [
+      '同场次数', '同边次数', '同边狼人次数',
+      '同边率', '同边狼人胜率', '同边好人胜率',
+    ];
+    const TONGBIAN_TABLE_COLUMNS = [NAME_A_KEY, NAME_B_KEY, ...TONGBIAN_METRIC_COLUMNS];
+    const BANXING_COLUMNS = ['版型', '总场次', '狼赢次数', '好人赢次数', '平均持续天数', '狼人胜率'];
+    const BANXING_SORTABLE = new Set(['平均持续天数', '狼人胜率']);
+    const BANXING_SUB_MODES = {
+      all: null,
+      jixie: ['机械狼', '机械双刀', '机械女巫', '机械猎人', '机械守卫', '机械平民', '机械通灵师'],
+      daobao: ['盗宝大师', '盗宝通灵师', '盗宝猎人', '盗宝毒师', '盗宝蒙面人', '盗宝摄梦人'],
+      yvlhb: ['预女猎白混', '预女猎白好人混', '预女猎白狼人混'],
+    };
+    const NAME_KEY = '姓名';
+    const IDENTITY_KEY = '身份';
+    const RAW_TABLE_HIDDEN_COLUMNS = new Set([
+      '攻击技能', '防御技能', 'D1警徽', '阵营', '版型', '胜利',
+    ]);
+
+    function getRawTableColumnLabel(col) {
+      if (/^D\d+警下投票$/.test(col)) return '警徽票';
+      if (/^D\d+二轮票$/.test(col)) return '警徽票二轮票';
+      const exile1 = col.match(/^(D\d+)放逐票1$/);
+      if (exile1) return `${exile1[1]}放逐票`;
+      const exile2 = col.match(/^(D\d+)放逐票2$/);
+      if (exile2) return `${exile2[1]}放逐二轮票`;
+      return col;
+    }
+    const CAMP_KEY = '阵营';
+    const BANXING_KEY = '版型';
+    const WIN_KEY = '胜利';
+
+    const PERCENT_COLUMNS = new Set([
+      '狼人率', '身份率', '总胜率', '好人警下率',
+      '放逐票正确率', '警徽票正确率', '毒药技能正确率', '狼人胜率', '好人胜率', '悍跳率',
+      '盲毒狼人率'
+    ]);
+    const SKILL_DATA_KEY = '技能数据';
+    const WITCH_POISON_WITCH_COL = '女巫毒师次数';
+    const WITCH_POISON_USE_COL = '毒药使用次数';
+    const WITCH_POISON_WOLF_COL = '毒狼次数';
+    const DREAM_WALKER_COL = '摄梦人次数';
+    const DREAM_FIRST_WOLF_COL = '首摄狼人次数';
+    const DREAM_FIRST_SPECIAL_COL = '首摄狼王/盗宝猎人次数';
+    const WITCH_POISON_LIGHT_BLUE = '#dbeafe';
+    const WITCH_POISON_GREEN = '#22c55e';
+    const WITCH_POISON_GRAY = '#f1f5f9';
+    const WITCH_POISON_GRAY_BORDER = '#e2e8f0';
+    const DREAM_DARK_GREEN = '#15803d';
+    const APPEARANCE_DATA_KEY = '身份数据';
+    const APPEARANCE_COMBO_TOTAL = '出场次数';
+    const APPEARANCE_COMBO_WOLF = '狼次数';
+    const APPEARANCE_COMBO_IDENTITY = '身份次数';
+    const APPEARANCE_COMBO_YUTONG = '预通次数';
+    const APPEARANCE_COMBO_IDENTITY_SEG = '神职次数';
+    const APPEARANCE_COMBO_OTHER = '其余';
+    const APPEARANCE_WOLF_COLOR = '#ef4444';
+    const APPEARANCE_YUTONG_COLOR = '#eab308';
+    const APPEARANCE_IDENTITY_COLOR = '#22c55e';
+    const WOLF_DATA_KEY = '狼人数据';
+    const VOTE_DATA_KEY = '投票数据';
+    const VOTE_BADGE_COUNT = '警徽票次数';
+    const VOTE_BADGE_RATE = '警徽票正确率';
+    const VOTE_EXILE_COUNT = '放逐票次数';
+    const VOTE_EXILE_RATE = '放逐票正确率';
+    const WIN_RATE_DATA_KEY = '胜率数据';
+    const WOLF_WIN_RATE_COL = '狼人胜率';
+    const GOOD_WIN_RATE_COL = '好人胜率';
+    const SURVIVAL_DATA_KEY = '存活天数数据';
+    const AVG_SURVIVAL_COL = '平均存活天数';
+    const GOOD_AVG_SURVIVAL_COL = '好人平均存活天数';
+    const WOLF_AVG_SURVIVAL_COL = '狼人平均存活天数';
+    const SURVIVAL_DAY_COLUMNS = new Set([
+      AVG_SURVIVAL_COL, GOOD_AVG_SURVIVAL_COL, WOLF_AVG_SURVIVAL_COL
+    ]);
+    const OTHER_DATA_KEY = '其他数据';
+    const BLIND_POISON_COL = '被盲毒次数';
+    const NON_WOLF_BLIND_POISON_COL = '非狼被盲毒次数';
+    const FIRST_CHECK_COL = '被首验次数';
+    const MIXED_BLOOD_MODEL_COL = '混血儿榜样次数';
+    const FAKE_GOLD_COL = '接狼人金水次数';
+    const BLIND_POISON_USE_COL = '盲毒次数';
+    const BLIND_POISON_WOLF_RATE_COL = '盲毒狼人率';
+    const BLIND_POISON_WOLVES_COL = '盲毒狼人';
+    const OTHER_ZERO_EXCLUDE_COLS = new Set([
+      BLIND_POISON_COL, FIRST_CHECK_COL, MIXED_BLOOD_MODEL_COL, FAKE_GOLD_COL
+    ]);
+    const GOOD_SHERIFF_BELOW_RATE_COL = '好人警下率';
+    const CHART_MIN_APPEARANCES = 9;
+    const WOLF_COMBO_TOTAL = '狼次数';
+    const WOLF_COMBO_HJT = '悍跳次数';
+    const WOLF_COMBO_SELF = '自爆次数';
+    const WOLF_COMBO_SELF_GREEN = '#22c55e';
+    const RED_WOLF_COL = '非盗宝红狼次数';
+    const SELF_KNIFE_COL = '自刀次数';
+    const TEAMMATE_SELF_KNIFE_COL = '狼队友自刀次数';
+    const JIXIE_WOLF_TOTAL_COL = '机械狼次数';
+    const JIXIE_CIVILIAN_COL = '机械平民次数';
+    const JIXIE_DUAL_COL = '机械双刀次数';
+    const JIXIE_WITCH_COL = '机械女巫次数';
+    const JIXIE_GUARD_COL = '机械守卫次数';
+    const JIXIE_HUNTER_COL = '机械猎人次数';
+    const JIXIE_MEDIUM_COL = '机械通灵师次数';
+    const JIXIE_WOLF_SEGMENTS = [
+      { field: 'base', label: JIXIE_WOLF_TOTAL_COL, color: '#ffffff', labelColor: '#1a1a1a', borderColor: '#d1d5db' },
+      { field: 'civilian', label: JIXIE_CIVILIAN_COL, color: '#3b82f6' },
+      { field: 'dual', label: JIXIE_DUAL_COL, color: '#ef4444' },
+      { field: 'witch', label: JIXIE_WITCH_COL, color: '#fb923c' },
+      { field: 'guard', label: JIXIE_GUARD_COL, color: '#fde68a', labelColor: '#1a1a1a' },
+      { field: 'hunter', label: JIXIE_HUNTER_COL, color: '#86efac', labelColor: '#1a1a1a' },
+      { field: 'medium', label: JIXIE_MEDIUM_COL, color: '#c4b5fd' },
+    ];
+    const APPEARANCE_COLOR = '#0ea5e9';
+    const WOLF_COLOR = '#22c55e';
+    const COMPARE_AVG_COLOR = '#22c55e';
+    const COMPARE_PLAYER_COLOR = '#3b82f6';
+    const COMPARE_METRIC_COLUMNS = [
+      '狼人率', '总胜率', '狼人胜率', '好人胜率',
+      '警徽票正确率', '放逐票正确率', '毒药技能正确率',
+      '平均存活天数', '好人警下率'
+    ];
+
+    const PROPHET_FIRST_CHECK_COL = '首验';
+    const FIRST_CHECKED_BY_COL = '被首验';
+    const FAKE_GOLD_GIVER_COL = '接狼人金水';
+    const PARTICIPATION_COL = '参与场次';
+    const WIN_SESSIONS_COL = '胜利场次';
+    const RADAR_TABLE_TEXT_COLUMNS = new Set([
+      PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL, BLIND_POISON_WOLVES_COL
+    ]);
+
+    const RADAR_COLUMNS = ['总胜率', '放逐票正确率', '警徽票正确率', '毒药技能正确率', '狼人率', '狼人胜率', '好人胜率'];
+    const RADAR_TABLE_EXTRA_COLUMNS = [
+      '出场次数',
+      FAKE_GOLD_COL,
+      WITCH_POISON_WITCH_COL,
+      AVG_SURVIVAL_COL,
+      GOOD_AVG_SURVIVAL_COL,
+      WOLF_AVG_SURVIVAL_COL,
+      GOOD_SHERIFF_BELOW_RATE_COL,
+      VOTE_BADGE_COUNT,
+      VOTE_EXILE_COUNT
+    ];
+    const RADAR_TABLE_COLUMNS = [
+      PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL,
+      BLIND_POISON_USE_COL, BLIND_POISON_WOLF_RATE_COL, BLIND_POISON_WOLVES_COL,
+      ...RADAR_COLUMNS, ...RADAR_TABLE_EXTRA_COLUMNS
+    ];
+
+    const CHART_TEXT = '#1a1a1a';
+    const CHART_AXIS = '#666666';
+    const CHART_LINE = '#e0e0e0';
+    // 普通数据视图可选指标（按顺序）
+    const RANKING_COLUMNS = [
+      APPEARANCE_DATA_KEY, WOLF_DATA_KEY, VOTE_DATA_KEY, WIN_RATE_DATA_KEY, SURVIVAL_DATA_KEY,
+      SKILL_DATA_KEY, OTHER_DATA_KEY,
+    ];
+    let seasonStats = { S20: [],S21: [], S22: [], S1: [], S2: [] };
+    let rawData = [];
+    let rawTableData = [];
+    let banxingData = [];
+    let totalBanxingData = [];
+    let tongbianData = [];
+    let banxingSubMode = 'all';
+    let banxingSort = { column: '总场次', direction: 'desc' };
+    let tongbianSort = { column: '同场次数', direction: 'desc' };
+    let chart = null;
+    let currentView = 'bar';
+    let wolfSubMode = 'hjt';
+    let voteSubMode = 'badge';
+    let survivalSubMode = 'avg';
+    let otherSubMode = 'blind';
+    let skillSubMode = 'witch';
+    let radarSubMode = 'chart';
+    let lastRadarGamesPlayer = '';
+    let currentSeason = DEFAULT_SEASON;
+    let resizeTimer = null;
+    let uiBound = false;
+
+    const $ = id => document.getElementById(id);
+    const $show = (id, visible, display = 'flex') => { $(id).style.display = visible ? display : 'none'; };
+
+    function syncModeButtons(selector, dataKey, mode) {
+      document.querySelectorAll(selector).forEach(btn => {
+        btn.classList.toggle('active', btn.dataset[dataKey] === mode);
+      });
+    }
+
+    function refreshBarChartIf(colKey) {
+      if (currentView === 'bar' && $('columnSelect').value === colKey) updateChart();
+    }
+
+    function makeBarSubModeSetter(assign, selector, dataKey, colKey, before) {
+      return mode => {
+        assign(mode);
+        syncModeButtons(selector, dataKey, mode);
+        before?.();
+        refreshBarChartIf(colKey);
+      };
+    }
+
+    const BAR_SUB_CONTROL_ROWS = [
+      [WOLF_DATA_KEY, 'wolfSubControls', hasWolfComboData],
+      [VOTE_DATA_KEY, 'voteSubControls', hasVoteData],
+      [SURVIVAL_DATA_KEY, 'survivalSubControls', hasSurvivalData],
+      [OTHER_DATA_KEY, 'otherSubControls', hasOtherData],
+      [SKILL_DATA_KEY, 'skillSubControls', hasSkillData],
+    ];
+
+    const VIEW_PANEL_ROWS = [
+      ['barControls', 'bar'], ['tongbianControls', 'tongbian'], ['banxingControls', 'banxing'],
+      ['compareControls', 'compare'], ['radarControls', 'radar'], ['tableControls', 'table'],
+    ];
+    const VIEW_TABLE_ROWS = [
+      ['dataTable', 'table', 'block'], ['banxingTable', 'banxing', 'block'], ['tongbianTable', 'tongbian', 'block'],
+    ];
+
+    const MODE_BUTTON_BINDINGS = [
+      ['wolf-mode', 'wolfMode'],
+      ['vote-mode', 'voteMode'],
+      ['survival-mode', 'survivalMode'],
+      ['other-mode', 'otherMode'],
+      ['skill-mode', 'skillMode'],
+      ['banxing-mode', 'banxingMode'],
+      ['radar-mode', 'radarMode'],
+    ];
+
+    function isMobile() {
+      return window.innerWidth <= 768;
+    }
+
+    function getChartLayout() {
+      const mobile = isMobile();
+      return {
+        titleFontSize: mobile ? 15 : 18,
+        axisFontSize: mobile ? 11 : 13,
+        gridLeft: mobile ? 56 : 100,
+        gridRight: mobile ? 12 : 48,
+        gridTop: mobile ? 12 : 20,
+        gridBottom: mobile ? 12 : 32,
+        showBarLabel: !mobile,
+        barMaxWidth: mobile ? 16 : 28,
+        radarRadius: mobile ? '50%' : '62%',
+        radarCenter: mobile ? ['50%', '46%'] : ['50%', '52%'],
+        radarNameFontSize: mobile ? 10 : 13,
+        legendBottom: mobile ? 0 : 16,
+        legendFontSize: mobile ? 11 : 12,
+        scatterGridLeft: mobile ? 56 : 88,
+        scatterGridRight: mobile ? 16 : 48,
+        scatterGridTop: mobile ? 48 : 64,
+        scatterGridBottom: mobile ? 56 : 72,
+        scatterYNameGap: mobile ? 42 : 58,
+        scatterXNameGap: mobile ? 28 : 36
+      };
+    }
+
+    function getScatterGrid(layout) {
+      return {
+        left: layout.scatterGridLeft,
+        right: layout.scatterGridRight,
+        top: layout.scatterGridTop,
+        bottom: layout.scatterGridBottom,
+        containLabel: true
+      };
+    }
+
+    function buildScatterYAxis(name, layout, options = {}) {
+      const axis = {
+        type: 'value',
+        name,
+        nameLocation: 'middle',
+        nameGap: layout.scatterYNameGap,
+        nameRotate: 90,
+        axisLabel: {
+          color: CHART_AXIS,
+          fontSize: layout.axisFontSize,
+          ...(options.axisLabelFormatter ? { formatter: options.axisLabelFormatter } : {})
+        },
+        nameTextStyle: { color: CHART_TEXT, fontSize: layout.axisFontSize },
+        splitLine: { lineStyle: { color: CHART_LINE } }
+      };
+      if (options.min != null) axis.min = options.min;
+      if (options.max != null) axis.max = options.max;
+      if (options.minInterval != null) axis.minInterval = options.minInterval;
+      return axis;
+    }
+
+    function buildScatterXAxis(name, layout, options = {}) {
+      const axis = {
+        type: 'value',
+        name,
+        nameLocation: 'middle',
+        nameGap: layout.scatterXNameGap,
+        axisLabel: {
+          color: CHART_AXIS,
+          fontSize: layout.axisFontSize,
+          ...(options.axisLabelFormatter ? { formatter: options.axisLabelFormatter } : {})
+        },
+        nameTextStyle: { color: CHART_TEXT, fontSize: layout.axisFontSize },
+        splitLine: { lineStyle: { color: CHART_LINE } }
+      };
+      if (options.min != null) axis.min = options.min;
+      if (options.max != null) axis.max = options.max;
+      if (options.minInterval != null) axis.minInterval = options.minInterval;
+      return axis;
+    }
+
+    function setChartHeight(itemCount) {
+      const el = document.getElementById('chart');
+      if (itemCount <= 0) {
+        el.style.height = isMobile() ? Math.max(window.innerHeight - 260, 320) + 'px' : '';
+        return;
+      }
+      const mobile = isMobile();
+      const rowHeight = mobile ? 32 : 36;
+      const chrome = mobile ? 80 : 120;
+      const minHeight = mobile ? 320 : 520;
+      el.style.height = Math.max(minHeight, itemCount * rowHeight + chrome) + 'px';
+    }
+
+    function setScatterChartHeight(itemCount) {
+      const el = document.getElementById('chart');
+      const mobile = isMobile();
+      const minHeight = mobile ? 420 : 520;
+      const baseCount = 12;
+      if (itemCount <= baseCount) {
+        el.style.height = mobile ? `${minHeight}px` : '';
+        return;
+      }
+      const extraPerPoint = mobile ? 10 : 12;
+      const maxHeight = mobile ? 760 : Math.max(window.innerHeight - 120, 880);
+      const height = Math.min(
+        minHeight + (itemCount - baseCount) * extraPerPoint,
+        maxHeight
+      );
+      el.style.height = `${Math.max(minHeight, height)}px`;
+    }
+
+    function buildBarCategoryYAxis(categories, layout) {
+      return {
+        type: 'category',
+        data: categories,
+        axisLabel: {
+          color: CHART_TEXT,
+          fontSize: layout.axisFontSize,
+          interval: 0,
+          overflow: 'none'
+        },
+        axisLine: { lineStyle: { color: CHART_LINE } }
+      };
+    }
+
+    function parseValue(value, column) {
+      if (value == null || value === '') return 0;
+      if (typeof value === 'string' && value.includes('%')) {
+        return parseFloat(value.replace('%', '')) || 0;
+      }
+      return Number(value) || 0;
+    }
+
+    function getPlayerInSeason(season, name) {
+      return (seasonStats[season] || []).find(item => item[NAME_KEY] === name);
+    }
+
+    function getSeasonAverage(season, column) {
+      const data = filterSeasonByMinAppearances(seasonStats[season] || []);
+      if (!data.length) return 0;
+      const sum = data.reduce((acc, item) => acc + parseValue(item[column], column), 0);
+      return sum / data.length;
+    }
+
+    function getCompareSeries(seriesKey) {
+      return COMPARE_SERIES[seriesKey] || COMPARE_SERIES.jingcheng;
+    }
+
+    function getCompareSeasonList(seriesKey) {
+      return getCompareSeries(seriesKey).seasons;
+    }
+
+    function getCurrentSeriesKey() {
+      const el = document.getElementById('seriesSelect');
+      return el ? el.value : 'jingcheng';
+    }
+
+    function getSeriesKeyForSeason(season) {
+      if (COMPARE_SERIES.jingcheng.seasons.includes(season)) return 'jingcheng';
+      if (COMPARE_SERIES.yuexiao.seasons.includes(season)) return 'yuexiao';
+      return 'jingcheng';
+    }
+
+    function getSeriesSeason(seriesKey, preferredSeason) {
+      const seasons = getCompareSeasonList(seriesKey);
+      if (preferredSeason && seasons.includes(preferredSeason)) return preferredSeason;
+      return SERIES_DEFAULT_SEASON[seriesKey] || seasons[seasons.length - 1];
+    }
+
+    function refreshSeasonSelectOptions() {
+      const seriesKey = getCurrentSeriesKey();
+      const seasons = getCompareSeasonList(seriesKey);
+      const season = getSeriesSeason(seriesKey, currentSeason);
+      const el = document.getElementById('seasonSelect');
+      el.innerHTML = seasons.map(s =>
+        `<option value="${s}">${s}</option>`
+      ).join('');
+      el.value = season;
+    }
+
+    function getCompareColumns(seriesKey) {
+      const seasons = getCompareSeasonList(seriesKey);
+      if (!seasons.some(s => seasonStats[s]?.length)) return [];
+      const cols = new Set();
+      seasons.forEach(season => {
+        Object.keys(seasonStats[season][0] || {}).forEach(k => cols.add(k));
+      });
+      return COMPARE_METRIC_COLUMNS.filter(c => cols.has(c));
+    }
+
+    function getComparePlayerNames(seriesKey) {
+      const totals = new Map();
+      const maxAppear = new Map();
+      getCompareSeasonList(seriesKey).forEach(season => {
+        (seasonStats[season] || []).forEach(item => {
+          const name = item[NAME_KEY];
+          const count = parseValue(item['出场次数'], '出场次数');
+          totals.set(name, (totals.get(name) || 0) + count);
+          maxAppear.set(name, Math.max(maxAppear.get(name) || 0, count));
+        });
+      });
+      return [...totals.entries()]
+        .filter(([name]) => maxAppear.get(name) >= CHART_MIN_APPEARANCES)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-CN'))
+        .map(([name]) => name);
+    }
+
+    function formatCompareValue(value, column) {
+      if (column.includes('率')) return formatPercent(value);
+      if (column === '平均存活天数') return Number(value).toFixed(1);
+      return Number.isInteger(value) ? String(value) : Number(value).toFixed(1);
+    }
+
+    function getCompareSeasonDetail(season, name, column) {
+      const player = getPlayerInSeason(season, name);
+      const raw = player ? parseValue(player[column], column) : 0;
+      const avg = getSeasonAverage(season, column);
+      return { raw, avg, display: player ? (player[column] ?? '-') : '-' };
+    }
+
+    function renderPersonalCompare(name, metric, seriesKey) {
+      const series = getCompareSeries(seriesKey);
+      const compareSeasons = getCompareSeasonList(seriesKey);
+      const layout = getChartLayout();
+      const avgLabel = '赛季平均值';
+      setChartHeight(isMobile() ? 8 : 0);
+
+      const playerData = compareSeasons.map(season => {
+        const player = getPlayerInSeason(season, name);
+        return player ? parseValue(player[metric], metric) : 0;
+      });
+      const avgData = compareSeasons.map(season => getSeasonAverage(season, metric));
+      const yAxisFormatter = metric.includes('率') ? (v) => formatPercent(v) : '{value}';
+      const tooltipFormatter = (params) => {
+        const season = params[0]?.axisValue;
+        if (!season) return '';
+        const d = getCompareSeasonDetail(season, name, metric);
+        return params.map(p => {
+          const text = p.seriesName === name
+            ? `个人：${d.display}`
+            : `${avgLabel}：${formatCompareValue(d.avg, metric)}`;
+          return `${p.marker}${p.seriesName}<br/>${text}`;
+        }).join('<br/><br/>');
+      };
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [name, avgLabel],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter: tooltipFormatter
+        },
+        grid: {
+          left: 48,
+          right: 24,
+          top: layout.gridTop,
+          bottom: isMobile() ? 72 : 88,
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: [...compareSeasons],
+          axisLabel: { color: CHART_TEXT, fontSize: layout.axisFontSize },
+          axisLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: {
+            color: CHART_AXIS,
+            fontSize: layout.axisFontSize,
+            formatter: yAxisFormatter
+          },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        series: [
+          {
+            name,
+            type: 'line',
+            data: playerData,
+            symbol: 'circle',
+            symbolSize: 8,
+            lineStyle: { color: COMPARE_PLAYER_COLOR, width: 2 },
+            itemStyle: { color: COMPARE_PLAYER_COLOR }
+          },
+          {
+            name: avgLabel,
+            type: 'line',
+            data: avgData,
+            symbol: 'circle',
+            symbolSize: 8,
+            lineStyle: { color: COMPARE_AVG_COLOR, width: 2 },
+            itemStyle: { color: COMPARE_AVG_COLOR }
+          }
+        ],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function formatPercent(value) {
+      return Number(value).toFixed(1) + '%';
+    }
+
+    function formatValue(value, column) {
+      if (PERCENT_COLUMNS.has(column)) {
+        return formatPercent(value);
+      }
+      if (SURVIVAL_DAY_COLUMNS.has(column)) {
+        return Number(value).toFixed(1);
+      }
+      return String(value);
+    }
+
+    function formatRadarTableAverage(value, column) {
+      if (PERCENT_COLUMNS.has(column)) {
+        return formatPercent(value);
+      }
+      if (SURVIVAL_DAY_COLUMNS.has(column)) {
+        return Number(value).toFixed(1);
+      }
+      const num = Number(value);
+      if (!Number.isFinite(num)) return '-';
+      return Number.isInteger(num) ? String(num) : num.toFixed(1);
+    }
+
+    function getColumnAverage(column) {
+      const rows = getMinAppearanceRows();
+      if (!rows.length) return 0;
+      const sum = rows.reduce((acc, item) => acc + parseValue(item[column], column), 0);
+      return sum / rows.length;
+    }
+
+    function parseTongbianValue(value, column) {
+      if (value == null || value === '') return 0;
+      if (typeof value === 'string' && value.includes('%')) {
+        return parseFloat(value.replace('%', '')) || 0;
+      }
+      return Number(value) || 0;
+    }
+
+    function getTongbianFilteredRows(selectedName) {
+      if (!selectedName) return tongbianData;
+      return tongbianData.filter(row =>
+        row[NAME_A_KEY] === selectedName || row[NAME_B_KEY] === selectedName
+      );
+    }
+
+    function getTongbianTableColumns() {
+      return TONGBIAN_TABLE_COLUMNS;
+    }
+
+    function getUniqueTongbianNames() {
+      const names = new Set();
+      tongbianData.forEach(row => {
+        if (row[NAME_A_KEY]) names.add(row[NAME_A_KEY]);
+        if (row[NAME_B_KEY]) names.add(row[NAME_B_KEY]);
+      });
+      return [...names].sort((a, b) => a.localeCompare(b, 'zh-CN'));
+    }
+
+    function getTongbianCellClass(col) {
+      if (col === NAME_A_KEY) return 'col-name';
+      if (col === NAME_B_KEY) return 'col-identity';
+      return '';
+    }
+
+    function applyTongbianStickyOffsets() {
+      const nameTh = document.querySelector('.tongbian-table th.col-name');
+      if (!nameTh) return;
+      const left = `${nameTh.getBoundingClientRect().width}px`;
+      document.querySelectorAll('.tongbian-table .col-identity').forEach(el => {
+        el.style.left = left;
+      });
+    }
+
+    function renderTongbianHeaderCell(col) {
+      const thClass = getTongbianCellClass(col);
+      if (col === NAME_A_KEY || col === NAME_B_KEY) {
+        return `<th class="${thClass}">${col}</th>`;
+      }
+      const isActive = tongbianSort.column === col;
+      const isAsc = isActive && tongbianSort.direction === 'asc';
+      const arrow = isActive ? (isAsc ? '↑' : '↓') : '↕';
+      const title = isActive ? (isAsc ? '升序，点击切换为降序' : '降序，点击切换为升序') : '点击排序';
+      return `<th class="${thClass} th-sortable">
+        <div class="th-sort-wrap">
+          <span class="th-label">${col}</span>
+          <button type="button" class="sort-btn${isActive ? ' active' : ''}" data-col="${col}" title="${title}" aria-label="${title}">${arrow}</button>
+        </div>
+      </th>`;
+    }
+
+    function toggleTongbianSort(column) {
+      if (tongbianSort.column === column) {
+        tongbianSort.direction = tongbianSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        tongbianSort = { column, direction: 'desc' };
+      }
+      renderTongbianTable(document.getElementById('tongbianNameSelect').value);
+    }
+
+    function bindTongbianSort() {
+      document.getElementById('tongbianHead').addEventListener('click', (e) => {
+        const btn = e.target.closest('.sort-btn');
+        if (!btn) return;
+        toggleTongbianSort(btn.dataset.col);
+      });
+    }
+
+    function getTongbianEmptyMessage(selectedName) {
+      if (!tongbianData.length) {
+        return '本赛季暂无同边数据（需至少两名出场次数>=9 的选手才会生成配对统计）。';
+      }
+      if (selectedName) {
+        return `选手「${selectedName}」暂无同边配对记录。`;
+      }
+      return '暂无同边数据。';
+    }
+
+    function updateTongbianEmptyNotice(selectedName, showNotice) {
+      const notice = document.getElementById('tongbianEmptyNotice');
+      if (!showNotice) {
+        notice.style.display = 'none';
+        notice.textContent = '';
+        return;
+      }
+      notice.textContent = getTongbianEmptyMessage(selectedName);
+      notice.style.display = 'block';
+    }
+
+    function renderTongbianTable(selectedName) {
+      const columns = getTongbianTableColumns();
+      const { column, direction } = tongbianSort;
+      const sorted = [...getTongbianFilteredRows(selectedName)].sort((a, b) => {
+        const av = parseTongbianValue(a[column], column);
+        const bv = parseTongbianValue(b[column], column);
+        return direction === 'asc' ? av - bv : bv - av;
+      });
+      const thead = document.getElementById('tongbianHead');
+      const tbody = document.getElementById('tongbianBody');
+      const isEmpty = sorted.length === 0;
+      const seasonEmpty = !tongbianData.length;
+
+      thead.innerHTML = `<tr>${columns.map(col => renderTongbianHeaderCell(col)).join('')}</tr>`;
+      if (isEmpty && !seasonEmpty) {
+        tbody.innerHTML = `<tr><td colspan="${columns.length}" class="table-empty-cell">${getTongbianEmptyMessage(selectedName)}</td></tr>`;
+      } else if (!isEmpty) {
+        tbody.innerHTML = sorted.map(row =>
+          `<tr>${columns.map(col =>
+            `<td class="${getTongbianCellClass(col)}">${row[col] ?? ''}</td>`
+          ).join('')}</tr>`
+        ).join('');
+      } else {
+        tbody.innerHTML = '';
+      }
+      updateTongbianEmptyNotice(selectedName, seasonEmpty);
+      applyTongbianStickyOffsets();
+    }
+
+    function getBarColor(value, average, belowAvgGreen) {
+      if (belowAvgGreen && value < average) {
+        return new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          { offset: 0, color: '#4ade80' },
+          { offset: 1, color: '#22c55e' }
+        ]);
+      }
+      return new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+        { offset: 0, color: '#0ea5e9' },
+        { offset: 1, color: '#6366f1' }
+      ]);
+    }
+
+    function hasBlindPoisonedComboData() {
+      const row = rawData[0] || {};
+      return BLIND_POISON_COL in row && NON_WOLF_BLIND_POISON_COL in row;
+    }
+
+    function getBlindPoisonedComboItems() {
+      return getMinAppearanceRows()
+        .map(item => {
+          const blind = parseValue(item[BLIND_POISON_COL], BLIND_POISON_COL);
+          const nonWolf = parseValue(item[NON_WOLF_BLIND_POISON_COL], NON_WOLF_BLIND_POISON_COL);
+          return {
+            name: item[NAME_KEY],
+            blind,
+            nonWolf,
+            other: Math.max(0, blind - nonWolf)
+          };
+        })
+        .filter(item => item.blind > 0)
+        .sort((a, b) => a.blind - b.blind);
+    }
+
+    function getChartData(column, options = {}) {
+      const { excludeZero = false, requirePositiveCol = null } = options;
+      return getMinAppearanceRows()
+        .filter(item => (
+          !requirePositiveCol
+          || parseValue(item[requirePositiveCol], requirePositiveCol) > 0
+        ))
+        .map(item => ({
+          name: item[NAME_KEY],
+          value: parseValue(item[column], column)
+        }))
+        .filter(d => !excludeZero || d.value !== 0)
+        .sort((a, b) => a.value - b.value);
+    }
+
+    function hasWitchPoisonComboData() {
+      const row = rawData[0] || {};
+      return '出场次数' in row
+        && WITCH_POISON_WITCH_COL in row
+        && WITCH_POISON_USE_COL in row
+        && WITCH_POISON_WOLF_COL in row;
+    }
+
+    function hasDreamFirstComboData() {
+      const row = rawData[0] || {};
+      return DREAM_WALKER_COL in row
+        && DREAM_FIRST_WOLF_COL in row
+        && DREAM_FIRST_SPECIAL_COL in row;
+    }
+
+    function hasBlindPoisonWolfRateData() {
+      const row = rawData[0] || {};
+      return BLIND_POISON_WOLF_RATE_COL in row && BLIND_POISON_USE_COL in row;
+    }
+
+    function hasSkillData() {
+      return hasWitchPoisonComboData() || hasDreamFirstComboData() || hasBlindPoisonWolfRateData();
+    }
+
+    function getBlindPoisonWolfRateItems() {
+      return getMinAppearanceRows()
+        .map(item => ({
+          name: item[NAME_KEY],
+          rate: parseValue(item[BLIND_POISON_WOLF_RATE_COL], BLIND_POISON_WOLF_RATE_COL),
+          blindUse: parseValue(item[BLIND_POISON_USE_COL], BLIND_POISON_USE_COL),
+        }))
+        .filter(d => d.blindUse > 0)
+        .sort((a, b) => a.rate - b.rate);
+    }
+
+    function hasMinAppearances(item) {
+      return parseValue(item['出场次数'], '出场次数') >= CHART_MIN_APPEARANCES;
+    }
+
+    function filterSeasonByMinAppearances(data) {
+      if (!data.length) return [];
+      return data.filter(item => hasMinAppearances(item));
+    }
+
+    function getMinAppearanceRows() {
+      return filterSeasonByMinAppearances(rawData);
+    }
+
+    function getMetricRankEligibleRows() {
+      return getMinAppearanceRows();
+    }
+
+    function getWitchPoisonComboItems() {
+      return getMinAppearanceRows()
+        .map(item => {
+          const witch = parseValue(item[WITCH_POISON_WITCH_COL], WITCH_POISON_WITCH_COL);
+          const use = parseValue(item[WITCH_POISON_USE_COL], WITCH_POISON_USE_COL);
+          const wolf = parseValue(item[WITCH_POISON_WOLF_COL], WITCH_POISON_WOLF_COL);
+          return {
+            name: item[NAME_KEY],
+            witch,
+            use,
+            wolf,
+            useOther: Math.max(0, use - wolf),
+            other: Math.max(0, witch - use)
+          };
+        })
+        .filter(item => item.witch > 0)
+        .sort((a, b) => a.witch - b.witch);
+    }
+
+    function getDreamFirstComboItems() {
+      return getMinAppearanceRows()
+        .map(item => {
+          const dreamer = parseValue(item[DREAM_WALKER_COL], DREAM_WALKER_COL);
+          const wolf = parseValue(item[DREAM_FIRST_WOLF_COL], DREAM_FIRST_WOLF_COL);
+          const special = parseValue(item[DREAM_FIRST_SPECIAL_COL], DREAM_FIRST_SPECIAL_COL);
+          return {
+            name: item[NAME_KEY],
+            dreamer,
+            wolf,
+            special,
+            wolfOther: Math.max(0, wolf - special),
+            other: Math.max(0, dreamer - wolf)
+          };
+        })
+        .filter(item => item.dreamer > 0)
+        .sort((a, b) => a.dreamer - b.dreamer);
+    }
+
+    function getAppearanceComboItems() {
+      return getMinAppearanceRows()
+        .map(item => {
+          const total = parseValue(item[APPEARANCE_COMBO_TOTAL], APPEARANCE_COMBO_TOTAL);
+          const wolf = parseValue(item[APPEARANCE_COMBO_WOLF], APPEARANCE_COMBO_WOLF);
+          const identity = parseValue(item[APPEARANCE_COMBO_IDENTITY], APPEARANCE_COMBO_IDENTITY);
+          const yutong = APPEARANCE_COMBO_YUTONG in item
+            ? parseValue(item[APPEARANCE_COMBO_YUTONG], APPEARANCE_COMBO_YUTONG)
+            : 0;
+          const identitySeg = Math.max(0, identity - wolf);
+          const yutongSeg = Math.min(yutong, identitySeg);
+          const identityGreen = Math.max(0, identitySeg - yutongSeg);
+          const other = Math.max(0, total - identity);
+          return {
+            name: item[NAME_KEY],
+            total,
+            wolf,
+            identity,
+            yutong: yutongSeg,
+            identitySeg,
+            identityGreen,
+            other
+          };
+        })
+        .sort((a, b) => a.total - b.total);
+    }
+
+    function hasAppearanceComboData() {
+      const row = rawData[0] || {};
+      return APPEARANCE_COMBO_TOTAL in row
+        && APPEARANCE_COMBO_WOLF in row
+        && APPEARANCE_COMBO_IDENTITY in row;
+    }
+
+    function isAppearanceComboColumn(column) {
+      return column === APPEARANCE_DATA_KEY;
+    }
+
+    function getWolfEligibleRows() {
+      return getMinAppearanceRows();
+    }
+
+    function getWolfComboItems(mode) {
+      const items = getWolfEligibleRows().map(item => {
+        const total = parseValue(item[WOLF_COMBO_TOTAL], WOLF_COMBO_TOTAL);
+        const hjt = parseValue(item[WOLF_COMBO_HJT], WOLF_COMBO_HJT);
+        const self = parseValue(item[WOLF_COMBO_SELF], WOLF_COMBO_SELF);
+        return {
+          name: item[NAME_KEY],
+          total,
+          hjt,
+          self,
+          hjtOther: Math.max(0, total - hjt),
+          selfOther: Math.max(0, total - self)
+        };
+      });
+      const sortDesc = (primaryA, primaryB, totalA, totalB) => {
+        if (primaryA !== primaryB) return primaryA - primaryB;
+        return totalA - totalB;
+      };
+      if (mode === 'self') {
+        return items.sort((a, b) => sortDesc(a.self, b.self, a.total, b.total));
+      }
+      return items.sort((a, b) => sortDesc(a.hjt, b.hjt, a.total, b.total));
+    }
+
+    function hasSelfKnifeComboData() {
+      const row = rawData[0] || {};
+      return RED_WOLF_COL in row
+        && SELF_KNIFE_COL in row
+        && TEAMMATE_SELF_KNIFE_COL in row;
+    }
+
+    function getSelfKnifeComboItems() {
+      return getWolfEligibleRows()
+        .map(item => {
+          const redWolf = parseValue(item[RED_WOLF_COL], RED_WOLF_COL);
+          const selfKnife = parseValue(item[SELF_KNIFE_COL], SELF_KNIFE_COL);
+          const teammateKnife = parseValue(item[TEAMMATE_SELF_KNIFE_COL], TEAMMATE_SELF_KNIFE_COL);
+          return {
+            name: item[NAME_KEY],
+            redWolf,
+            selfKnife,
+            teammateKnife,
+            other: Math.max(0, redWolf - selfKnife - teammateKnife)
+          };
+        })
+        .filter(item => item.redWolf > 0)
+        .sort((a, b) => {
+          const knifeA = a.selfKnife + a.teammateKnife;
+          const knifeB = b.selfKnife + b.teammateKnife;
+          if (knifeA !== knifeB) return knifeA - knifeB;
+          return a.redWolf - b.redWolf;
+        });
+    }
+
+    function hasJixieWolfComboData() {
+      const row = rawData[0] || {};
+      return JIXIE_WOLF_TOTAL_COL in row
+        && JIXIE_CIVILIAN_COL in row
+        && JIXIE_DUAL_COL in row
+        && JIXIE_WITCH_COL in row
+        && JIXIE_GUARD_COL in row
+        && JIXIE_HUNTER_COL in row
+        && JIXIE_MEDIUM_COL in row;
+    }
+
+    function hasWolfComboData() {
+      const row = rawData[0] || {};
+      const hasHjtSelf = '出场次数' in row
+        && WOLF_COMBO_TOTAL in row
+        && WOLF_COMBO_HJT in row
+        && WOLF_COMBO_SELF in row;
+      return hasHjtSelf || hasJixieWolfComboData() || hasSelfKnifeComboData();
+    }
+
+    function getJixieWolfComboItems() {
+      return getMinAppearanceRows()
+        .map(item => {
+          const total = parseValue(item[JIXIE_WOLF_TOTAL_COL], JIXIE_WOLF_TOTAL_COL);
+          const civilian = parseValue(item[JIXIE_CIVILIAN_COL], JIXIE_CIVILIAN_COL);
+          const dual = parseValue(item[JIXIE_DUAL_COL], JIXIE_DUAL_COL);
+          const witch = parseValue(item[JIXIE_WITCH_COL], JIXIE_WITCH_COL);
+          const guard = parseValue(item[JIXIE_GUARD_COL], JIXIE_GUARD_COL);
+          const hunter = parseValue(item[JIXIE_HUNTER_COL], JIXIE_HUNTER_COL);
+          const medium = parseValue(item[JIXIE_MEDIUM_COL], JIXIE_MEDIUM_COL);
+          const subSum = civilian + dual + witch + guard + hunter + medium;
+          return {
+            name: item[NAME_KEY],
+            total,
+            base: Math.max(0, total - subSum),
+            civilian,
+            dual,
+            witch,
+            guard,
+            hunter,
+            medium
+          };
+        })
+        .filter(item => item.total > 0)
+        .sort((a, b) => a.total - b.total);
+    }
+
+    function isWolfComboColumn(column) {
+      return column === WOLF_DATA_KEY;
+    }
+
+    function isVoteDataColumn(column) {
+      return column === VOTE_DATA_KEY;
+    }
+
+    function hasVoteData() {
+      return rawData.length > 0
+        && VOTE_BADGE_COUNT in rawData[0]
+        && VOTE_EXILE_COUNT in rawData[0];
+    }
+
+    function hasWinRateData() {
+      return rawData.length > 0
+        && WOLF_WIN_RATE_COL in rawData[0]
+        && GOOD_WIN_RATE_COL in rawData[0];
+    }
+
+    function hasSurvivalData() {
+      return rawData.length > 0
+        && AVG_SURVIVAL_COL in rawData[0]
+        && GOOD_AVG_SURVIVAL_COL in rawData[0]
+        && WOLF_AVG_SURVIVAL_COL in rawData[0];
+    }
+
+    function hasOtherData() {
+      if (!rawData.length) return false;
+      const row = rawData[0];
+      return BLIND_POISON_COL in row
+        || FIRST_CHECK_COL in row
+        || MIXED_BLOOD_MODEL_COL in row
+        || FAKE_GOLD_COL in row
+        || GOOD_SHERIFF_BELOW_RATE_COL in row;
+    }
+
+    function getOtherDataColumn() {
+      if (otherSubMode === 'rate') return GOOD_SHERIFF_BELOW_RATE_COL;
+      if (otherSubMode === 'first') return FIRST_CHECK_COL;
+      if (otherSubMode === 'model') return MIXED_BLOOD_MODEL_COL;
+      if (otherSubMode === 'fake') return FAKE_GOLD_COL;
+      return BLIND_POISON_COL;
+    }
+
+    function getVoteScatterConfig(mode) {
+      return mode === 'badge'
+        ? { countCol: VOTE_BADGE_COUNT, rateCol: VOTE_BADGE_RATE, label: '警徽票' }
+        : { countCol: VOTE_EXILE_COUNT, rateCol: VOTE_EXILE_RATE, label: '放逐票' };
+    }
+
+    function updateChartFootnotes() {
+      const col = $('columnSelect').value;
+      const isBar = currentView === 'bar';
+      BAR_SUB_CONTROL_ROWS.forEach(([colKey, elId, hasData]) => {
+        $show(elId, isBar && col === colKey && hasData());
+      });
+      updateRadarPanelsVisibility();
+    }
+
+    function updateRadarPanelsVisibility() {
+      const view = currentView;
+      const isRadar = view === 'radar';
+      const showRadarChart = isRadar && radarSubMode === 'chart';
+      const showRadarGames = isRadar && radarSubMode === 'games';
+      const hideVisual = ['table', 'banxing', 'tongbian'].includes(view);
+
+      $show('radarSubControls', isRadar);
+      $show('radarGamesWrap', showRadarGames, 'block');
+      $show('radarTableWrap', showRadarChart, 'block');
+
+      const visualPanel = $('visualPanel');
+      const showVisual = !hideVisual && !showRadarGames;
+      visualPanel.style.display = showVisual ? '' : 'none';
+      visualPanel.classList.toggle('radar-layout', showRadarChart);
+
+      $show('chartWrap', showVisual && (view !== 'radar' || showRadarChart), 'block');
+      $show('chartDataNotice', view === 'bar' || view === 'compare' || showRadarChart, 'block');
+    }
+
+    const setWolfSubMode = makeBarSubModeSetter(
+      m => { wolfSubMode = m; }, '[data-wolf-mode]', 'wolfMode', WOLF_DATA_KEY, updateChartFootnotes
+    );
+    const setVoteSubMode = makeBarSubModeSetter(
+      m => { voteSubMode = m; }, '[data-vote-mode]', 'voteMode', VOTE_DATA_KEY
+    );
+    const setSurvivalSubMode = makeBarSubModeSetter(
+      m => { survivalSubMode = m; }, '[data-survival-mode]', 'survivalMode', SURVIVAL_DATA_KEY
+    );
+    const setOtherSubMode = makeBarSubModeSetter(
+      m => { otherSubMode = m; }, '[data-other-mode]', 'otherMode', OTHER_DATA_KEY
+    );
+    const setSkillSubMode = makeBarSubModeSetter(
+      m => { skillSubMode = m; }, '[data-skill-mode]', 'skillMode', SKILL_DATA_KEY
+    );
+
+    function setRadarSubMode(mode) {
+      radarSubMode = mode;
+      syncModeButtons('[data-radar-mode]', 'radarMode', mode);
+      updateRadarPanelsVisibility();
+      if (currentView !== 'radar') return;
+      const name = $('nameSelect').value;
+      if (mode === 'chart') renderRadarChart(name);
+      else renderRadarGamesSection(name);
+    }
+
+    function buildVoteLabelLayout(items) {
+      const groups = new Map();
+      items.forEach((item, index) => {
+        const key = `${item.value[0]},${item.value[1]}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(index);
+      });
+      const offsets = new Array(items.length).fill(0);
+      groups.forEach((indices) => {
+        if (indices.length <= 1) return;
+        indices.forEach((index, order) => {
+          offsets[index] = (order - (indices.length - 1) / 2) * 12;
+        });
+      });
+      return (params) => {
+        const offset = offsets[params.dataIndex];
+        return offset ? { dy: offset } : {};
+      };
+    }
+
+    function formatScatterMarkValue(value, column) {
+      if (PERCENT_COLUMNS.has(column) || column.includes('率')) {
+        return formatPercent(value);
+      }
+      if (SURVIVAL_DAY_COLUMNS.has(column)) {
+        return Number(value).toFixed(1);
+      }
+      const num = Number(value);
+      return Number.isInteger(num) ? String(num) : num.toFixed(1);
+    }
+
+    function buildScatterAverageOrigin(xCol, yCol, options = {}) {
+      const { showXMean = true, showYMean = true } = options;
+      const avgX = getColumnAverage(xCol);
+      const avgY = getColumnAverage(yCol);
+      const markLineData = [];
+      if (showXMean) {
+        markLineData.push({
+          xAxis: avgX,
+          label: { formatter: () => formatScatterMarkValue(avgX, xCol) }
+        });
+      }
+      if (showYMean) {
+        markLineData.push({
+          yAxis: avgY,
+          label: { formatter: () => formatScatterMarkValue(avgY, yCol) }
+        });
+      }
+      const result = {};
+      if (markLineData.length) {
+        result.markLine = {
+          silent: true,
+          symbol: 'none',
+          lineStyle: { color: '#94a3b8', type: 'dashed', width: 1.5 },
+          label: {
+            show: true,
+            color: CHART_AXIS,
+            fontSize: 11
+          },
+          data: markLineData
+        };
+      }
+      if (showXMean && showYMean) {
+        result.markPoint = {
+          silent: true,
+          symbol: 'circle',
+          symbolSize: 8,
+          itemStyle: { color: '#64748b', borderColor: '#ffffff', borderWidth: 1 },
+          label: {
+            show: true,
+            formatter: '均值',
+            position: 'right',
+            color: CHART_AXIS,
+            fontSize: 10,
+            distance: 4
+          },
+          data: [{ coord: [avgX, avgY], name: '平均值' }]
+        };
+      }
+      return result;
+    }
+
+    function renderVoteScatterChart() {
+      const { countCol, rateCol, label } = getVoteScatterConfig(voteSubMode);
+      const layout = getChartLayout();
+      const rawItems = getMinAppearanceRows().map(item => ({
+        name: item[NAME_KEY],
+        value: [
+          parseValue(item[countCol], countCol),
+          parseValue(item[rateCol], rateCol)
+        ]
+      }));
+      const items = rawItems;
+
+      setScatterChartHeight(items.length);
+      const averageOrigin = buildScatterAverageOrigin(countCol, rateCol, { showXMean: false });
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            return [
+              params.data.name,
+              `${countCol}：${params.value[0]}`,
+              `${rateCol}：${formatPercent(params.value[1])}`
+            ].join('<br/>');
+          }
+        },
+        grid: getScatterGrid(layout),
+        xAxis: buildScatterXAxis(countCol, layout, { minInterval: 1 }),
+        yAxis: buildScatterYAxis(rateCol, layout, {
+          max: 100,
+          axisLabelFormatter: (v) => formatPercent(v)
+        }),
+        series: [{
+          type: 'scatter',
+          data: items,
+          symbolSize: 10,
+          itemStyle: { color: '#3b82f6' },
+          label: {
+            show: true,
+            formatter: ({ data }) => data.name,
+            position: 'top',
+            distance: 4,
+            color: CHART_TEXT,
+            fontSize: isMobile() ? 10 : 11,
+            hideOverlap: true
+          },
+          labelLayout: buildVoteLabelLayout(items),
+          emphasis: {
+            scale: 1.4,
+            itemStyle: { color: '#2563eb' },
+            label: { show: true }
+          },
+          ...(averageOrigin.markLine ? { markLine: averageOrigin.markLine } : {}),
+          ...(averageOrigin.markPoint ? { markPoint: averageOrigin.markPoint } : {})
+        }],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderWinRateScatterChart() {
+      const layout = getChartLayout();
+      const items = getMinAppearanceRows().map(item => ({
+        name: item[NAME_KEY],
+        value: [
+          parseValue(item[WOLF_WIN_RATE_COL], WOLF_WIN_RATE_COL),
+          parseValue(item[GOOD_WIN_RATE_COL], GOOD_WIN_RATE_COL)
+        ]
+      }));
+
+      setScatterChartHeight(items.length);
+      const averageOrigin = buildScatterAverageOrigin(WOLF_WIN_RATE_COL, GOOD_WIN_RATE_COL);
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            return [
+              params.data.name,
+              `${WOLF_WIN_RATE_COL}：${formatPercent(params.value[0])}`,
+              `${GOOD_WIN_RATE_COL}：${formatPercent(params.value[1])}`
+            ].join('<br/>');
+          }
+        },
+        grid: getScatterGrid(layout),
+        xAxis: buildScatterXAxis(WOLF_WIN_RATE_COL, layout, {
+          max: 100,
+          axisLabelFormatter: (v) => formatPercent(v)
+        }),
+        yAxis: buildScatterYAxis(GOOD_WIN_RATE_COL, layout, {
+          max: 100,
+          axisLabelFormatter: (v) => formatPercent(v)
+        }),
+        series: [{
+          type: 'scatter',
+          data: items,
+          symbolSize: 10,
+          itemStyle: { color: '#3b82f6' },
+          label: {
+            show: true,
+            formatter: ({ data }) => data.name,
+            position: 'top',
+            distance: 4,
+            color: CHART_TEXT,
+            fontSize: isMobile() ? 10 : 11,
+            hideOverlap: true
+          },
+          labelLayout: buildVoteLabelLayout(items),
+          emphasis: {
+            scale: 1.4,
+            itemStyle: { color: '#2563eb' },
+            label: { show: true }
+          },
+          markLine: averageOrigin.markLine,
+          markPoint: averageOrigin.markPoint
+        }],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderMetricBarChart(column, options = {}) {
+      const items = getChartData(column, options);
+      const isPercent = PERCENT_COLUMNS.has(column);
+      const isRateColumn = column.includes('率');
+      const average = getColumnAverage(column);
+      const layout = getChartLayout();
+
+      setChartHeight(items.length);
+
+      const axisFormatter = isPercent
+        ? (v) => formatPercent(v)
+        : SURVIVAL_DAY_COLUMNS.has(column)
+          ? (v) => Number(v).toFixed(1)
+          : '{value}';
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const p = params[0];
+            return `${p.name}<br/>${column}：${formatValue(p.value, column)}`;
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom,
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          axisLabel: {
+            color: CHART_AXIS,
+            fontSize: layout.axisFontSize,
+            formatter: axisFormatter
+          },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [{
+          type: 'bar',
+          data: items.map(d => ({
+            value: d.value,
+            itemStyle: {
+              borderRadius: [0, 4, 4, 0],
+              color: getBarColor(d.value, average, isRateColumn)
+            }
+          })),
+          barMaxWidth: layout.barMaxWidth,
+          label: {
+            show: layout.showBarLabel,
+            position: 'right',
+            color: CHART_TEXT,
+            formatter: ({ value }) => formatValue(value, column)
+          }
+        }],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderAvgSurvivalBarChart() {
+      renderMetricBarChart(AVG_SURVIVAL_COL);
+    }
+
+    function renderOtherDataChart() {
+      if (otherSubMode === 'blind' && hasBlindPoisonedComboData()) {
+        renderBlindPoisonedComboChart();
+        return;
+      }
+      const column = getOtherDataColumn();
+      renderMetricBarChart(column, {
+        excludeZero: OTHER_ZERO_EXCLUDE_COLS.has(column)
+      });
+    }
+
+    function renderBlindPoisonedComboChart() {
+      const items = getBlindPoisonedComboItems();
+      const layout = getChartLayout();
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        renderWolfDataEmptyChart('暂无出场次数>=9且被盲毒次数>0的选手');
+        return;
+      }
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [BLIND_POISON_COL, NON_WOLF_BLIND_POISON_COL],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const name = params[0]?.name ?? '';
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              name,
+              `${BLIND_POISON_COL}：${row.blind}`,
+              `${NON_WOLF_BLIND_POISON_COL}：${row.nonWolf}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [
+          {
+            name: NON_WOLF_BLIND_POISON_COL,
+            type: 'bar',
+            stack: 'blindPoisoned',
+            data: items.map(d => d.nonWolf),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: BLIND_POISON_COL,
+            type: 'bar',
+            stack: 'blindPoisoned',
+            data: items.map(d => d.other),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: APPEARANCE_COLOR, borderRadius: [0, 4, 4, 0] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'right',
+              color: CHART_TEXT,
+              formatter: (p) => String(items[p.dataIndex].blind)
+            }
+          }
+        ],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderCampSurvivalScatterChart() {
+      const layout = getChartLayout();
+      const items = getMinAppearanceRows().map(item => ({
+        name: item[NAME_KEY],
+        value: [
+          parseValue(item[GOOD_AVG_SURVIVAL_COL], GOOD_AVG_SURVIVAL_COL),
+          parseValue(item[WOLF_AVG_SURVIVAL_COL], WOLF_AVG_SURVIVAL_COL)
+        ]
+      }));
+
+      setScatterChartHeight(items.length);
+      const averageOrigin = buildScatterAverageOrigin(GOOD_AVG_SURVIVAL_COL, WOLF_AVG_SURVIVAL_COL);
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            return [
+              params.data.name,
+              `${GOOD_AVG_SURVIVAL_COL}：${formatValue(params.value[0], GOOD_AVG_SURVIVAL_COL)}`,
+              `${WOLF_AVG_SURVIVAL_COL}：${formatValue(params.value[1], WOLF_AVG_SURVIVAL_COL)}`
+            ].join('<br/>');
+          }
+        },
+        grid: getScatterGrid(layout),
+        xAxis: buildScatterXAxis(GOOD_AVG_SURVIVAL_COL, layout, {
+          min: 1,
+          axisLabelFormatter: (v) => Number(v).toFixed(1)
+        }),
+        yAxis: buildScatterYAxis(WOLF_AVG_SURVIVAL_COL, layout, {
+          min: 1,
+          axisLabelFormatter: (v) => Number(v).toFixed(1)
+        }),
+        series: [{
+          type: 'scatter',
+          data: items,
+          symbolSize: 10,
+          itemStyle: { color: '#3b82f6' },
+          label: {
+            show: true,
+            formatter: ({ data }) => data.name,
+            position: 'top',
+            distance: 4,
+            color: CHART_TEXT,
+            fontSize: isMobile() ? 10 : 11,
+            hideOverlap: true
+          },
+          labelLayout: buildVoteLabelLayout(items),
+          emphasis: {
+            scale: 1.4,
+            itemStyle: { color: '#2563eb' },
+            label: { show: true }
+          },
+          markLine: averageOrigin.markLine,
+          markPoint: averageOrigin.markPoint
+        }],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderSurvivalDataChart() {
+      if (survivalSubMode === 'camp') {
+        renderCampSurvivalScatterChart();
+      } else {
+        renderAvgSurvivalBarChart();
+      }
+    }
+
+    function renderChart(column) {
+      if (column === OTHER_DATA_KEY && hasOtherData()) {
+        renderOtherDataChart();
+        return;
+      }
+      if (column === SURVIVAL_DATA_KEY && hasSurvivalData()) {
+        renderSurvivalDataChart();
+        return;
+      }
+      if (column === WIN_RATE_DATA_KEY && hasWinRateData()) {
+        renderWinRateScatterChart();
+        return;
+      }
+      if (column === VOTE_DATA_KEY && hasVoteData()) {
+        renderVoteScatterChart();
+        return;
+      }
+      if (column === SKILL_DATA_KEY && hasSkillData()) {
+        if (skillSubMode === 'blindwolf') {
+          if (hasBlindPoisonWolfRateData()) {
+            renderBlindPoisonWolfRateChart();
+          } else {
+            renderSkillDataEmptyChart();
+          }
+        } else if (skillSubMode === 'dream') {
+          if (hasDreamFirstComboData()) {
+            renderDreamFirstComboChart();
+          } else {
+            renderSkillDataEmptyChart();
+          }
+        } else if (hasWitchPoisonComboData()) {
+          renderWitchPoisonComboChart();
+        } else {
+          renderSkillDataEmptyChart();
+        }
+        return;
+      }
+      if (isWolfComboColumn(column) && hasWolfComboData()) {
+        if (wolfSubMode === 'jixie') {
+          renderJixieWolfComboChart();
+        } else if (wolfSubMode === 'knife') {
+          if (hasSelfKnifeComboData()) {
+            renderSelfKnifeComboChart();
+          } else {
+            renderWolfDataEmptyChart('当前赛季数据暂无自刀统计字段');
+          }
+        } else {
+          renderWolfComboChart();
+        }
+        return;
+      }
+      if (isAppearanceComboColumn(column) && hasAppearanceComboData()) {
+        renderAppearanceComboChart();
+        return;
+      }
+
+      const items = getChartData(column);
+      const isPercent = PERCENT_COLUMNS.has(column);
+      const isRateColumn = column.includes('率');
+      const average = getColumnAverage(column);
+      const layout = getChartLayout();
+
+      setChartHeight(items.length);
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const p = params[0];
+            return `${p.name}<br/>${column}：${formatValue(p.value, column)}`;
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom,
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          axisLabel: {
+            color: CHART_AXIS,
+            fontSize: layout.axisFontSize,
+            formatter: isPercent ? (v) => formatPercent(v) : '{value}'
+          },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [{
+          type: 'bar',
+          data: items.map(d => ({
+            value: d.value,
+            itemStyle: {
+              borderRadius: [0, 4, 4, 0],
+              color: getBarColor(d.value, average, isRateColumn)
+            }
+          })),
+          barMaxWidth: layout.barMaxWidth,
+          label: {
+            show: layout.showBarLabel,
+            position: 'right',
+            color: CHART_TEXT,
+            formatter: ({ value }) => formatValue(value, column)
+          }
+        }],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderWitchPoisonComboChart() {
+      const items = getWitchPoisonComboItems();
+      const layout = getChartLayout();
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        chart.setOption({
+          backgroundColor: 'transparent',
+          title: {
+            subtext: '暂无出场次数>=9且女巫毒师次数>0的选手',
+            left: 'center',
+            top: 'center',
+            subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+          },
+          series: []
+        }, true);
+        chart.resize();
+        return;
+      }
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [WITCH_POISON_WITCH_COL, WITCH_POISON_USE_COL, WITCH_POISON_WOLF_COL],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const name = params[0]?.name ?? '';
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              name,
+              `${WITCH_POISON_WITCH_COL}：${row.witch}`,
+              `${WITCH_POISON_USE_COL}：${row.use}`,
+              `${WITCH_POISON_WOLF_COL}：${row.wolf}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [
+          {
+            name: WITCH_POISON_WOLF_COL,
+            type: 'bar',
+            stack: 'witchPoison',
+            data: items.map(d => d.wolf),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: WITCH_POISON_USE_COL,
+            type: 'bar',
+            stack: 'witchPoison',
+            data: items.map(d => d.useOther),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: WITCH_POISON_LIGHT_BLUE },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#1a1a1a',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: WITCH_POISON_WITCH_COL,
+            type: 'bar',
+            stack: 'witchPoison',
+            data: items.map(d => d.other),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: {
+              color: WITCH_POISON_GRAY,
+              borderColor: WITCH_POISON_GRAY_BORDER,
+              borderWidth: 1,
+              borderRadius: [0, 4, 4, 0]
+            },
+            label: {
+              show: layout.showBarLabel,
+              position: 'right',
+              color: CHART_TEXT,
+              formatter: (p) => String(items[p.dataIndex].witch)
+            }
+          }
+        ],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderBlindPoisonWolfRateChart() {
+      const items = getBlindPoisonWolfRateItems();
+      const layout = getChartLayout();
+      const average = items.length
+        ? items.reduce((sum, d) => sum + d.rate, 0) / items.length
+        : 0;
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        renderSkillDataEmptyChart();
+        return;
+      }
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              row.name,
+              `${BLIND_POISON_WOLF_RATE_COL}：${formatPercent(row.rate)}`,
+              `${BLIND_POISON_USE_COL}：${row.blindUse}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom,
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          min: 0,
+          max: 100,
+          axisLabel: {
+            color: CHART_AXIS,
+            fontSize: layout.axisFontSize,
+            formatter: (v) => formatPercent(v)
+          },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [{
+          name: BLIND_POISON_WOLF_RATE_COL,
+          type: 'bar',
+          data: items.map(d => ({
+            value: d.rate,
+            itemStyle: {
+              borderRadius: [0, 4, 4, 0],
+              color: getBarColor(d.rate, average, true)
+            }
+          })),
+          barMaxWidth: layout.barMaxWidth,
+          label: {
+            show: layout.showBarLabel,
+            position: 'right',
+            color: CHART_TEXT,
+            formatter: (p) => {
+              const row = items[p.dataIndex];
+              return `${formatPercent(row.rate)}（${BLIND_POISON_USE_COL}${row.blindUse}）`;
+            }
+          }
+        }],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderSkillDataEmptyChart() {
+      setChartHeight(0);
+      chart.setOption({
+        backgroundColor: 'transparent',
+        title: {
+          subtext: '暂无出场次数>=9的选手',
+          left: 'center',
+          top: 'center',
+          subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+        },
+        series: []
+      }, true);
+      chart.resize();
+    }
+
+    function renderDreamFirstComboChart() {
+      const items = getDreamFirstComboItems();
+      const layout = getChartLayout();
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        setChartHeight(0);
+        chart.setOption({
+          backgroundColor: 'transparent',
+          title: {
+            subtext: '暂无出场次数>=9且摄梦人次数>0的选手',
+            left: 'center',
+            top: 'center',
+            subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+          },
+          series: []
+        }, true);
+        chart.resize();
+        return;
+      }
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [DREAM_WALKER_COL, DREAM_FIRST_WOLF_COL, DREAM_FIRST_SPECIAL_COL],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const name = params[0]?.name ?? '';
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              name,
+              `${DREAM_WALKER_COL}：${row.dreamer}`,
+              `${DREAM_FIRST_WOLF_COL}：${row.wolf}`,
+              `${DREAM_FIRST_SPECIAL_COL}：${row.special}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [
+          {
+            name: DREAM_FIRST_SPECIAL_COL,
+            type: 'bar',
+            stack: 'dreamFirst',
+            data: items.map(d => d.special),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: DREAM_DARK_GREEN, borderRadius: [4, 0, 0, 4] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: DREAM_FIRST_WOLF_COL,
+            type: 'bar',
+            stack: 'dreamFirst',
+            data: items.map(d => d.wolfOther),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: WITCH_POISON_GREEN },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: DREAM_WALKER_COL,
+            type: 'bar',
+            stack: 'dreamFirst',
+            data: items.map(d => d.other),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: {
+              color: WITCH_POISON_GRAY,
+              borderColor: WITCH_POISON_GRAY_BORDER,
+              borderWidth: 1,
+              borderRadius: [0, 4, 4, 0]
+            },
+            label: {
+              show: layout.showBarLabel,
+              position: 'right',
+              color: CHART_TEXT,
+              formatter: (p) => String(items[p.dataIndex].dreamer)
+            }
+          }
+        ],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderAppearanceComboChart() {
+      const items = getAppearanceComboItems();
+      const layout = getChartLayout();
+      const blueGradient = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+        { offset: 0, color: APPEARANCE_COLOR },
+        { offset: 1, color: '#6366f1' }
+      ]);
+
+      setChartHeight(items.length);
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [
+            APPEARANCE_COMBO_WOLF,
+            APPEARANCE_COMBO_YUTONG,
+            APPEARANCE_COMBO_IDENTITY_SEG,
+            APPEARANCE_COMBO_OTHER
+          ],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const name = params[0]?.name ?? '';
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              name,
+              `${APPEARANCE_COMBO_TOTAL}：${row.total}`,
+              `${APPEARANCE_COMBO_WOLF}：${row.wolf}`,
+              `${APPEARANCE_COMBO_IDENTITY}：${row.identity}`,
+              `${APPEARANCE_COMBO_YUTONG}：${row.yutong}`,
+              `${APPEARANCE_COMBO_IDENTITY_SEG}：${row.identitySeg}`,
+              `${APPEARANCE_COMBO_OTHER}：${row.other}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [
+          {
+            name: APPEARANCE_COMBO_WOLF,
+            type: 'bar',
+            stack: 'appearance',
+            data: items.map(d => d.wolf),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: {
+              color: APPEARANCE_WOLF_COLOR,
+              borderRadius: [4, 0, 0, 4]
+            },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: APPEARANCE_COMBO_YUTONG,
+            type: 'bar',
+            stack: 'appearance',
+            data: items.map(d => d.yutong),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: APPEARANCE_YUTONG_COLOR },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#1a1a1a',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: APPEARANCE_COMBO_IDENTITY_SEG,
+            type: 'bar',
+            stack: 'appearance',
+            data: items.map(d => d.identityGreen),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: APPEARANCE_IDENTITY_COLOR },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: APPEARANCE_COMBO_OTHER,
+            type: 'bar',
+            stack: 'appearance',
+            data: items.map(d => d.other),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: {
+              color: blueGradient,
+              borderRadius: [0, 4, 4, 0]
+            },
+            label: {
+              show: layout.showBarLabel,
+              position: 'right',
+              color: CHART_TEXT,
+              formatter: (p) => `${items[p.dataIndex].total}`
+            }
+          }
+        ],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderWolfDataEmptyChart(message) {
+      setChartHeight(0);
+      chart.setOption({
+        backgroundColor: 'transparent',
+        title: {
+          subtext: message,
+          left: 'center',
+          top: 'center',
+          subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+        },
+        series: []
+      }, true);
+      chart.resize();
+    }
+
+    function renderSelfKnifeComboChart() {
+      const items = getSelfKnifeComboItems();
+      const layout = getChartLayout();
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        renderWolfDataEmptyChart('暂无出场次数>=9且非盗宝红狼次数>0的选手');
+        return;
+      }
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [RED_WOLF_COL, SELF_KNIFE_COL, TEAMMATE_SELF_KNIFE_COL],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const name = params[0]?.name ?? '';
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              name,
+              `${RED_WOLF_COL}：${row.redWolf}`,
+              `${SELF_KNIFE_COL}：${row.selfKnife}`,
+              `${TEAMMATE_SELF_KNIFE_COL}：${row.teammateKnife}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [
+          {
+            name: TEAMMATE_SELF_KNIFE_COL,
+            type: 'bar',
+            stack: 'selfKnife',
+            data: items.map(d => d.teammateKnife),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: SELF_KNIFE_COL,
+            type: 'bar',
+            stack: 'selfKnife',
+            data: items.map(d => d.selfKnife),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: DREAM_DARK_GREEN },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: RED_WOLF_COL,
+            type: 'bar',
+            stack: 'selfKnife',
+            data: items.map(d => d.other),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: APPEARANCE_COLOR, borderRadius: [0, 4, 4, 0] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'right',
+              color: CHART_TEXT,
+              formatter: (p) => String(items[p.dataIndex].redWolf)
+            }
+          }
+        ],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderWolfComboChart() {
+      const isHjtMode = wolfSubMode === 'hjt';
+      const items = getWolfComboItems(wolfSubMode);
+      const layout = getChartLayout();
+      const blueGradient = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+        { offset: 0, color: APPEARANCE_COLOR },
+        { offset: 1, color: '#6366f1' }
+      ]);
+      const accentCol = isHjtMode ? WOLF_COMBO_HJT : WOLF_COMBO_SELF;
+      const accentLabel = isHjtMode ? '悍跳数据' : '自爆数据';
+      const accentColor = isHjtMode ? WOLF_COLOR : WOLF_COMBO_SELF_GREEN;
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        chart.setOption({
+          backgroundColor: 'transparent',
+          title: {
+            subtext: '暂无出场次数>=9的选手',
+            left: 'center',
+            top: 'center',
+            subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+          },
+          series: []
+        }, true);
+        chart.resize();
+        return;
+      }
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [accentCol, WOLF_COMBO_TOTAL],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const name = params[0]?.name ?? '';
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              name,
+              `${WOLF_COMBO_TOTAL}：${row.total}`,
+              `${WOLF_COMBO_HJT}：${row.hjt}`,
+              `${WOLF_COMBO_SELF}：${row.self}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [
+          {
+            name: accentCol,
+            type: 'bar',
+            stack: 'wolf',
+            data: items.map(d => (isHjtMode ? d.hjt : d.self)),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: {
+              color: accentColor,
+              borderRadius: [4, 0, 0, 4]
+            },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: WOLF_COMBO_TOTAL,
+            type: 'bar',
+            stack: 'wolf',
+            data: items.map(d => (isHjtMode ? d.hjtOther : d.selfOther)),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: {
+              color: blueGradient,
+              borderRadius: [0, 4, 4, 0]
+            },
+            label: {
+              show: layout.showBarLabel,
+              position: 'right',
+              color: CHART_TEXT,
+              formatter: (p) => String(items[p.dataIndex].total)
+            }
+          }
+        ],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderJixieWolfComboChart() {
+      const items = getJixieWolfComboItems();
+      const layout = getChartLayout();
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        chart.setOption({
+          backgroundColor: 'transparent',
+          title: {
+            subtext: hasJixieWolfComboData()
+              ? '暂无出场次数>=9且机械狼次数>0的选手'
+              : '当前赛季数据暂无机械狼统计字段',
+            left: 'center',
+            top: 'center',
+            subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+          },
+          series: []
+        }, true);
+        chart.resize();
+        return;
+      }
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: JIXIE_WOLF_SEGMENTS.map(seg => seg.label),
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const name = params[0]?.name ?? '';
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              name,
+              `${JIXIE_WOLF_TOTAL_COL}：${row.total}`,
+              `${JIXIE_CIVILIAN_COL}：${row.civilian}`,
+              `${JIXIE_DUAL_COL}：${row.dual}`,
+              `${JIXIE_WITCH_COL}：${row.witch}`,
+              `${JIXIE_GUARD_COL}：${row.guard}`,
+              `${JIXIE_HUNTER_COL}：${row.hunter}`,
+              `${JIXIE_MEDIUM_COL}：${row.medium}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: JIXIE_WOLF_SEGMENTS.map((seg, idx) => {
+          const isFirst = idx === 0;
+          const isLast = idx === JIXIE_WOLF_SEGMENTS.length - 1;
+          const labelColor = seg.labelColor || '#ffffff';
+          return {
+            name: seg.label,
+            type: 'bar',
+            stack: 'jixieWolf',
+            data: items.map(d => d[seg.field]),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: {
+              color: seg.color,
+              borderColor: seg.borderColor || seg.color,
+              borderWidth: seg.borderColor ? 1 : 0,
+              borderRadius: isFirst
+                ? [4, 0, 0, 4]
+                : (isLast ? [0, 4, 4, 0] : 0)
+            },
+            label: isLast
+              ? {
+                  show: layout.showBarLabel,
+                  position: 'right',
+                  color: CHART_TEXT,
+                  formatter: (p) => String(items[p.dataIndex].total)
+                }
+              : {
+                  show: layout.showBarLabel,
+                  position: 'inside',
+                  color: labelColor,
+                  fontSize: 11,
+                  formatter: ({ value }) => (value > 0 ? String(value) : '')
+                }
+          };
+        }),
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function getAverageValues() {
+      const rows = getMinAppearanceRows();
+      if (!rows.length) return RADAR_COLUMNS.map(() => 0);
+      return RADAR_COLUMNS.map(col => {
+        const sum = rows.reduce((acc, item) => acc + parseValue(item[col], col), 0);
+        return sum / rows.length;
+      });
+    }
+
+    function getPlayerValues(name) {
+      const player = getMinAppearanceRows().find(item => item[NAME_KEY] === name)
+        || rawData.find(item => item[NAME_KEY] === name);
+      if (!player) return RADAR_COLUMNS.map(() => 0);
+      return RADAR_COLUMNS.map(col => parseValue(player[col], col));
+    }
+
+    function getRadarTableColumns() {
+      const row = rawData[0] || {};
+      return RADAR_TABLE_COLUMNS.filter(col => col in row);
+    }
+
+    function getRadarTableAverage(column) {
+      const rows = getMinAppearanceRows();
+      if (!rows.length) return 0;
+      const sum = rows.reduce((acc, item) => acc + parseValue(item[column], column), 0);
+      return sum / rows.length;
+    }
+
+    function getRadarTablePlayer(name, column) {
+      const player = getMinAppearanceRows().find(item => item[NAME_KEY] === name);
+      if (!player) return RADAR_TABLE_TEXT_COLUMNS.has(column) ? '' : 0;
+      if (RADAR_TABLE_TEXT_COLUMNS.has(column)) {
+        return player[column] ?? '';
+      }
+      return parseValue(player[column], column);
+    }
+
+    function getMetricRankCompareValue(value, column) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return 0;
+      if (PERCENT_COLUMNS.has(column) || SURVIVAL_DAY_COLUMNS.has(column)) {
+        return Math.round(num * 10) / 10;
+      }
+      return num;
+    }
+
+    function getMetricRankMap(column) {
+      const rows = getMetricRankEligibleRows();
+      const sorted = rows
+        .map(item => ({
+          name: item[NAME_KEY],
+          value: getMetricRankCompareValue(parseValue(item[column], column), column)
+        }))
+        .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name, 'zh-CN'));
+      const rankMap = new Map();
+      sorted.forEach((item, index) => {
+        if (index === 0) {
+          rankMap.set(item.name, 1);
+          return;
+        }
+        const prev = sorted[index - 1];
+        rankMap.set(
+          item.name,
+          item.value === prev.value ? rankMap.get(prev.name) : index + 1
+        );
+      });
+      return { rankMap, total: sorted.length };
+    }
+
+    function getBottomRankSet(rankMap) {
+      const ranks = [...new Set(rankMap.values())].sort((a, b) => a - b);
+      return new Set(ranks.slice(-3));
+    }
+
+    function getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, column) {
+      if (!rank) return '';
+      if (rank <= 3) return 'rank-top';
+      if (bottomRanks.has(rank)) {
+        const p = getMetricRankCompareValue(playerVal, column);
+        const a = getMetricRankCompareValue(avgVal, column);
+        if (p > a) return '';
+        return 'rank-bottom';
+      }
+      return '';
+    }
+
+    function formatRadarDetailText(text) {
+      if (!text) return '-';
+      const normalized = text.replace(/（1）/g, '');
+      const escaped = escapeHtml(normalized);
+      return escaped.replace(/（[^）]*）/g, match =>
+        `<span class="radar-text-count">${match}</span>`
+      );
+    }
+
+    function renderRadarPersonalTable(name) {
+      const columns = getRadarTableColumns();
+      const thead = document.getElementById('radarTableHead');
+      const tbody = document.getElementById('radarTableBody');
+
+      thead.innerHTML =
+        `<tr><th class="col-metric"></th><th>${name}</th><th>平均值</th></tr>`;
+      tbody.innerHTML = columns.map(col => {
+        if (RADAR_TABLE_TEXT_COLUMNS.has(col)) {
+          const textVal = getRadarTablePlayer(name, col);
+          return `<tr>
+          <td class="col-metric">${col}</td>
+          <td colspan="2" class="col-text">${formatRadarDetailText(textVal)}</td>
+        </tr>`;
+        }
+        const playerVal = getRadarTablePlayer(name, col);
+        const avgVal = getRadarTableAverage(col);
+        const { rankMap } = getMetricRankMap(col);
+        const bottomRanks = getBottomRankSet(rankMap);
+        const rankEligible = getMetricRankEligibleRows().some(item => item[NAME_KEY] === name);
+        const rank = rankEligible ? rankMap.get(name) : null;
+        const rankClass = getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, col);
+        const rankText = rank != null ? rank : '-';
+        return `<tr>
+          <td class="col-metric">${col}</td>
+          <td class="${rankClass}">${formatValue(playerVal, col)}(${rankText})</td>
+          <td>${formatRadarTableAverage(avgVal, col)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderRadarChart(name) {
+      const playerValues = getPlayerValues(name);
+      const avgValues = getAverageValues();
+      const avgLabel = '平均值';
+      const layout = getChartLayout();
+      const radarSideLayout = currentView === 'radar' && !isMobile();
+
+      setChartHeight(isMobile() ? 10 : 0);
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [name, avgLabel],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const lines = params.value.map((v, i) =>
+              `${RADAR_COLUMNS[i]}：${formatPercent(v)}`
+            );
+            return `${params.name}<br/>${lines.join('<br/>')}`;
+          }
+        },
+        radar: {
+          center: radarSideLayout ? ['50%', '52%'] : layout.radarCenter,
+          radius: radarSideLayout ? '62%' : layout.radarRadius,
+          axisName: { color: CHART_TEXT, fontSize: layout.radarNameFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } },
+          splitArea: { areaStyle: { color: ['rgba(0,0,0,0.02)', 'rgba(0,0,0,0.04)'] } },
+          axisLine: { lineStyle: { color: CHART_LINE } },
+          indicator: RADAR_COLUMNS.map(col => ({ name: col, max: 100 }))
+        },
+        series: [{
+          type: 'radar',
+          data: [
+            {
+              value: playerValues,
+              name,
+              symbol: 'circle',
+              symbolSize: 6,
+              lineStyle: { color: '#3b82f6', width: 2 },
+              itemStyle: { color: '#3b82f6' },
+              areaStyle: { color: 'rgba(59, 130, 246, 0.35)' }
+            },
+            {
+              value: avgValues,
+              name: avgLabel,
+              symbol: 'circle',
+              symbolSize: 6,
+              lineStyle: { color: '#22c55e', width: 2 },
+              itemStyle: { color: '#22c55e' },
+              areaStyle: { color: 'rgba(34, 197, 94, 0.25)' }
+            }
+          ]
+        }],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+      renderRadarPersonalTable(name);
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function hasParticipationData() {
+      return rawData.length > 0 && PARTICIPATION_COL in rawData[0];
+    }
+
+    function parseGameSessions(text) {
+      if (text == null || String(text).trim() === '') return [];
+      return String(text)
+        .split('、')
+        .map(s => s.trim())
+        .filter(Boolean)
+        .map(entry => {
+          const m = entry.match(/^(.+?)[（(](.+?)[，,](.+?)[）)]$/);
+          if (!m) {
+            return { date: entry, banxing: '', identity: '', key: entry };
+          }
+          const session = { date: m[1].trim(), banxing: m[2].trim(), identity: m[3].trim() };
+          session.key = `${session.date}|${session.banxing}|${session.identity}`;
+          return session;
+        });
+    }
+
+    function parseGameDateDisplay(dateRaw) {
+      const dateStr = String(dateRaw).trim();
+      if (dateStr.length < 3) {
+        return { day: dateStr, roundLabel: '', roundNum: 0 };
+      }
+      const day = dateStr.slice(0, -2);
+      const roundNum = parseInt(dateStr.slice(-2), 10);
+      const roundLabel = Number.isFinite(roundNum) ? `第${roundNum}场` : dateStr.slice(-2);
+      return { day, roundLabel, roundNum: Number.isFinite(roundNum) ? roundNum : 0 };
+    }
+
+    function sortGameSessions(sessions) {
+      return sessions.slice().sort((a, b) => {
+        const da = parseGameDateDisplay(a.date);
+        const db = parseGameDateDisplay(b.date);
+        const dayA = Number(da.day) || 0;
+        const dayB = Number(db.day) || 0;
+        if (dayA !== dayB) return dayA - dayB;
+        return da.roundNum - db.roundNum;
+      });
+    }
+
+    function formatGameSessionHtml(session) {
+      const { day, roundLabel } = parseGameDateDisplay(session.date);
+      const detailParts = [roundLabel, session.banxing, session.identity].filter(Boolean);
+      const detail = detailParts.join('/');
+      if (!detail) {
+        return escapeHtml(day || session.date);
+      }
+      return `${escapeHtml(day)} <span class="game-session-detail">${escapeHtml(detail)}</span>`;
+    }
+
+    function getRadarPlayerRecord(name) {
+      return getMinAppearanceRows().find(item => item[NAME_KEY] === name)
+        || rawData.find(item => item[NAME_KEY] === name);
+    }
+
+    function getPlayerGameSessions(name) {
+      const player = getRadarPlayerRecord(name);
+      if (!player) return { participation: [], wins: new Set() };
+      const participation = parseGameSessions(player[PARTICIPATION_COL]);
+      const wins = new Set(parseGameSessions(player[WIN_SESSIONS_COL]).map(s => s.key));
+      return { participation, wins };
+    }
+
+    function getRadarItemCheckboxes(containerId) {
+      return [...document.querySelectorAll(`#${containerId} input.radar-filter-item-cb`)];
+    }
+
+    function getRadarCheckboxSelection(containerId) {
+      const boxes = getRadarItemCheckboxes(containerId);
+      if (!boxes.length) return null;
+      const checked = boxes.filter(cb => cb.checked);
+      if (!checked.length) return new Set();
+      if (checked.length === boxes.length) return null;
+      return new Set(checked.map(cb => cb.value));
+    }
+
+    function syncRadarSelectAllCheckbox(containerId) {
+      const allCb = document.querySelector(`#${containerId} input.radar-filter-all-cb`);
+      if (!allCb) return;
+      const items = getRadarItemCheckboxes(containerId);
+      allCb.checked = items.length > 0 && items.every(cb => cb.checked);
+    }
+
+    function renderRadarCheckboxGroup(containerId, values, selectedSet) {
+      const container = document.getElementById(containerId);
+      if (!values.length) {
+        container.innerHTML = '<span class="radar-filter-empty">—</span>';
+        return;
+      }
+      const allChecked = selectedSet === null
+        || (selectedSet.size > 0 && selectedSet.size === values.length);
+      const allHtml =
+        `<label class="radar-filter-check radar-filter-select-all">` +
+        `<input type="checkbox" class="radar-filter-all-cb" data-filter-group="${containerId}"${allChecked ? ' checked' : ''}>` +
+        `<span>全部</span></label>`;
+      const itemsHtml = values.map(v => {
+        const checked = selectedSet === null || selectedSet.has(v);
+        return `<label class="radar-filter-check"><input type="checkbox" class="radar-filter-item-cb" value="${escapeHtml(v)}"${checked ? ' checked' : ''}><span>${escapeHtml(v)}</span></label>`;
+      }).join('');
+      container.innerHTML = allHtml + itemsHtml;
+    }
+
+    function refreshRadarGameFilterOptions(name) {
+      const { participation } = getPlayerGameSessions(name);
+      const playerChanged = name !== lastRadarGamesPlayer;
+      lastRadarGamesPlayer = name;
+
+      const banxings = [...new Set(participation.map(s => s.banxing).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, 'zh-CN'));
+      const identities = [...new Set(participation.map(s => s.identity).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, 'zh-CN'));
+
+      const prevBanxing = playerChanged ? null : getRadarCheckboxSelection('radarBanxingFilters');
+      const prevIdentity = playerChanged ? null : getRadarCheckboxSelection('radarIdentityFilters');
+
+      const banxingSelection = playerChanged ? null : (
+        prevBanxing === null ? null : new Set([...prevBanxing].filter(v => banxings.includes(v)))
+      );
+      const identitySelection = playerChanged ? null : (
+        prevIdentity === null ? null : new Set([...prevIdentity].filter(v => identities.includes(v)))
+      );
+
+      renderRadarCheckboxGroup('radarBanxingFilters', banxings, banxingSelection);
+      renderRadarCheckboxGroup('radarIdentityFilters', identities, identitySelection);
+    }
+
+    function sessionMatchesRadarFilters(session, banxingFilter, identityFilter) {
+      if (banxingFilter !== null && !banxingFilter.has(session.banxing)) return false;
+      if (identityFilter !== null && !identityFilter.has(session.identity)) return false;
+      return true;
+    }
+
+    function updateRadarGamesVisibility() {
+      updateRadarPanelsVisibility();
+    }
+
+    function renderRadarGamesSection(name, options = {}) {
+      const content = document.getElementById('radarGamesContent');
+      if (!hasParticipationData()) {
+        content.innerHTML = '<span class="radar-games-empty">暂无参与场次数据</span>';
+        return;
+      }
+
+      if (!options.skipFilterRefresh) {
+        refreshRadarGameFilterOptions(name);
+      }
+      const banxingFilter = getRadarCheckboxSelection('radarBanxingFilters');
+      const identityFilter = getRadarCheckboxSelection('radarIdentityFilters');
+      const { participation, wins } = getPlayerGameSessions(name);
+
+      const filtered = sortGameSessions(participation.filter(session =>
+        sessionMatchesRadarFilters(session, banxingFilter, identityFilter)
+      ));
+
+      if (!filtered.length) {
+        content.innerHTML = '<span class="radar-games-empty">暂无匹配场次</span>';
+        return;
+      }
+
+      content.innerHTML = filtered.map(session => {
+        const isWin = wins.has(session.key);
+        const rawDate = getRawDateFromSession(session);
+        const canOpen = getUniqueDates().includes(rawDate);
+        const tag = canOpen ? 'button' : 'span';
+        const attrs = canOpen
+          ? ` type="button" data-raw-date="${escapeHtml(rawDate)}" title="查看原始数据 ${escapeHtml(rawDate)}"`
+          : '';
+        return `<${tag} class="game-session-chip${isWin ? ' is-win' : ''}"${attrs}>${formatGameSessionHtml(session)}</${tag}>`;
+      }).join('');
+    }
+
+    function getRawDateFromSession(session) {
+      const dateStr = String(session.date).trim();
+      if (/^\d{10,}$/.test(dateStr)) return dateStr;
+      const { day, roundNum } = parseGameDateDisplay(session.date);
+      if (day && roundNum > 0) {
+        return `${day}${String(roundNum).padStart(2, '0')}`;
+      }
+      return dateStr;
+    }
+
+    async function openRawDataForSession(session) {
+      const rawDate = getRawDateFromSession(session);
+      if (!getUniqueDates().includes(rawDate)) return;
+      await setView('table');
+      document.getElementById('dateSelect').value = rawDate;
+      renderTable();
+    }
+
+    function getSortedByAppearance() {
+      return getMinAppearanceRows().sort(
+        (a, b) => parseValue(b['出场次数'], '出场次数') - parseValue(a['出场次数'], '出场次数')
+      );
+    }
+
+    function getUniqueDates() {
+      return [...new Set(rawTableData.map(row => String(row['日期'] ?? '')))]
+        .filter(Boolean)
+        .sort((a, b) => Number(b) - Number(a));
+    }
+
+    function refreshTableControls() {
+      const dateSelect = document.getElementById('dateSelect');
+      const dates = getUniqueDates();
+      dateSelect.innerHTML = dates.map(date =>
+        `<option value="${date}">${date}</option>`
+      ).join('');
+    }
+
+    function getTableColumns() {
+      const columns = Object.keys(rawTableData[0])
+        .filter(col => col !== '日期'
+          && !RAW_TABLE_HIDDEN_COLUMNS.has(col)
+          && !col.includes('归票'));
+      const stickyCols = [NAME_KEY, IDENTITY_KEY].filter(col => columns.includes(col));
+      const others = columns.filter(col => !stickyCols.includes(col));
+      return [...stickyCols, ...others];
+    }
+
+    function getCellClass(col) {
+      const classes = [];
+      if (col === NAME_KEY) classes.push('col-name');
+      if (col === IDENTITY_KEY) classes.push('col-identity');
+      if (col.includes('状态')) classes.push('col-state');
+      return classes.join(' ');
+    }
+
+    function applyStickyColumnOffsets() {
+      const nameTh = document.querySelector('.raw-table th.col-name');
+      if (!nameTh) return;
+      const left = `${nameTh.getBoundingClientRect().width}px`;
+      document.querySelectorAll('.raw-table .col-identity').forEach(el => {
+        el.style.left = left;
+      });
+    }
+
+    function setBanxingSubMode(mode) {
+      banxingSubMode = mode;
+      syncModeButtons('[data-banxing-mode]', 'banxingMode', mode);
+      if (currentView === 'banxing') renderBanxingTable();
+    }
+
+    const MODE_SETTERS = {
+      'wolf-mode': setWolfSubMode,
+      'vote-mode': setVoteSubMode,
+      'survival-mode': setSurvivalSubMode,
+      'other-mode': setOtherSubMode,
+      'skill-mode': setSkillSubMode,
+      'banxing-mode': setBanxingSubMode,
+      'radar-mode': setRadarSubMode,
+    };
+
+    function getActiveBanxingData() {
+      return totalBanxingData;
+    }
+
+    function getBanxingDisplayRows() {
+      const types = BANXING_SUB_MODES[banxingSubMode];
+      const source = getActiveBanxingData();
+      let rows = types
+        ? source.filter(row => types.includes(row['版型']))
+        : [...source];
+      const { column, direction } = banxingSort;
+      if (BANXING_SORTABLE.has(column)) {
+        rows.sort((a, b) => {
+          const av = parseBanxingValue(a[column], column);
+          const bv = parseBanxingValue(b[column], column);
+          return direction === 'asc' ? av - bv : bv - av;
+        });
+      } else if (types) {
+        const order = new Map(types.map((type, index) => [type, index]));
+        rows.sort((a, b) => (order.get(a['版型']) ?? 0) - (order.get(b['版型']) ?? 0));
+      } else {
+        rows.sort((a, b) => {
+          const av = parseBanxingValue(a[column], column);
+          const bv = parseBanxingValue(b[column], column);
+          return direction === 'asc' ? av - bv : bv - av;
+        });
+      }
+      return rows;
+    }
+
+    function parseBanxingValue(value, column) {
+      if (column === '狼人胜率' && typeof value === 'string') {
+        return parseFloat(value.replace('%', '')) || 0;
+      }
+      return Number(value) || 0;
+    }
+
+    function renderBanxingHeaderCell(col) {
+      const thClass = col === '版型' ? 'col-name' : '';
+      if (!BANXING_SORTABLE.has(col)) {
+        return `<th class="${thClass}">${col}</th>`;
+      }
+      const isActive = banxingSort.column === col;
+      const isAsc = isActive && banxingSort.direction === 'asc';
+      const arrow = isActive ? (isAsc ? '↑' : '↓') : '↕';
+      const title = isActive ? (isAsc ? '升序，点击切换为降序' : '降序，点击切换为升序') : '点击排序';
+      return `<th class="${thClass} th-sortable">
+        <div class="th-sort-wrap">
+          <span class="th-label">${col}</span>
+          <button type="button" class="sort-btn${isActive ? ' active' : ''}" data-col="${col}" title="${title}" aria-label="${title}">${arrow}</button>
+        </div>
+      </th>`;
+    }
+
+    function toggleBanxingSort(column) {
+      if (banxingSort.column === column) {
+        banxingSort.direction = banxingSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        banxingSort = { column, direction: 'desc' };
+      }
+      renderBanxingTable();
+    }
+
+    function bindBanxingSort() {
+      document.getElementById('banxingHead').addEventListener('click', (e) => {
+        const btn = e.target.closest('.sort-btn');
+        if (!btn) return;
+        toggleBanxingSort(btn.dataset.col);
+      });
+    }
+
+    function renderBanxingTable() {
+      const sorted = getBanxingDisplayRows();
+      const thead = document.getElementById('banxingHead');
+      const tbody = document.getElementById('banxingBody');
+
+      thead.innerHTML = `<tr>${BANXING_COLUMNS.map(col => renderBanxingHeaderCell(col)).join('')}</tr>`;
+      tbody.innerHTML = sorted.map(row =>
+        `<tr>${BANXING_COLUMNS.map(col =>
+          `<td class="${col === '版型' ? 'col-name' : ''}">${row[col] ?? ''}</td>`
+        ).join('')}</tr>`
+      ).join('');
+    }
+
+    function getFirstFieldValue(rows, key) {
+      const row = rows.find(item => {
+        const value = item[key];
+        return value != null && String(value).trim() !== '';
+      });
+      return row ? String(row[key]).trim() : '—';
+    }
+
+    function updateRawTableGameInfo(selectedDate) {
+      const infoEl = document.getElementById('rawTableGameInfo');
+      const rows = rawTableData.filter(row => String(row['日期']) === selectedDate);
+      if (!rows.length) {
+        infoEl.textContent = '';
+        return;
+      }
+      const banxing = getFirstFieldValue(rows, BANXING_KEY);
+      const win = getFirstFieldValue(rows, WIN_KEY);
+      infoEl.textContent = `版型：${banxing}\t胜利：${win}`;
+    }
+
+    function renderTable() {
+      const dateSelect = document.getElementById('dateSelect');
+      const selectedDate = dateSelect.value;
+      updateRawTableGameInfo(selectedDate);
+      const filteredData = rawTableData.filter(row => String(row['日期']) === selectedDate);
+      const columns = getTableColumns();
+      const thead = document.getElementById('tableHead');
+      const tbody = document.getElementById('tableBody');
+
+      thead.innerHTML = `<tr>${columns.map(col =>
+        `<th class="${getCellClass(col)}">${getRawTableColumnLabel(col)}</th>`
+      ).join('')}</tr>`;
+      tbody.innerHTML = filteredData.map(row => {
+        const rowClass = row[CAMP_KEY] === '狼人' ? ' class="row-wolf"' : '';
+        return `<tr${rowClass}>${columns.map(col =>
+          `<td class="${getCellClass(col)}">${row[col] ?? ''}</td>`
+        ).join('')}</tr>`;
+      }).join('');
+
+      applyStickyColumnOffsets();
+    }
+
+    function updateChart() {
+      if (currentView === 'banxing') {
+        renderBanxingTable();
+        return;
+      }
+      if (currentView === 'table') {
+        renderTable();
+        return;
+      }
+      if (currentView === 'tongbian') {
+        renderTongbianTable(document.getElementById('tongbianNameSelect').value);
+        return;
+      }
+      if (currentView === 'compare') {
+        renderPersonalCompare(
+          document.getElementById('compareNameSelect').value,
+          document.getElementById('compareMetricSelect').value,
+          getCurrentSeriesKey()
+        );
+        return;
+      }
+      if (currentView === 'bar') {
+        renderChart(document.getElementById('columnSelect').value);
+      } else if (currentView === 'radar') {
+        const name = document.getElementById('nameSelect').value;
+        if (radarSubMode === 'chart') {
+          renderRadarChart(name);
+        } else {
+          renderRadarGamesSection(name);
+        }
+      }
+    }
+
+    async function loadBanxingView(seriesKey, { refreshFootnotes = true } = {}) {
+      try {
+        await loadTotalBanxingData(seriesKey);
+        if (refreshFootnotes) updateChartFootnotes();
+        updateChart();
+      } catch (err) {
+        showError(
+          `无法加载版型数据：${err.message}<br><br>` +
+          `请确认 <strong>${getTotalBanxingFile(seriesKey)}</strong> 存在，并重新运行 statistics.ipynb 导出。`
+        );
+      }
+    }
+
+    async function setView(view) {
+      currentView = view;
+      document.querySelectorAll('.view-btn[data-view]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+      });
+      updateSeasonSelect();
+      VIEW_PANEL_ROWS.forEach(([id, v]) => $show(id, view === v));
+      updateRadarPanelsVisibility();
+      VIEW_TABLE_ROWS.forEach(([id, v, display]) => $show(id, view === v, display));
+      if (view === 'compare') {
+        refreshCompareControls();
+        updateChart();
+        return;
+      }
+      if (view === 'banxing') {
+        await loadBanxingView(getCurrentSeriesKey());
+        return;
+      }
+      const seriesKey = getCurrentSeriesKey();
+      if (!getCompareSeasonList(seriesKey).includes(currentSeason)) {
+        await setSeason(getSeriesSeason(seriesKey, null));
+        return;
+      }
+      updateChartFootnotes();
+      updateChart();
+    }
+
+    function updateSeasonSelect() {
+      const seasonEl = $('seasonSelect');
+      if (currentView === 'compare' || currentView === 'banxing') {
+        seasonEl.innerHTML = '<option value="">—</option>';
+        seasonEl.value = '';
+        seasonEl.disabled = true;
+        return;
+      }
+      seasonEl.disabled = false;
+      refreshSeasonSelectOptions();
+      const seriesKey = getCurrentSeriesKey();
+      seasonEl.value = getCompareSeasonList(seriesKey).includes(currentSeason)
+        ? currentSeason
+        : getSeriesSeason(seriesKey, null);
+    }
+
+    function getBarChartColumns() {
+      return RANKING_COLUMNS.filter(col => {
+        if (col === SKILL_DATA_KEY) return hasSkillData();
+        if (col === WOLF_DATA_KEY) return hasWolfComboData();
+        if (col === APPEARANCE_DATA_KEY) return hasAppearanceComboData();
+        if (col === VOTE_DATA_KEY) return hasVoteData();
+        if (col === WIN_RATE_DATA_KEY) return hasWinRateData();
+        if (col === SURVIVAL_DATA_KEY) return hasSurvivalData();
+        if (col === OTHER_DATA_KEY) return hasOtherData();
+        return col in rawData[0];
+      });
+    }
+
+    function refreshControls() {
+      const columns = getBarChartColumns();
+      const columnSelect = document.getElementById('columnSelect');
+      const prevColumn = columnSelect.value;
+      columnSelect.innerHTML = columns.map(col =>
+        `<option value="${col}">${col}</option>`
+      ).join('');
+      if (columns.includes(prevColumn)) columnSelect.value = prevColumn;
+
+      const sortedPlayers = getSortedByAppearance();
+      const prevName = document.getElementById('nameSelect').value;
+      const nameSelect = document.getElementById('nameSelect');
+      nameSelect.innerHTML = sortedPlayers.map(item =>
+        `<option value="${item[NAME_KEY]}">${item[NAME_KEY]}</option>`
+      ).join('');
+      if (sortedPlayers.some(item => item[NAME_KEY] === prevName)) nameSelect.value = prevName;
+
+      const tongbianNameSelect = document.getElementById('tongbianNameSelect');
+      const prevTongbianName = tongbianNameSelect.value;
+      const tongbianNames = getUniqueTongbianNames();
+      tongbianNameSelect.innerHTML =
+        '<option value="">全部</option>' +
+        tongbianNames.map(name =>
+          `<option value="${name}">${name}</option>`
+        ).join('');
+      if (prevTongbianName === '' || tongbianNames.includes(prevTongbianName)) {
+        tongbianNameSelect.value = prevTongbianName;
+      }
+
+      refreshTableControls();
+      refreshCompareControls();
+      updateRadarGamesVisibility();
+      updateChartFootnotes();
+    }
+
+    function refreshCompareControls() {
+      const compareNameSelect = document.getElementById('compareNameSelect');
+      const compareMetricSelect = document.getElementById('compareMetricSelect');
+      const seriesKey = getCurrentSeriesKey();
+      const prevName = compareNameSelect.value;
+      const prevMetric = compareMetricSelect.value;
+      const names = getComparePlayerNames(seriesKey);
+      const metrics = getCompareColumns(seriesKey);
+
+      compareNameSelect.innerHTML = names.map(n =>
+        `<option value="${n}">${n}</option>`
+      ).join('');
+      if (names.includes(prevName)) compareNameSelect.value = prevName;
+
+      compareMetricSelect.innerHTML = metrics.map(col =>
+        `<option value="${col}">${col}</option>`
+      ).join('');
+      if (metrics.includes(prevMetric)) {
+        compareMetricSelect.value = prevMetric;
+      } else if (metrics.includes('总胜率')) {
+        compareMetricSelect.value = '总胜率';
+      }
+    }
+
+    function bindUiOnce() {
+      if (uiBound) return;
+      uiBound = true;
+      bindRulesModal();
+      $('columnSelect').addEventListener('change', () => {
+        updateChartFootnotes();
+        updateChart();
+      });
+      MODE_BUTTON_BINDINGS.forEach(([attr, dataKey]) => {
+        document.querySelectorAll(`.wolf-mode-btn[data-${attr}]`).forEach(btn => {
+          btn.addEventListener('click', () => MODE_SETTERS[attr](btn.dataset[dataKey]));
+        });
+      });
+      $('nameSelect').addEventListener('change', updateChart);
+      $('radarGameFilters').addEventListener('change', (e) => {
+        if (e.target.type !== 'checkbox' || currentView !== 'radar') return;
+        if (e.target.classList.contains('radar-filter-all-cb')) {
+          const containerId = e.target.dataset.filterGroup;
+          const checked = e.target.checked;
+          getRadarItemCheckboxes(containerId).forEach(cb => { cb.checked = checked; });
+        } else if (e.target.classList.contains('radar-filter-item-cb')) {
+          const container = e.target.closest('.radar-filter-checkboxes');
+          if (container) syncRadarSelectAllCheckbox(container.id);
+        }
+        renderRadarGamesSection($('nameSelect').value, { skipFilterRefresh: true });
+      });
+      $('radarGamesContent').addEventListener('click', (e) => {
+        const chip = e.target.closest('button.game-session-chip[data-raw-date]');
+        if (!chip) return;
+        openRawDataForSession({ date: chip.dataset.rawDate });
+      });
+      $('tongbianNameSelect').addEventListener('change', updateChart);
+      $('seriesSelect').addEventListener('change', async () => {
+        const seriesKey = getCurrentSeriesKey();
+        if (currentView === 'compare') {
+          refreshCompareControls();
+          updateChart();
+          return;
+        }
+        if (currentView === 'banxing') {
+          await loadBanxingView(seriesKey, { refreshFootnotes: false });
+          return;
+        }
+        refreshSeasonSelectOptions();
+        await setSeason(getSeriesSeason(seriesKey, null));
+      });
+      $('compareNameSelect').addEventListener('change', updateChart);
+      $('compareMetricSelect').addEventListener('change', updateChart);
+      $('dateSelect').addEventListener('change', renderTable);
+      document.querySelectorAll('.view-btn[data-view]').forEach(btn => {
+        btn.addEventListener('click', () => setView(btn.dataset.view));
+      });
+      $('seasonSelect').addEventListener('change', (e) => {
+        const season = e.target.value;
+        if (!season || currentView === 'compare' || currentView === 'banxing') return;
+        setSeason(season);
+      });
+      bindBanxingSort();
+      bindTongbianSort();
+    }
+
+    function showError(message) {
+      $show('error', true, 'block');
+      $('error').innerHTML = message;
+      $('chart').style.display = 'none';
+      document.querySelector('.toolbar').style.display = 'none';
+    }
+
+    async function loadAllPlayerStats() {
+      await Promise.all(SEASONS.map(async (season) => {
+        const files = getSeasonFiles(season);
+        seasonStats[season] = await fetchJson(files.stats);
+        if (!Array.isArray(seasonStats[season]) || seasonStats[season].length === 0) {
+          throw new Error(`${files.stats} 数据为空或格式不正确`);
+        }
+      }));
+    }
+
+    async function loadTotalBanxingData(seriesKey) {
+      const file = getTotalBanxingFile(seriesKey);
+      totalBanxingData = await fetchJson(file);
+      if (!Array.isArray(totalBanxingData) || totalBanxingData.length === 0) {
+        throw new Error(`${file} 数据为空或格式不正确`);
+      }
+    }
+
+    async function loadSeasonData(season) {
+      const files = getSeasonFiles(season);
+      const [stats, rawTable, banxing, tongbian] = await Promise.all([
+        fetchJson(files.stats),
+        fetchJson(files.raw),
+        fetchJson(files.banxing),
+        fetchJson(files.tongbian),
+      ]);
+
+      seasonStats[season] = stats;
+      rawData = stats;
+      rawTableData = rawTable;
+      banxingData = banxing;
+      tongbianData = tongbian;
+
+      if (!Array.isArray(rawData) || rawData.length === 0) {
+        throw new Error(`${files.stats} 数据为空或格式不正确`);
+      }
+      if (!Array.isArray(rawTableData) || rawTableData.length === 0) {
+        throw new Error(`${files.raw} 数据为空或格式不正确`);
+      }
+      if (!Array.isArray(banxingData) || banxingData.length === 0) {
+        throw new Error(`${files.banxing} 数据为空或格式不正确`);
+      }
+      if (!Array.isArray(tongbianData)) {
+        throw new Error(`${files.tongbian} 格式不正确（应为 JSON 数组）`);
+      }
+      currentSeason = season;
+    }
+
+    async function setSeason(season) {
+      if (!SEASONS.includes(season) || season === currentSeason) return;
+      try {
+        await loadSeasonData(season);
+        updateSeasonSelect();
+        refreshControls();
+        updateChart();
+      } catch (err) {
+        const files = getSeasonFiles(season);
+        showError(
+          `无法加载 ${season} 数据：${err.message}<br><br>` +
+          `请确认 <strong>${files.stats}</strong>、<strong>${files.raw}</strong>、<strong>${files.banxing}</strong> 与 <strong>${files.tongbian}</strong> 存在。`
+        );
+      }
+    }
+
+    async function initApp() {
+      try {
+        chart = echarts.init(document.getElementById('chart'));
+        bindUiOnce();
+        await loadAllPlayerStats();
+        document.getElementById('seriesSelect').value = getSeriesKeyForSeason(DEFAULT_SEASON);
+        refreshSeasonSelectOptions();
+        await loadSeasonData(DEFAULT_SEASON);
+        updateSeasonSelect();
+        refreshControls();
+        updateChart();
+
+        window.addEventListener('resize', () => {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+            if (currentView === 'table') applyStickyColumnOffsets();
+            else if (currentView === 'tongbian') applyTongbianStickyOffsets();
+            else updateChart();
+          }, 150);
+        });
+      } catch (err) {
+        const files = getSeasonFiles(DEFAULT_SEASON);
+        showError(
+          `无法加载数据：${err.message}<br><br>` +
+          `请确认 <strong>${files.stats}</strong>、<strong>${files.raw}</strong>、<strong>${files.banxing}</strong> 与 <strong>${files.tongbian}</strong> 存在，并在本目录启动本地服务器后访问，例如：<br>` +
+          `<code>python -m http.server 8080</code><br>` +
+          `然后打开 <code>http://localhost:8080/index.html</code>`
+        );
+      }
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
