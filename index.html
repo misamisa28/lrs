@@ -411,6 +411,11 @@
     const VOTE_NO_PROPHET_EXILE_COUNT = '无预通放逐票次数';
     const VOTE_NO_PROPHET_EXILE_CORRECT_COUNT = '无预通正确放逐票次数';
     const VOTE_NO_PROPHET_EXILE_RATE = '无预通放逐票正确率';
+    const SHERIFF_VOTE_ERROR_RECORD_COL = '警徽票错误记录';
+    const STAND_WOLF_BADGE_COL = '站狼边（警徽票阶段）';
+    const RADAR_TABLE_DATA_COLUMN_ALIASES = {
+      [STAND_WOLF_BADGE_COL]: SHERIFF_VOTE_ERROR_RECORD_COL,
+    };
     const PLAYER_STATS_COLUMN_RENAMES = {
       '无预通生推正确放逐票次数': VOTE_NO_PROPHET_EXILE_CORRECT_COUNT,
       '无预通生推放逐票次数': VOTE_NO_PROPHET_EXILE_COUNT,
@@ -485,8 +490,25 @@
     const PARTICIPATION_COL = '参与场次';
     const WIN_SESSIONS_COL = '胜利场次';
     const RADAR_TABLE_TEXT_COLUMNS = new Set([
-      PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL, BLIND_POISON_WOLVES_COL
+      PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL, BLIND_POISON_WOLVES_COL,
+      STAND_WOLF_BADGE_COL,
     ]);
+    const RADAR_TABLE_MERGED_METRICS = [
+      { label: '预通率（次数）', rateCol: YUTONG_RATE_COL, countCol: APPEARANCE_COMBO_YUTONG },
+      { label: '盲毒狼人率（次数）', rateCol: BLIND_POISON_WOLF_RATE_COL, countCol: BLIND_POISON_USE_COL },
+      { label: '毒药技能正确率（次数）', rateCol: POISON_SKILL_RATE_COL, countCol: WITCH_POISON_WITCH_COL },
+      { label: '警徽票正确率（次数）', rateCol: VOTE_BADGE_RATE, countCol: VOTE_BADGE_COUNT },
+      { label: '平民警徽票正确率（次数）', rateCol: VOTE_CIVILIAN_BADGE_RATE, countCol: VOTE_CIVILIAN_BADGE_COUNT },
+      { label: '放逐票正确率（次数）', rateCol: VOTE_EXILE_RATE, countCol: VOTE_EXILE_COUNT },
+      { label: '平民放逐票正确率（次数）', rateCol: VOTE_CIVILIAN_EXILE_RATE, countCol: VOTE_CIVILIAN_EXILE_COUNT },
+      { label: '无预通放逐票正确率（次数）', rateCol: VOTE_NO_PROPHET_EXILE_RATE, countCol: VOTE_NO_PROPHET_EXILE_COUNT },
+    ];
+    const RADAR_TABLE_MERGED_BY_LABEL = new Map(
+      RADAR_TABLE_MERGED_METRICS.map(m => [m.label, m])
+    );
+    const RADAR_TABLE_MERGED_SUB_COLUMNS = new Set(
+      RADAR_TABLE_MERGED_METRICS.flatMap(m => [m.rateCol, m.countCol])
+    );
 
     const RADAR_METRIC_OPTIONS = [
       '总胜率', '放逐票正确率', VOTE_NO_PROPHET_EXILE_RATE, '警徽票正确率', '毒药技能正确率',
@@ -501,26 +523,27 @@
       {
         title: '预言家相关',
         columns: [
-          APPEARANCE_COMBO_YUTONG, YUTONG_RATE_COL,
+          '预通率（次数）',
           PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL,
           FAKE_GOLD_COL, FAKE_GOLD_GIVER_COL,
+          STAND_WOLF_BADGE_COL,
         ],
       },
       {
         title: '技能相关',
         columns: [
-          BLIND_POISON_USE_COL, BLIND_POISON_WOLF_RATE_COL, BLIND_POISON_WOLVES_COL,
-          WITCH_POISON_WITCH_COL, '毒药技能正确率',
+          '盲毒狼人率（次数）', BLIND_POISON_WOLVES_COL,
+          '毒药技能正确率（次数）',
         ],
       },
       {
         title: '投票相关',
         columns: [
-          VOTE_BADGE_COUNT, VOTE_BADGE_RATE,
-          VOTE_CIVILIAN_BADGE_COUNT, VOTE_CIVILIAN_BADGE_RATE,
-          VOTE_EXILE_COUNT, VOTE_EXILE_RATE,
-          VOTE_CIVILIAN_EXILE_COUNT, VOTE_CIVILIAN_EXILE_RATE,
-          VOTE_NO_PROPHET_EXILE_COUNT, VOTE_NO_PROPHET_EXILE_RATE,
+          '警徽票正确率（次数）',
+          '平民警徽票正确率（次数）',
+          '放逐票正确率（次数）',
+          '平民放逐票正确率（次数）',
+          '无预通放逐票正确率（次数）',
         ],
       },
     ];
@@ -3320,9 +3343,34 @@
       return columns.map(col => parseValue(player[col], col));
     }
 
+    function getRadarTableDataColumn(column) {
+      return RADAR_TABLE_DATA_COLUMN_ALIASES[column] ?? column;
+    }
+
+    function isRadarTableMergedColumn(column) {
+      return RADAR_TABLE_MERGED_BY_LABEL.has(column);
+    }
+
+    function getRadarTableRankColumn(column) {
+      return RADAR_TABLE_MERGED_BY_LABEL.get(column)?.rateCol ?? getRadarTableDataColumn(column);
+    }
+
+    function formatRadarMergedDisplay(player, label) {
+      const { rateCol, countCol } = RADAR_TABLE_MERGED_BY_LABEL.get(label);
+      const rateStr = formatValue(parseValue(player[rateCol], rateCol), rateCol);
+      const countStr = formatValue(parseValue(player[countCol], countCol), countCol);
+      return `${rateStr}（${countStr}）`;
+    }
+
     function getRadarTableColumns() {
       const row = rawData[0] || {};
-      return RADAR_TABLE_COLUMNS.filter(col => col in row);
+      return RADAR_TABLE_COLUMNS.filter(col => {
+        if (isRadarTableMergedColumn(col)) {
+          return RADAR_TABLE_MERGED_BY_LABEL.get(col).rateCol in row;
+        }
+        if (RADAR_TABLE_MERGED_SUB_COLUMNS.has(col)) return false;
+        return getRadarTableDataColumn(col) in row;
+      });
     }
 
     function getRadarTableGroupedColumns() {
@@ -3339,7 +3387,8 @@
       const otherCols = [
         ...RADAR_TABLE_OTHER_COLUMN_ORDER.filter(col => available.has(col) && !assigned.has(col)),
         ...getRadarTableColumns().filter(col => !assigned.has(col)
-          && !RADAR_TABLE_OTHER_COLUMN_ORDER.includes(col)),
+          && !RADAR_TABLE_OTHER_COLUMN_ORDER.includes(col)
+          && !RADAR_TABLE_MERGED_SUB_COLUMNS.has(col)),
       ];
       otherCols.forEach(col => assigned.add(col));
       if (otherCols.length) groups.push({ title: '其他', columns: otherCols });
@@ -3358,7 +3407,10 @@
     function renderRadarTableRow(name, col) {
       if (isRadarTableTextColumn(col)) {
         const playerVal = getRadarTablePlayer(name, col);
-        const valueHtml = formatRadarDetailText(playerVal);
+        const displayText = col === STAND_WOLF_BADGE_COL
+          ? String(playerVal ?? '').replace(/,/g, '、')
+          : playerVal;
+        const valueHtml = formatRadarDetailText(displayText);
         return `<div class="radar-stats-row is-text">
           <span class="col-metric">${formatColumnLabel(col)}</span>
           <span class="col-value">${valueHtml || '—'}</span>
@@ -3366,30 +3418,35 @@
           <span class="col-avg"><span class="radar-rank-empty">—</span></span>
         </div>`;
       }
-      if (isRadarTableCountColumn(col)) {
-        const playerVal = getRadarTablePlayer(name, col);
+      const rankCol = getRadarTableRankColumn(col);
+      const player = getMinAppearanceRows().find(item => item[NAME_KEY] === name);
+      const playerVal = player ? parseValue(player[rankCol], rankCol) : 0;
+      const avgVal = getRadarTableAverage(rankCol);
+      const { rankMap } = getMetricRankMap(rankCol);
+      const bottomRanks = getBottomRankSet(rankMap);
+      const rankEligible = getMetricRankEligibleRows().some(item => item[NAME_KEY] === name);
+      const rank = rankEligible ? rankMap.get(name) : null;
+      const rankClass = getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, rankCol);
+      const rankHtml = rank != null
+        ? `<span class="radar-rank-pill">${rank}</span>`
+        : '<span class="radar-rank-empty">—</span>';
+      const metricLabel = isRadarTableMergedColumn(col) ? col : formatColumnLabel(col);
+      const displayValue = isRadarTableMergedColumn(col)
+        ? (player ? formatRadarMergedDisplay(player, col) : '—')
+        : formatValue(playerVal, rankCol);
+      if (isRadarTableCountColumn(col) && !isRadarTableMergedColumn(col)) {
         return `<div class="radar-stats-row is-count">
-          <span class="col-metric">${formatColumnLabel(col)}</span>
-          <span class="col-value">${formatValue(playerVal, col) || '—'}</span>
+          <span class="col-metric">${metricLabel}</span>
+          <span class="col-value">${displayValue || '—'}</span>
           <span class="col-rank"><span class="radar-rank-empty">—</span></span>
           <span class="col-avg"><span class="radar-rank-empty">—</span></span>
         </div>`;
       }
-      const playerVal = getRadarTablePlayer(name, col);
-      const avgVal = getRadarTableAverage(col);
-      const { rankMap } = getMetricRankMap(col);
-      const bottomRanks = getBottomRankSet(rankMap);
-      const rankEligible = getMetricRankEligibleRows().some(item => item[NAME_KEY] === name);
-      const rank = rankEligible ? rankMap.get(name) : null;
-      const rankClass = getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, col);
-      const rankHtml = rank != null
-        ? `<span class="radar-rank-pill">${rank}</span>`
-        : '<span class="radar-rank-empty">—</span>';
       return `<div class="radar-stats-row${rankClass ? ` ${rankClass}` : ''}">
-        <span class="col-metric">${formatColumnLabel(col)}</span>
-        <span class="col-value">${formatValue(playerVal, col)}</span>
+        <span class="col-metric">${metricLabel}</span>
+        <span class="col-value">${displayValue}</span>
         <span class="col-rank">${rankHtml}</span>
-        <span class="col-avg">${formatRadarTableAverage(avgVal, col)}</span>
+        <span class="col-avg">${formatRadarTableAverage(avgVal, rankCol)}</span>
       </div>`;
     }
 
@@ -3421,19 +3478,21 @@
     }
 
     function getRadarTableAverage(column) {
+      const rankCol = getRadarTableRankColumn(column);
       const rows = getMinAppearanceRows();
       if (!rows.length) return 0;
-      const sum = rows.reduce((acc, item) => acc + parseValue(item[column], column), 0);
+      const sum = rows.reduce((acc, item) => acc + parseValue(item[rankCol], rankCol), 0);
       return sum / rows.length;
     }
 
     function getRadarTablePlayer(name, column) {
+      const dataCol = getRadarTableDataColumn(column);
       const player = getMinAppearanceRows().find(item => item[NAME_KEY] === name);
       if (!player) return RADAR_TABLE_TEXT_COLUMNS.has(column) ? '' : 0;
       if (RADAR_TABLE_TEXT_COLUMNS.has(column)) {
-        return player[column] ?? '';
+        return player[dataCol] ?? '';
       }
-      return parseValue(player[column], column);
+      return parseValue(player[dataCol], dataCol);
     }
 
     function getMetricRankCompareValue(value, column) {
