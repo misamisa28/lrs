@@ -1486,7 +1486,7 @@
 
     function getLaganTableRows() {
       const rows = [];
-      getMinAppearanceRows().forEach(item => {
+      rawData.forEach(item => {
         const raw = item[LAGAN_RECORD_COL];
         if (raw == null || String(raw).trim() === '') return;
         String(raw).split(',').forEach(entry => {
@@ -1511,7 +1511,7 @@
       if (!rows.length) {
         tbody.innerHTML = '';
         emptyNotice.textContent = hasLaganData()
-          ? '暂无出场次数>=9且含拉杆记录的玩家'
+          ? '暂无拉杆记录'
           : '当前赛季数据暂无拉杆记录字段';
         emptyNotice.style.display = '';
         return;
