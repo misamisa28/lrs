@@ -13,7 +13,6 @@
       <div class="header-row">
         <div class="header-text">
           <h1>大师赛数据统计</h1>
-          <p class="subtitle">按指标、选手或原始数据切换查看</p>
         </div>
         <button type="button" id="rulesBtn" class="rules-btn" aria-label="统计规则" title="统计规则">
           <svg class="rules-btn-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
@@ -44,14 +43,20 @@
         <label for="columnSelect">选择指标：</label>
         <select id="columnSelect"></select>
         <div id="wolfSubControls" class="wolf-sub-controls" style="display: none;">
-          <button type="button" class="wolf-mode-btn active" data-wolf-mode="hjt">悍跳数据</button>
+          <button type="button" class="wolf-mode-btn active" data-wolf-mode="rate">狼人率</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="hjt">悍跳数据</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="self">自爆数据</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="knife">自刀数据</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="witchknife">首刀女巫数据</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="lagan">拉杆数据</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="jixie">机械狼数据</button>
         </div>
         <div id="voteSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-vote-mode="badge">警徽票</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-badge">平民阵营警徽票</button>
           <button type="button" class="wolf-mode-btn" data-vote-mode="exile">放逐票</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-exile">平民阵营放逐票</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="noprophet">无预通放逐票</button>
         </div>
         <div id="otherSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-other-mode="blind">被盲毒次数</button>
@@ -64,8 +69,8 @@
         </div>
         <div id="skillSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-skill-mode="witch">女巫毒师数据</button>
+          <button type="button" class="wolf-mode-btn" data-skill-mode="blindwolf">盲毒数据</button>
           <button type="button" class="wolf-mode-btn" data-skill-mode="dream">摄梦人首摄数据</button>
-          <button type="button" class="wolf-mode-btn" data-skill-mode="blindwolf">盲毒狼人率</button>
         </div>
       </div>
       <div id="tongbianControls" class="control-group" style="display: none;">
@@ -79,7 +84,7 @@
         <button type="button" class="wolf-mode-btn" data-banxing-mode="yvlhb">预女猎白混版型</button>
       </div>
       <div id="radarControls" class="control-group" style="display: none;">
-        <label for="nameSelect">选择选手</label>
+        <label for="nameSelect">选择玩家</label>
         <select id="nameSelect"></select>
         <div id="radarSubControls" class="wolf-sub-controls">
           <button type="button" class="wolf-mode-btn active" data-radar-mode="table">详细数据</button>
@@ -88,7 +93,7 @@
         </div>
       </div>
       <div id="compareControls" class="control-group" style="display: none;">
-        <label for="compareNameSelect">选择选手</label>
+        <label for="compareNameSelect">选择玩家</label>
         <select id="compareNameSelect"></select>
         <label for="compareMetricSelect">选择指标</label>
         <select id="compareMetricSelect"></select>
@@ -113,12 +118,22 @@
       <div id="chartWrap" class="chart-wrap">
         <div id="chart"></div>
       </div>
-      <div id="radarTableWrap" class="data-table-wrap radar-table-wrap" style="display: none;">
-        <div class="table-scroll radar-table-scroll">
-          <table class="raw-table radar-stats-table">
-            <thead id="radarTableHead"></thead>
-            <tbody id="radarTableBody"></tbody>
+      <div id="laganTable" class="data-table-wrap" style="display: none;">
+        <p id="laganEmptyNotice" class="empty-notice" style="display: none;"></p>
+        <div class="table-scroll">
+          <table class="raw-table lagan-table">
+            <thead id="laganHead"></thead>
+            <tbody id="laganBody"></tbody>
           </table>
+        </div>
+      </div>
+      <div id="radarTableWrap" class="data-table-wrap radar-table-wrap" style="display: none;">
+        <div class="radar-stats-toolbar">
+          <h2 id="radarTablePlayerName" class="radar-stats-player-name"></h2>
+          <p class="radar-stats-legend-text">排名基于出场≥9玩家；前三名与末三档（且低于赛季平均）分别高亮</p>
+        </div>
+        <div class="table-scroll radar-table-scroll">
+          <div id="radarTableBody" class="radar-stats-cards"></div>
         </div>
       </div>
     </div>
@@ -148,7 +163,7 @@
         </span>
       </p>
     </div>
-    <p id="chartDataNotice" class="chart-footnote" style="display: none;">注：仅显示出场次数>=9的选手</p>
+    <p id="chartDataNotice" class="chart-footnote" style="display: none;">注：仅显示出场次数>=9的玩家</p>
     <div id="dataTable" class="data-table-wrap" style="display: none;">
       <div class="table-scroll">
         <table class="raw-table">
@@ -320,6 +335,7 @@
       '同边率', '同边狼人胜率', '同边好人胜率',
     ];
     const TONGBIAN_TABLE_COLUMNS = [NAME_A_KEY, NAME_B_KEY, ...TONGBIAN_METRIC_COLUMNS];
+    const TONGBIAN_NON_SORTABLE = new Set(['同场次数']);
     const BANXING_COLUMNS = ['版型', '总场次', '狼赢次数', '好人赢次数', '平均持续天数', '狼人胜率'];
     const BANXING_SORTABLE = new Set(['平均持续天数', '狼人胜率']);
     const BANXING_SUB_MODES = {
@@ -333,6 +349,8 @@
     const RAW_TABLE_HIDDEN_COLUMNS = new Set([
       '攻击技能', '防御技能', 'D1警徽', '阵营', '版型', '胜利',
     ]);
+    const SPECIAL_ORDER_EXILE_COL = '特殊放逐票';
+    const SPECIAL_ORDER_EXILE_COL_LEGACY = '特殊放逐票（定序）';
 
     function getRawTableColumnLabel(col) {
       if (/^D\d+警下投票$/.test(col)) return '警徽票';
@@ -349,13 +367,16 @@
 
     const PERCENT_COLUMNS = new Set([
       '狼人率', '身份率', '预通率', '总胜率', '好人警下率',
-      '放逐票正确率', '警徽票正确率', '毒药技能正确率', '狼人胜率', '好人胜率', '悍跳率',
+      '放逐票正确率', '无预通放逐票正确率', '警徽票正确率', '平民放逐票正确率', '平民警徽票正确率', '毒药技能正确率', '狼人胜率', '好人胜率', '悍跳率',
       '盲毒狼人率'
     ]);
     const SKILL_DATA_KEY = '技能数据';
     const WITCH_POISON_WITCH_COL = '女巫毒师次数';
     const WITCH_POISON_USE_COL = '毒药使用次数';
     const WITCH_POISON_WOLF_COL = '毒狼次数';
+    const POISON_SKILL_RATE_COL = '毒药技能正确率';
+    const POISON_RATE_COL = '毒药正确率';
+    const POISON_RATE_COLS = [POISON_SKILL_RATE_COL, POISON_RATE_COL];
     const DREAM_WALKER_COL = '摄梦人次数';
     const DREAM_FIRST_WOLF_COL = '首摄狼人次数';
     const DREAM_FIRST_SPECIAL_COL = '首摄狼王/盗宝猎人次数';
@@ -372,7 +393,7 @@
     const APPEARANCE_COMBO_YUTONG = '预通次数';
     const YUTONG_RATE_COL = '预通率';
     const APPEARANCE_COMBO_IDENTITY_SEG = '神职次数';
-    const APPEARANCE_COMBO_OTHER = '其余';
+    const APPEARANCE_COMBO_OTHER = '平民';
     const APPEARANCE_WOLF_COLOR = '#ef4444';
     const APPEARANCE_SKILL_WOLF_COLOR = '#991b1b';
     const APPEARANCE_YUTONG_COLOR = '#eab308';
@@ -383,6 +404,20 @@
     const VOTE_BADGE_RATE = '警徽票正确率';
     const VOTE_EXILE_COUNT = '放逐票次数';
     const VOTE_EXILE_RATE = '放逐票正确率';
+    const VOTE_CIVILIAN_BADGE_COUNT = '平民警徽票次数';
+    const VOTE_CIVILIAN_BADGE_RATE = '平民警徽票正确率';
+    const VOTE_CIVILIAN_EXILE_COUNT = '平民放逐票次数';
+    const VOTE_CIVILIAN_EXILE_RATE = '平民放逐票正确率';
+    const VOTE_NO_PROPHET_EXILE_COUNT = '无预通放逐票次数';
+    const VOTE_NO_PROPHET_EXILE_CORRECT_COUNT = '无预通正确放逐票次数';
+    const VOTE_NO_PROPHET_EXILE_RATE = '无预通放逐票正确率';
+    const PLAYER_STATS_COLUMN_RENAMES = {
+      '无预通生推正确放逐票次数': VOTE_NO_PROPHET_EXILE_CORRECT_COUNT,
+      '无预通生推放逐票次数': VOTE_NO_PROPHET_EXILE_COUNT,
+      '无预通生推放逐票正确率': VOTE_NO_PROPHET_EXILE_RATE,
+      '预通生推放逐票次数': VOTE_NO_PROPHET_EXILE_COUNT,
+      [POISON_RATE_COL]: POISON_SKILL_RATE_COL,
+    };
     const WIN_RATE_DATA_KEY = '胜率数据';
     const WOLF_WIN_RATE_COL = '狼人胜率';
     const GOOD_WIN_RATE_COL = '好人胜率';
@@ -399,6 +434,7 @@
     const MIXED_BLOOD_MODEL_COL = '混血儿榜样次数';
     const FAKE_GOLD_COL = '接狼人金水次数';
     const BLIND_POISON_USE_COL = '盲毒次数';
+    const BLIND_POISON_WOLF_COUNT_COL = '盲毒狼人次数';
     const BLIND_POISON_WOLF_RATE_COL = '盲毒狼人率';
     const BLIND_POISON_WOLVES_COL = '盲毒狼人';
     const OTHER_ZERO_EXCLUDE_COLS = new Set([
@@ -410,9 +446,13 @@
     const WOLF_COMBO_HJT = '悍跳次数';
     const WOLF_COMBO_SELF = '自爆次数';
     const WOLF_COMBO_SELF_GREEN = '#22c55e';
+    const WOLF_RATE_COL = '狼人率';
     const RED_WOLF_COL = '非盗宝红狼次数';
     const SELF_KNIFE_COL = '自刀次数';
     const TEAMMATE_SELF_KNIFE_COL = '狼队友自刀次数';
+    const FIRST_KNIFE_WITCH_COL = '首刀女巫次数';
+    const LAGAN_RECORD_COL = '拉杆记录';
+    const LAGAN_TABLE_COLUMNS = ['日期场次', '姓名', '被拉杆玩家', '被拉杆身份'];
     const JIXIE_WOLF_TOTAL_COL = '机械狼次数';
     const JIXIE_CIVILIAN_COL = '机械平民次数';
     const JIXIE_DUAL_COL = '机械双刀次数';
@@ -449,7 +489,7 @@
     ]);
 
     const RADAR_METRIC_OPTIONS = [
-      '总胜率', '放逐票正确率', '警徽票正确率', '毒药技能正确率',
+      '总胜率', '放逐票正确率', VOTE_NO_PROPHET_EXILE_RATE, '警徽票正确率', '毒药技能正确率',
       '狼人率', '狼人胜率', '好人胜率', '好人警下率',
       '出场次数', AVG_SURVIVAL_COL,
     ];
@@ -475,7 +515,13 @@
       },
       {
         title: '投票相关',
-        columns: [VOTE_BADGE_COUNT, VOTE_BADGE_RATE, VOTE_EXILE_COUNT, VOTE_EXILE_RATE],
+        columns: [
+          VOTE_BADGE_COUNT, VOTE_BADGE_RATE,
+          VOTE_CIVILIAN_BADGE_COUNT, VOTE_CIVILIAN_BADGE_RATE,
+          VOTE_EXILE_COUNT, VOTE_EXILE_RATE,
+          VOTE_CIVILIAN_EXILE_COUNT, VOTE_CIVILIAN_EXILE_RATE,
+          VOTE_NO_PROPHET_EXILE_COUNT, VOTE_NO_PROPHET_EXILE_RATE,
+        ],
       },
     ];
     const RADAR_TABLE_OTHER_COLUMN_ORDER = [
@@ -508,7 +554,7 @@
     let tongbianSort = { column: '同场次数', direction: 'desc' };
     let chart = null;
     let currentView = 'bar';
-    let wolfSubMode = 'hjt';
+    let wolfSubMode = 'rate';
     let voteSubMode = 'badge';
     let otherSubMode = 'blind';
     let skillSubMode = 'witch';
@@ -563,6 +609,45 @@
       ['banxing-mode', 'banxingMode'],
       ['radar-mode', 'radarMode'],
     ];
+
+    function formatColumnLabel(column) {
+      return String(column).replace(/无预通生推/g, '无预通');
+    }
+
+    function normalizePlayerStatsColumns(rows) {
+      if (!Array.isArray(rows)) return rows;
+      return rows.map(row => {
+        const next = { ...row };
+        for (const [oldKey, newKey] of Object.entries(PLAYER_STATS_COLUMN_RENAMES)) {
+          if (oldKey in next && !(newKey in next)) {
+            next[newKey] = next[oldKey];
+          }
+          if (oldKey in next) delete next[oldKey];
+        }
+        if (!(VOTE_NO_PROPHET_EXILE_RATE in next)
+          && VOTE_NO_PROPHET_EXILE_COUNT in next
+          && VOTE_NO_PROPHET_EXILE_CORRECT_COUNT in next) {
+          const count = Number(next[VOTE_NO_PROPHET_EXILE_COUNT]) || 0;
+          const correct = Number(next[VOTE_NO_PROPHET_EXILE_CORRECT_COUNT]) || 0;
+          next[VOTE_NO_PROPHET_EXILE_RATE] = count > 0
+            ? `${(correct / count * 100).toFixed(1)}%`
+            : '0.0%';
+        }
+        return next;
+      });
+    }
+
+    function normalizeRawTableColumns(rows) {
+      if (!Array.isArray(rows)) return rows;
+      return rows.map(row => {
+        const next = { ...row };
+        if (SPECIAL_ORDER_EXILE_COL_LEGACY in next && !(SPECIAL_ORDER_EXILE_COL in next)) {
+          next[SPECIAL_ORDER_EXILE_COL] = next[SPECIAL_ORDER_EXILE_COL_LEGACY];
+        }
+        if (SPECIAL_ORDER_EXILE_COL_LEGACY in next) delete next[SPECIAL_ORDER_EXILE_COL_LEGACY];
+        return next;
+      });
+    }
 
     function isMobile() {
       return window.innerWidth <= 768;
@@ -696,6 +781,15 @@
         return parseFloat(value.replace('%', '')) || 0;
       }
       return Number(value) || 0;
+    }
+
+    function getPoisonSkillRate(item) {
+      for (const col of POISON_RATE_COLS) {
+        if (col in item) return parseValue(item[col], col);
+      }
+      const use = parseValue(item[WITCH_POISON_USE_COL], WITCH_POISON_USE_COL);
+      const wolf = parseValue(item[WITCH_POISON_WOLF_COL], WITCH_POISON_WOLF_COL);
+      return use > 0 ? (wolf / use * 100) : 0;
     }
 
     function getPlayerInSeason(season, name) {
@@ -961,7 +1055,7 @@
 
     function renderTongbianHeaderCell(col) {
       const thClass = getTongbianCellClass(col);
-      if (col === NAME_A_KEY || col === NAME_B_KEY) {
+      if (col === NAME_A_KEY || col === NAME_B_KEY || TONGBIAN_NON_SORTABLE.has(col)) {
         return `<th class="${thClass}">${col}</th>`;
       }
       const isActive = tongbianSort.column === col;
@@ -995,10 +1089,10 @@
 
     function getTongbianEmptyMessage(selectedName) {
       if (!tongbianData.length) {
-        return '本赛季暂无同边数据（需至少两名出场次数>=9 的选手才会生成配对统计）。';
+        return '本赛季暂无同边数据（需至少两名出场次数>=9 的玩家才会生成配对统计）。';
       }
       if (selectedName) {
-        return `选手「${selectedName}」暂无同边配对记录。`;
+        return `玩家「${selectedName}」暂无同边配对记录。`;
       }
       return '暂无同边数据。';
     }
@@ -1109,7 +1203,9 @@
 
     function hasBlindPoisonWolfRateData() {
       const row = rawData[0] || {};
-      return BLIND_POISON_WOLF_RATE_COL in row && BLIND_POISON_USE_COL in row;
+      return BLIND_POISON_WOLF_RATE_COL in row
+        && BLIND_POISON_USE_COL in row
+        && BLIND_POISON_WOLF_COUNT_COL in row;
     }
 
     function hasSkillData() {
@@ -1118,13 +1214,22 @@
 
     function getBlindPoisonWolfRateItems() {
       return getMinAppearanceRows()
-        .map(item => ({
-          name: item[NAME_KEY],
-          rate: parseValue(item[BLIND_POISON_WOLF_RATE_COL], BLIND_POISON_WOLF_RATE_COL),
-          blindUse: parseValue(item[BLIND_POISON_USE_COL], BLIND_POISON_USE_COL),
-        }))
+        .map(item => {
+          const blindUse = parseValue(item[BLIND_POISON_USE_COL], BLIND_POISON_USE_COL);
+          const blindWolf = parseValue(item[BLIND_POISON_WOLF_COUNT_COL], BLIND_POISON_WOLF_COUNT_COL);
+          return {
+            name: item[NAME_KEY],
+            rate: parseValue(item[BLIND_POISON_WOLF_RATE_COL], BLIND_POISON_WOLF_RATE_COL),
+            blindUse,
+            blindWolf,
+            blindOther: Math.max(0, blindUse - blindWolf),
+          };
+        })
         .filter(d => d.blindUse > 0)
-        .sort((a, b) => a.rate - b.rate);
+        .sort((a, b) => {
+          if (a.rate !== b.rate) return a.rate - b.rate;
+          return a.blindUse - b.blindUse;
+        });
     }
 
     function hasMinAppearances(item) {
@@ -1150,17 +1255,22 @@
           const witch = parseValue(item[WITCH_POISON_WITCH_COL], WITCH_POISON_WITCH_COL);
           const use = parseValue(item[WITCH_POISON_USE_COL], WITCH_POISON_USE_COL);
           const wolf = parseValue(item[WITCH_POISON_WOLF_COL], WITCH_POISON_WOLF_COL);
+          const rate = getPoisonSkillRate(item);
           return {
             name: item[NAME_KEY],
             witch,
             use,
             wolf,
+            rate,
             useOther: Math.max(0, use - wolf),
             other: Math.max(0, witch - use)
           };
         })
         .filter(item => item.witch > 0)
-        .sort((a, b) => a.witch - b.witch);
+        .sort((a, b) => {
+          if (a.rate !== b.rate) return a.rate - b.rate;
+          return a.witch - b.witch;
+        });
     }
 
     function getDreamFirstComboItems() {
@@ -1255,11 +1365,39 @@
       return items.sort((a, b) => sortDesc(a.hjt, b.hjt, a.total, b.total));
     }
 
+    function hasWolfRateData() {
+      return rawData.length > 0 && WOLF_RATE_COL in rawData[0];
+    }
+
     function hasSelfKnifeComboData() {
       const row = rawData[0] || {};
       return RED_WOLF_COL in row
         && SELF_KNIFE_COL in row
         && TEAMMATE_SELF_KNIFE_COL in row;
+    }
+
+    function hasFirstKnifeWitchComboData() {
+      const row = rawData[0] || {};
+      return RED_WOLF_COL in row && FIRST_KNIFE_WITCH_COL in row;
+    }
+
+    function getFirstKnifeWitchComboItems() {
+      return getWolfEligibleRows()
+        .map(item => {
+          const redWolf = parseValue(item[RED_WOLF_COL], RED_WOLF_COL);
+          const firstKnifeWitch = parseValue(item[FIRST_KNIFE_WITCH_COL], FIRST_KNIFE_WITCH_COL);
+          return {
+            name: item[NAME_KEY],
+            redWolf,
+            firstKnifeWitch,
+            other: Math.max(0, redWolf - firstKnifeWitch)
+          };
+        })
+        .filter(item => item.redWolf > 0)
+        .sort((a, b) => {
+          if (a.firstKnifeWitch !== b.firstKnifeWitch) return a.firstKnifeWitch - b.firstKnifeWitch;
+          return a.redWolf - b.redWolf;
+        });
     }
 
     function getSelfKnifeComboItems() {
@@ -1302,7 +1440,66 @@
         && WOLF_COMBO_TOTAL in row
         && WOLF_COMBO_HJT in row
         && WOLF_COMBO_SELF in row;
-      return hasHjtSelf || hasJixieWolfComboData() || hasSelfKnifeComboData();
+      return hasWolfRateData() || hasHjtSelf || hasJixieWolfComboData() || hasSelfKnifeComboData() || hasFirstKnifeWitchComboData() || hasLaganData();
+    }
+
+    function hasLaganData() {
+      const row = rawData[0] || {};
+      return LAGAN_RECORD_COL in row;
+    }
+
+    function parseLaganRecordEntry(entry) {
+      const text = String(entry ?? '').trim();
+      if (!text) return null;
+      const parts = text.split('-');
+      if (parts.length < 4) return null;
+      return {
+        '日期场次': parts[0],
+        '姓名': parts[1],
+        '被拉杆玩家': parts[2],
+        '被拉杆身份': parts.slice(3).join('-'),
+      };
+    }
+
+    function getLaganTableRows() {
+      const rows = [];
+      getMinAppearanceRows().forEach(item => {
+        const raw = item[LAGAN_RECORD_COL];
+        if (raw == null || String(raw).trim() === '') return;
+        String(raw).split(',').forEach(entry => {
+          const parsed = parseLaganRecordEntry(entry);
+          if (parsed) rows.push(parsed);
+        });
+      });
+      return rows.sort((a, b) => String(b['日期场次']).localeCompare(String(a['日期场次']), 'zh-CN'));
+    }
+
+    function renderLaganTable() {
+      setChartHeight(0);
+      const rows = getLaganTableRows();
+      const emptyNotice = document.getElementById('laganEmptyNotice');
+      const thead = document.getElementById('laganHead');
+      const tbody = document.getElementById('laganBody');
+
+      thead.innerHTML = `<tr>${LAGAN_TABLE_COLUMNS.map(col =>
+        `<th>${escapeHtml(col)}</th>`
+      ).join('')}</tr>`;
+
+      if (!rows.length) {
+        tbody.innerHTML = '';
+        emptyNotice.textContent = hasLaganData()
+          ? '暂无出场次数>=9且含拉杆记录的玩家'
+          : '当前赛季数据暂无拉杆记录字段';
+        emptyNotice.style.display = '';
+        return;
+      }
+
+      emptyNotice.style.display = 'none';
+      tbody.innerHTML = rows.map(row =>
+        `<tr>${LAGAN_TABLE_COLUMNS.map(col =>
+          `<td>${escapeHtml(String(row[col] ?? ''))}</td>`
+        ).join('')}</tr>`
+      ).join('');
     }
 
     function getJixieWolfComboItems() {
@@ -1340,10 +1537,28 @@
       return column === VOTE_DATA_KEY;
     }
 
-    function hasVoteData() {
+    function hasNoProphetExileVoteData() {
+      const row = rawData[0] || {};
       return rawData.length > 0
-        && VOTE_BADGE_COUNT in rawData[0]
-        && VOTE_EXILE_COUNT in rawData[0];
+        && VOTE_NO_PROPHET_EXILE_COUNT in row
+        && (VOTE_NO_PROPHET_EXILE_RATE in row || VOTE_NO_PROPHET_EXILE_CORRECT_COUNT in row);
+    }
+
+    function hasCivilianVoteData() {
+      const row = rawData[0] || {};
+      return rawData.length > 0
+        && VOTE_CIVILIAN_BADGE_COUNT in row
+        && VOTE_CIVILIAN_BADGE_RATE in row
+        && VOTE_CIVILIAN_EXILE_COUNT in row
+        && VOTE_CIVILIAN_EXILE_RATE in row;
+    }
+
+    function hasVoteData() {
+      return rawData.length > 0 && (
+        (VOTE_BADGE_COUNT in rawData[0] && VOTE_EXILE_COUNT in rawData[0])
+        || hasNoProphetExileVoteData()
+        || hasCivilianVoteData()
+      );
     }
 
     function hasWinRateData() {
@@ -1379,9 +1594,31 @@
     }
 
     function getVoteScatterConfig(mode) {
-      return mode === 'badge'
-        ? { countCol: VOTE_BADGE_COUNT, rateCol: VOTE_BADGE_RATE, label: '警徽票' }
-        : { countCol: VOTE_EXILE_COUNT, rateCol: VOTE_EXILE_RATE, label: '放逐票' };
+      if (mode === 'badge') {
+        return { countCol: VOTE_BADGE_COUNT, rateCol: VOTE_BADGE_RATE, label: '警徽票' };
+      }
+      if (mode === 'civilian-badge') {
+        return {
+          countCol: VOTE_CIVILIAN_BADGE_COUNT,
+          rateCol: VOTE_CIVILIAN_BADGE_RATE,
+          label: '平民阵营警徽票'
+        };
+      }
+      if (mode === 'noprophet') {
+        return {
+          countCol: VOTE_NO_PROPHET_EXILE_COUNT,
+          rateCol: VOTE_NO_PROPHET_EXILE_RATE,
+          label: '无预通放逐票'
+        };
+      }
+      if (mode === 'civilian-exile') {
+        return {
+          countCol: VOTE_CIVILIAN_EXILE_COUNT,
+          rateCol: VOTE_CIVILIAN_EXILE_RATE,
+          label: '平民阵营放逐票'
+        };
+      }
+      return { countCol: VOTE_EXILE_COUNT, rateCol: VOTE_EXILE_RATE, label: '放逐票' };
     }
 
     function updateChartFootnotes() {
@@ -1396,6 +1633,8 @@
     function updateRadarPanelsVisibility() {
       const view = currentView;
       const isRadar = view === 'radar';
+      const col = $('columnSelect').value;
+      const showWolfLagan = view === 'bar' && col === WOLF_DATA_KEY && wolfSubMode === 'lagan';
       const showRadarChartView = isRadar && radarSubMode === 'radar';
       const showRadarTableView = isRadar && radarSubMode === 'table';
       const showRadarGames = isRadar && radarSubMode === 'games';
@@ -1412,7 +1651,8 @@
       visualPanel.classList.remove('radar-layout');
       visualPanel.classList.toggle('radar-chart-view', showRadarChartView);
 
-      $show('chartWrap', showVisual && (view !== 'radar' || showRadarChartView), 'block');
+      $show('chartWrap', showVisual && !showWolfLagan && (view !== 'radar' || showRadarChartView), 'block');
+      $show('laganTable', showWolfLagan, 'block');
       $show('chartDataNotice', view === 'bar' || view === 'compare' || showRadarChartView || showRadarTableView, 'block');
     }
 
@@ -1526,8 +1766,43 @@
     }
 
     function renderVoteScatterChart() {
-      const { countCol, rateCol, label } = getVoteScatterConfig(voteSubMode);
+      const { countCol, rateCol, countLabel, rateLabel } = getVoteScatterConfig(voteSubMode);
+      const xName = countLabel || countCol;
+      const yName = rateLabel || rateCol;
       const layout = getChartLayout();
+
+      if (voteSubMode === 'noprophet' && !hasNoProphetExileVoteData()) {
+        setScatterChartHeight(1);
+        chart.setOption({
+          backgroundColor: 'transparent',
+          title: {
+            subtext: '当前赛季数据暂无无预通放逐票统计字段',
+            left: 'center',
+            top: 'center',
+            subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+          },
+          series: []
+        }, true);
+        chart.resize();
+        return;
+      }
+
+      if ((voteSubMode === 'civilian-badge' || voteSubMode === 'civilian-exile') && !hasCivilianVoteData()) {
+        setScatterChartHeight(1);
+        chart.setOption({
+          backgroundColor: 'transparent',
+          title: {
+            subtext: '当前赛季数据暂无平民阵营投票统计字段',
+            left: 'center',
+            top: 'center',
+            subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+          },
+          series: []
+        }, true);
+        chart.resize();
+        return;
+      }
+
       const rawItems = getMinAppearanceRows().map(item => ({
         name: item[NAME_KEY],
         value: [
@@ -1550,14 +1825,14 @@
           formatter(params) {
             return [
               params.data.name,
-              `${countCol}：${params.value[0]}`,
-              `${rateCol}：${formatPercent(params.value[1])}`
+              `${xName}：${params.value[0]}`,
+              `${yName}：${formatPercent(params.value[1])}`
             ].join('<br/>');
           }
         },
         grid: getScatterGrid(layout),
-        xAxis: buildScatterXAxis(countCol, layout, { minInterval: 1 }),
-        yAxis: buildScatterYAxis(rateCol, layout, {
+        xAxis: buildScatterXAxis(xName, layout, { minInterval: 1 }),
+        yAxis: buildScatterYAxis(yName, layout, {
           max: 100,
           axisLabelFormatter: (v) => formatPercent(v)
         }),
@@ -1757,7 +2032,7 @@
       setChartHeight(Math.max(items.length, 1));
 
       if (!items.length) {
-        renderWolfDataEmptyChart('暂无出场次数>=9且被盲毒次数>0的选手');
+        renderWolfDataEmptyChart('暂无出场次数>=9且被盲毒次数>0的玩家');
         return;
       }
 
@@ -1848,6 +2123,12 @@
       }));
 
       setScatterChartHeight(items.length);
+      const minX = items.length
+        ? Math.min(...items.map(item => item.value[0]))
+        : 0;
+      const minY = items.length
+        ? Math.min(...items.map(item => item.value[1]))
+        : 0;
       const averageOrigin = buildScatterAverageOrigin(GOOD_AVG_SURVIVAL_COL, WOLF_AVG_SURVIVAL_COL);
 
       const option = {
@@ -1867,11 +2148,11 @@
         },
         grid: getScatterGrid(layout),
         xAxis: buildScatterXAxis(GOOD_AVG_SURVIVAL_COL, layout, {
-          min: 1,
+          min: minX,
           axisLabelFormatter: (v) => Number(v).toFixed(1)
         }),
         yAxis: buildScatterYAxis(WOLF_AVG_SURVIVAL_COL, layout, {
-          min: 1,
+          min: minY,
           axisLabelFormatter: (v) => Number(v).toFixed(1)
         }),
         series: [{
@@ -1938,7 +2219,13 @@
         return;
       }
       if (isWolfComboColumn(column) && hasWolfComboData()) {
-        if (wolfSubMode === 'jixie') {
+        if (wolfSubMode === 'rate') {
+          if (hasWolfRateData()) {
+            renderMetricBarChart(WOLF_RATE_COL);
+          } else {
+            renderWolfDataEmptyChart('当前赛季数据暂无狼人率字段');
+          }
+        } else if (wolfSubMode === 'jixie') {
           renderJixieWolfComboChart();
         } else if (wolfSubMode === 'knife') {
           if (hasSelfKnifeComboData()) {
@@ -1946,6 +2233,14 @@
           } else {
             renderWolfDataEmptyChart('当前赛季数据暂无自刀统计字段');
           }
+        } else if (wolfSubMode === 'witchknife') {
+          if (hasFirstKnifeWitchComboData()) {
+            renderFirstKnifeWitchComboChart();
+          } else {
+            renderWolfDataEmptyChart('当前赛季数据暂无首刀女巫统计字段');
+          }
+        } else if (wolfSubMode === 'lagan') {
+          renderLaganTable();
         } else {
           renderWolfComboChart();
         }
@@ -2028,7 +2323,7 @@
         chart.setOption({
           backgroundColor: 'transparent',
           title: {
-            subtext: '暂无出场次数>=9且女巫毒师次数>0的选手',
+            subtext: '暂无出场次数>=9且女巫毒师次数>0的玩家',
             left: 'center',
             top: 'center',
             subtextStyle: { color: CHART_AXIS, fontSize: 12 }
@@ -2058,6 +2353,7 @@
             const row = items[idx];
             return [
               name,
+              `${POISON_RATE_COL}：${formatPercent(row.rate)}`,
               `${WITCH_POISON_WITCH_COL}：${row.witch}`,
               `${WITCH_POISON_USE_COL}：${row.use}`,
               `${WITCH_POISON_WOLF_COL}：${row.wolf}`
@@ -2100,11 +2396,11 @@
             stack: 'witchPoison',
             data: items.map(d => d.useOther),
             barMaxWidth: layout.barMaxWidth,
-            itemStyle: { color: WITCH_POISON_LIGHT_BLUE },
+            itemStyle: { color: APPEARANCE_WOLF_COLOR },
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#1a1a1a',
+              color: '#ffffff',
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2139,9 +2435,6 @@
     function renderBlindPoisonWolfRateChart() {
       const items = getBlindPoisonWolfRateItems();
       const layout = getChartLayout();
-      const average = items.length
-        ? items.reduce((sum, d) => sum + d.rate, 0) / items.length
-        : 0;
 
       setChartHeight(Math.max(items.length, 1));
 
@@ -2152,6 +2445,11 @@
 
       const option = {
         backgroundColor: 'transparent',
+        legend: {
+          data: [BLIND_POISON_USE_COL, BLIND_POISON_WOLF_COUNT_COL],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -2164,7 +2462,8 @@
             return [
               row.name,
               `${BLIND_POISON_WOLF_RATE_COL}：${formatPercent(row.rate)}`,
-              `${BLIND_POISON_USE_COL}：${row.blindUse}`
+              `${BLIND_POISON_USE_COL}：${row.blindUse}`,
+              `${BLIND_POISON_WOLF_COUNT_COL}：${row.blindWolf}`
             ].join('<br/>');
           }
         },
@@ -2172,42 +2471,50 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
           containLabel: true
         },
         xAxis: {
           type: 'value',
-          min: 0,
-          max: 100,
-          axisLabel: {
-            color: CHART_AXIS,
-            fontSize: layout.axisFontSize,
-            formatter: (v) => formatPercent(v)
-          },
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
           splitLine: { lineStyle: { color: CHART_LINE } }
         },
         yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
-        series: [{
-          name: BLIND_POISON_WOLF_RATE_COL,
-          type: 'bar',
-          data: items.map(d => ({
-            value: d.rate,
-            itemStyle: {
-              borderRadius: [0, 4, 4, 0],
-              color: getBarColor(d.rate, average, true)
+        series: [
+          {
+            name: BLIND_POISON_WOLF_COUNT_COL,
+            type: 'bar',
+            stack: 'blindPoison',
+            data: items.map(d => d.blindWolf),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
-          })),
-          barMaxWidth: layout.barMaxWidth,
-          label: {
-            show: layout.showBarLabel,
-            position: 'right',
-            color: CHART_TEXT,
-            formatter: (p) => {
-              const row = items[p.dataIndex];
-              return `${formatPercent(row.rate)}（${BLIND_POISON_USE_COL}${row.blindUse}）`;
+          },
+          {
+            name: BLIND_POISON_USE_COL,
+            type: 'bar',
+            stack: 'blindPoison',
+            data: items.map(d => d.blindOther),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: APPEARANCE_WOLF_COLOR, borderRadius: [0, 4, 4, 0] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'right',
+              color: CHART_TEXT,
+              formatter: (p) => {
+                const row = items[p.dataIndex];
+                return `${formatPercent(row.rate)}（${row.blindUse}）`;
+              }
             }
           }
-        }],
+        ],
         animationDuration: 600
       };
 
@@ -2220,7 +2527,7 @@
       chart.setOption({
         backgroundColor: 'transparent',
         title: {
-          subtext: '暂无出场次数>=9的选手',
+          subtext: '暂无出场次数>=9的玩家',
           left: 'center',
           top: 'center',
           subtextStyle: { color: CHART_AXIS, fontSize: 12 }
@@ -2241,7 +2548,7 @@
         chart.setOption({
           backgroundColor: 'transparent',
           title: {
-            subtext: '暂无出场次数>=9且摄梦人次数>0的选手',
+            subtext: '暂无出场次数>=9且摄梦人次数>0的玩家',
             left: 'center',
             top: 'center',
             subtextStyle: { color: CHART_AXIS, fontSize: 12 }
@@ -2526,7 +2833,7 @@
       setChartHeight(Math.max(items.length, 1));
 
       if (!items.length) {
-        renderWolfDataEmptyChart('暂无出场次数>=9且非盗宝红狼次数>0的选手');
+        renderWolfDataEmptyChart('暂无出场次数>=9且非盗宝红狼次数>0的玩家');
         return;
       }
 
@@ -2622,6 +2929,93 @@
       chart.resize();
     }
 
+    function renderFirstKnifeWitchComboChart() {
+      const items = getFirstKnifeWitchComboItems();
+      const layout = getChartLayout();
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        renderWolfDataEmptyChart('暂无出场次数>=9且非盗宝红狼次数>0的玩家');
+        return;
+      }
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [FIRST_KNIFE_WITCH_COL, RED_WOLF_COL],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const name = params[0]?.name ?? '';
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              name,
+              `${FIRST_KNIFE_WITCH_COL}：${row.firstKnifeWitch}`,
+              `${RED_WOLF_COL}：${row.redWolf}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [
+          {
+            name: FIRST_KNIFE_WITCH_COL,
+            type: 'bar',
+            stack: 'firstKnifeWitch',
+            data: items.map(d => d.firstKnifeWitch),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: WOLF_COLOR, borderRadius: [4, 0, 0, 4] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: RED_WOLF_COL,
+            type: 'bar',
+            stack: 'firstKnifeWitch',
+            data: items.map(d => d.other),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: APPEARANCE_COLOR, borderRadius: [0, 4, 4, 0] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'right',
+              color: CHART_TEXT,
+              formatter: (p) => String(items[p.dataIndex].redWolf)
+            }
+          }
+        ],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
     function renderWolfComboChart() {
       const isHjtMode = wolfSubMode === 'hjt';
       const items = getWolfComboItems(wolfSubMode);
@@ -2640,7 +3034,7 @@
         chart.setOption({
           backgroundColor: 'transparent',
           title: {
-            subtext: '暂无出场次数>=9的选手',
+            subtext: '暂无出场次数>=9的玩家',
             left: 'center',
             top: 'center',
             subtextStyle: { color: CHART_AXIS, fontSize: 12 }
@@ -2745,7 +3139,7 @@
           backgroundColor: 'transparent',
           title: {
             subtext: hasJixieWolfComboData()
-              ? '暂无出场次数>=9且机械狼次数>0的选手'
+              ? '暂无出场次数>=9且机械狼次数>0的玩家'
               : '当前赛季数据暂无机械狼统计字段',
             left: 'center',
             top: 'center',
@@ -2857,7 +3251,7 @@
     }
 
     function buildRadarIndicators(columns) {
-      return columns.map(col => ({ name: col, max: getRadarIndicatorMax(col) }));
+      return columns.map(col => ({ name: formatColumnLabel(col), max: getRadarIndicatorMax(col) }));
     }
 
     function getSelectedRadarColumns() {
@@ -2953,13 +3347,33 @@
       return groups;
     }
 
+    function isRadarTableCountColumn(col) {
+      return col.includes('次数');
+    }
+
+    function isRadarTableTextColumn(col) {
+      return RADAR_TABLE_TEXT_COLUMNS.has(col);
+    }
+
     function renderRadarTableRow(name, col) {
-      if (RADAR_TABLE_TEXT_COLUMNS.has(col)) {
-        const textVal = getRadarTablePlayer(name, col);
-        return `<tr>
-          <td class="col-metric">${col}</td>
-          <td colspan="2" class="col-text">${formatRadarDetailText(textVal)}</td>
-        </tr>`;
+      if (isRadarTableTextColumn(col)) {
+        const playerVal = getRadarTablePlayer(name, col);
+        const valueHtml = formatRadarDetailText(playerVal);
+        return `<div class="radar-stats-row is-text">
+          <span class="col-metric">${formatColumnLabel(col)}</span>
+          <span class="col-value">${valueHtml || '—'}</span>
+          <span class="col-rank"><span class="radar-rank-empty">—</span></span>
+          <span class="col-avg"><span class="radar-rank-empty">—</span></span>
+        </div>`;
+      }
+      if (isRadarTableCountColumn(col)) {
+        const playerVal = getRadarTablePlayer(name, col);
+        return `<div class="radar-stats-row is-count">
+          <span class="col-metric">${formatColumnLabel(col)}</span>
+          <span class="col-value">${formatValue(playerVal, col) || '—'}</span>
+          <span class="col-rank"><span class="radar-rank-empty">—</span></span>
+          <span class="col-avg"><span class="radar-rank-empty">—</span></span>
+        </div>`;
       }
       const playerVal = getRadarTablePlayer(name, col);
       const avgVal = getRadarTableAverage(col);
@@ -2968,12 +3382,42 @@
       const rankEligible = getMetricRankEligibleRows().some(item => item[NAME_KEY] === name);
       const rank = rankEligible ? rankMap.get(name) : null;
       const rankClass = getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, col);
-      const rankText = rank != null ? rank : '-';
-      return `<tr>
-        <td class="col-metric">${col}</td>
-        <td class="${rankClass}">${formatValue(playerVal, col)}(${rankText})</td>
-        <td>${formatRadarTableAverage(avgVal, col)}</td>
-      </tr>`;
+      const rankHtml = rank != null
+        ? `<span class="radar-rank-pill">${rank}</span>`
+        : '<span class="radar-rank-empty">—</span>';
+      return `<div class="radar-stats-row${rankClass ? ` ${rankClass}` : ''}">
+        <span class="col-metric">${formatColumnLabel(col)}</span>
+        <span class="col-value">${formatValue(playerVal, col)}</span>
+        <span class="col-rank">${rankHtml}</span>
+        <span class="col-avg">${formatRadarTableAverage(avgVal, col)}</span>
+      </div>`;
+    }
+
+    function renderRadarPersonalTable(name) {
+      const groups = getRadarTableGroupedColumns();
+      const playerEl = document.getElementById('radarTablePlayerName');
+      const body = document.getElementById('radarTableBody');
+
+      if (playerEl) playerEl.textContent = name;
+      if (!groups.length) {
+        body.innerHTML = '<p class="radar-stats-empty">暂无可用数据</p>';
+        return;
+      }
+
+      body.innerHTML = groups.map(({ title, columns }) => `
+        <section class="radar-stats-group">
+          <h3 class="radar-stats-group-title">${escapeHtml(title)}</h3>
+          <div class="radar-stats-group-grid">
+            <div class="radar-stats-row radar-stats-head" aria-hidden="true">
+              <span class="col-metric">指标</span>
+              <span class="col-value">数值</span>
+              <span class="col-rank">排名</span>
+              <span class="col-avg">赛季平均</span>
+            </div>
+            ${columns.map(col => renderRadarTableRow(name, col)).join('')}
+          </div>
+        </section>
+      `).join('');
     }
 
     function getRadarTableAverage(column) {
@@ -3048,19 +3492,6 @@
       return escaped.replace(/（[^）]*）/g, match =>
         `<span class="radar-text-count">${match}</span>`
       );
-    }
-
-    function renderRadarPersonalTable(name) {
-      const groups = getRadarTableGroupedColumns();
-      const thead = document.getElementById('radarTableHead');
-      const tbody = document.getElementById('radarTableBody');
-
-      thead.innerHTML =
-        `<tr><th class="col-metric"></th><th>${name}</th><th>平均值</th></tr>`;
-      tbody.innerHTML = groups.map(({ title, columns }) =>
-        `<tr class="radar-group-row"><td colspan="3">${escapeHtml(title)}</td></tr>` +
-        columns.map(col => renderRadarTableRow(name, col)).join('')
-      ).join('');
     }
 
     function renderRadarChart(name) {
@@ -3255,7 +3686,7 @@
         `<span>全部</span></label>`;
       const itemsHtml = values.map(v => {
         const checked = selectedSet === null || selectedSet.has(v);
-        return `<label class="radar-filter-check"><input type="checkbox" class="radar-filter-item-cb" value="${escapeHtml(v)}"${checked ? ' checked' : ''}><span>${escapeHtml(v)}</span></label>`;
+        return `<label class="radar-filter-check"><input type="checkbox" class="radar-filter-item-cb" value="${escapeHtml(v)}"${checked ? ' checked' : ''}><span>${escapeHtml(formatColumnLabel(v))}</span></label>`;
       }).join('');
       container.innerHTML = allHtml + itemsHtml;
     }
@@ -3792,9 +4223,9 @@
         fetchJson(files.tongbian),
       ]);
 
-      seasonStats[season] = stats;
-      rawData = stats;
-      rawTableData = rawTable;
+      seasonStats[season] = normalizePlayerStatsColumns(stats);
+      rawData = seasonStats[season];
+      rawTableData = normalizeRawTableColumns(rawTable);
       banxingData = banxing;
       tongbianData = tongbian;
 
