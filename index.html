@@ -65,10 +65,10 @@
           <button type="button" class="wolf-mode-btn" data-other-mode="fake">接狼人金水次数</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="rate">好人警下率</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="avg">平均存活天数</button>
-          <button type="button" class="wolf-mode-btn" data-other-mode="camp">不同阵营存活天数</button>
         </div>
         <div id="skillSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-skill-mode="witch">女巫毒师数据</button>
+          <button type="button" class="wolf-mode-btn" data-skill-mode="hunter">猎人技能数据</button>
           <button type="button" class="wolf-mode-btn" data-skill-mode="blindwolf">盲毒数据</button>
           <button type="button" class="wolf-mode-btn" data-skill-mode="dream">摄梦人首摄数据</button>
         </div>
@@ -367,7 +367,7 @@
 
     const PERCENT_COLUMNS = new Set([
       '狼人率', '身份率', '预通率', '总胜率', '好人警下率',
-      '放逐票正确率', '无预通放逐票正确率', '警徽票正确率', '平民放逐票正确率', '平民警徽票正确率', '毒药技能正确率', '狼人胜率', '好人胜率', '悍跳率',
+      '放逐票正确率', '无预通放逐票正确率', '警徽票正确率', '平民放逐票正确率', '平民警徽票正确率', '毒药技能正确率', '猎人技能正确率', '狼人胜率', '好人胜率', '悍跳率',
       '盲毒狼人率'
     ]);
     const SKILL_DATA_KEY = '技能数据';
@@ -377,6 +377,11 @@
     const POISON_SKILL_RATE_COL = '毒药技能正确率';
     const POISON_RATE_COL = '毒药正确率';
     const POISON_RATE_COLS = [POISON_SKILL_RATE_COL, POISON_RATE_COL];
+    const HUNTER_COUNT_COL = '猎人次数';
+    const HUNTER_SKILL_USE_COL = '猎人技能次数';
+    const HUNTER_SKILL_WOLF_COL = '猎人技能狼人次数';
+    const HUNTER_SKILL_RATE_COL = '猎人技能正确率';
+    const HUNTER_SKILL_RECORD_COL = '猎人技能记录';
     const DREAM_WALKER_COL = '摄梦人次数';
     const DREAM_FIRST_WOLF_COL = '首摄狼人次数';
     const DREAM_FIRST_SPECIAL_COL = '首摄狼王/盗宝猎人次数';
@@ -437,11 +442,13 @@
     const NON_WOLF_BLIND_POISON_COL = '非狼被盲毒次数';
     const FIRST_CHECK_COL = '被首验次数';
     const MIXED_BLOOD_MODEL_COL = '混血儿榜样次数';
+    const MIXED_BLOOD_RECORD_COL = '混血儿记录';
     const FAKE_GOLD_COL = '接狼人金水次数';
     const BLIND_POISON_USE_COL = '盲毒次数';
     const BLIND_POISON_WOLF_COUNT_COL = '盲毒狼人次数';
     const BLIND_POISON_WOLF_RATE_COL = '盲毒狼人率';
     const BLIND_POISON_WOLVES_COL = '盲毒狼人';
+    const POISON_RECORD_COL = '毒药记录';
     const OTHER_ZERO_EXCLUDE_COLS = new Set([
       BLIND_POISON_COL, FIRST_CHECK_COL, MIXED_BLOOD_MODEL_COL, FAKE_GOLD_COL
     ]);
@@ -489,14 +496,21 @@
     const FAKE_GOLD_GIVER_COL = '接狼人金水';
     const PARTICIPATION_COL = '参与场次';
     const WIN_SESSIONS_COL = '胜利场次';
+    const RADAR_TABLE_DETAIL_TEXT_COLUMNS = new Set([
+      PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL,
+      BLIND_POISON_WOLVES_COL, POISON_RECORD_COL, HUNTER_SKILL_RECORD_COL,
+      MIXED_BLOOD_RECORD_COL,
+    ]);
     const RADAR_TABLE_TEXT_COLUMNS = new Set([
-      PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL, BLIND_POISON_WOLVES_COL,
+      ...RADAR_TABLE_DETAIL_TEXT_COLUMNS,
       STAND_WOLF_BADGE_COL,
     ]);
+    const RADAR_TABLE_RANK_NO_AVG_COLUMNS = new Set([APPEARANCE_COMBO_TOTAL]);
     const RADAR_TABLE_MERGED_METRICS = [
       { label: '预通率（次数）', rateCol: YUTONG_RATE_COL, countCol: APPEARANCE_COMBO_YUTONG },
       { label: '盲毒狼人率（次数）', rateCol: BLIND_POISON_WOLF_RATE_COL, countCol: BLIND_POISON_USE_COL },
-      { label: '毒药技能正确率（次数）', rateCol: POISON_SKILL_RATE_COL, countCol: WITCH_POISON_WITCH_COL },
+      { label: '毒药技能正确率（次数）', rateCol: POISON_SKILL_RATE_COL, countCol: WITCH_POISON_USE_COL },
+      { label: '猎人技能正确率（次数）', rateCol: HUNTER_SKILL_RATE_COL, countCol: HUNTER_SKILL_USE_COL },
       { label: '警徽票正确率（次数）', rateCol: VOTE_BADGE_RATE, countCol: VOTE_BADGE_COUNT },
       { label: '平民警徽票正确率（次数）', rateCol: VOTE_CIVILIAN_BADGE_RATE, countCol: VOTE_CIVILIAN_BADGE_COUNT },
       { label: '放逐票正确率（次数）', rateCol: VOTE_EXILE_RATE, countCol: VOTE_EXILE_COUNT },
@@ -513,7 +527,7 @@
     const RADAR_METRIC_OPTIONS = [
       '总胜率', '放逐票正确率', VOTE_NO_PROPHET_EXILE_RATE, '警徽票正确率', '毒药技能正确率',
       '狼人率', '狼人胜率', '好人胜率', '好人警下率',
-      '出场次数', AVG_SURVIVAL_COL,
+      '出场次数',
     ];
     const RADAR_MIN_METRICS = 3;
     const RADAR_METRIC_DEFAULT = [
@@ -534,6 +548,9 @@
         columns: [
           '盲毒狼人率（次数）', BLIND_POISON_WOLVES_COL,
           '毒药技能正确率（次数）',
+          POISON_RECORD_COL,
+          '猎人技能正确率（次数）',
+          HUNTER_SKILL_RECORD_COL,
         ],
       },
       {
@@ -550,12 +567,14 @@
     const RADAR_TABLE_OTHER_COLUMN_ORDER = [
       '总胜率', '狼人率', '狼人胜率', '好人胜率',
       '出场次数',
-      AVG_SURVIVAL_COL, GOOD_AVG_SURVIVAL_COL, WOLF_AVG_SURVIVAL_COL,
+      AVG_SURVIVAL_COL,
       GOOD_SHERIFF_BELOW_RATE_COL,
     ];
+    const RADAR_TABLE_TRAILING_COLUMNS = [MIXED_BLOOD_RECORD_COL];
     const RADAR_TABLE_COLUMNS = [
       ...RADAR_TABLE_GROUP_DEFS.flatMap(g => g.columns),
       ...RADAR_TABLE_OTHER_COLUMN_ORDER,
+      ...RADAR_TABLE_TRAILING_COLUMNS,
     ];
 
     const CHART_TEXT = '#1a1a1a';
@@ -812,6 +831,15 @@
       }
       const use = parseValue(item[WITCH_POISON_USE_COL], WITCH_POISON_USE_COL);
       const wolf = parseValue(item[WITCH_POISON_WOLF_COL], WITCH_POISON_WOLF_COL);
+      return use > 0 ? (wolf / use * 100) : 0;
+    }
+
+    function getHunterSkillRate(item) {
+      if (HUNTER_SKILL_RATE_COL in item) {
+        return parseValue(item[HUNTER_SKILL_RATE_COL], HUNTER_SKILL_RATE_COL);
+      }
+      const use = parseValue(item[HUNTER_SKILL_USE_COL], HUNTER_SKILL_USE_COL);
+      const wolf = parseValue(item[HUNTER_SKILL_WOLF_COL], HUNTER_SKILL_WOLF_COL);
       return use > 0 ? (wolf / use * 100) : 0;
     }
 
@@ -1231,8 +1259,18 @@
         && BLIND_POISON_WOLF_COUNT_COL in row;
     }
 
+    function hasHunterSkillComboData() {
+      const row = rawData[0] || {};
+      return HUNTER_COUNT_COL in row
+        && HUNTER_SKILL_USE_COL in row
+        && HUNTER_SKILL_WOLF_COL in row;
+    }
+
     function hasSkillData() {
-      return hasWitchPoisonComboData() || hasDreamFirstComboData() || hasBlindPoisonWolfRateData();
+      return hasWitchPoisonComboData()
+        || hasHunterSkillComboData()
+        || hasDreamFirstComboData()
+        || hasBlindPoisonWolfRateData();
     }
 
     function getBlindPoisonWolfRateItems() {
@@ -1293,6 +1331,30 @@
         .sort((a, b) => {
           if (a.rate !== b.rate) return a.rate - b.rate;
           return a.witch - b.witch;
+        });
+    }
+
+    function getHunterSkillComboItems() {
+      return getMinAppearanceRows()
+        .map(item => {
+          const hunter = parseValue(item[HUNTER_COUNT_COL], HUNTER_COUNT_COL);
+          const use = parseValue(item[HUNTER_SKILL_USE_COL], HUNTER_SKILL_USE_COL);
+          const wolf = parseValue(item[HUNTER_SKILL_WOLF_COL], HUNTER_SKILL_WOLF_COL);
+          const rate = getHunterSkillRate(item);
+          return {
+            name: item[NAME_KEY],
+            hunter,
+            use,
+            wolf,
+            rate,
+            useOther: Math.max(0, use - wolf),
+            other: Math.max(0, hunter - use),
+          };
+        })
+        .filter(item => item.hunter > 0)
+        .sort((a, b) => {
+          if (a.rate !== b.rate) return a.rate - b.rate;
+          return a.hunter - b.hunter;
         });
     }
 
@@ -1591,10 +1653,7 @@
     }
 
     function hasSurvivalData() {
-      return rawData.length > 0
-        && AVG_SURVIVAL_COL in rawData[0]
-        && GOOD_AVG_SURVIVAL_COL in rawData[0]
-        && WOLF_AVG_SURVIVAL_COL in rawData[0];
+      return rawData.length > 0 && AVG_SURVIVAL_COL in rawData[0];
     }
 
     function hasOtherData() {
@@ -2034,10 +2093,6 @@
         renderAvgSurvivalBarChart();
         return;
       }
-      if (otherSubMode === 'camp' && hasSurvivalData()) {
-        renderCampSurvivalScatterChart();
-        return;
-      }
       if (otherSubMode === 'blind' && hasBlindPoisonedComboData()) {
         renderBlindPoisonedComboChart();
         return;
@@ -2135,79 +2190,6 @@
       chart.resize();
     }
 
-    function renderCampSurvivalScatterChart() {
-      const layout = getChartLayout();
-      const items = getMinAppearanceRows().map(item => ({
-        name: item[NAME_KEY],
-        value: [
-          parseValue(item[GOOD_AVG_SURVIVAL_COL], GOOD_AVG_SURVIVAL_COL),
-          parseValue(item[WOLF_AVG_SURVIVAL_COL], WOLF_AVG_SURVIVAL_COL)
-        ]
-      }));
-
-      setScatterChartHeight(items.length);
-      const minX = items.length
-        ? Math.min(...items.map(item => item.value[0]))
-        : 0;
-      const minY = items.length
-        ? Math.min(...items.map(item => item.value[1]))
-        : 0;
-      const averageOrigin = buildScatterAverageOrigin(GOOD_AVG_SURVIVAL_COL, WOLF_AVG_SURVIVAL_COL);
-
-      const option = {
-        backgroundColor: 'transparent',
-        tooltip: {
-          trigger: 'item',
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
-          textStyle: { color: CHART_TEXT },
-          formatter(params) {
-            return [
-              params.data.name,
-              `${GOOD_AVG_SURVIVAL_COL}：${formatValue(params.value[0], GOOD_AVG_SURVIVAL_COL)}`,
-              `${WOLF_AVG_SURVIVAL_COL}：${formatValue(params.value[1], WOLF_AVG_SURVIVAL_COL)}`
-            ].join('<br/>');
-          }
-        },
-        grid: getScatterGrid(layout),
-        xAxis: buildScatterXAxis(GOOD_AVG_SURVIVAL_COL, layout, {
-          min: minX,
-          axisLabelFormatter: (v) => Number(v).toFixed(1)
-        }),
-        yAxis: buildScatterYAxis(WOLF_AVG_SURVIVAL_COL, layout, {
-          min: minY,
-          axisLabelFormatter: (v) => Number(v).toFixed(1)
-        }),
-        series: [{
-          type: 'scatter',
-          data: items,
-          symbolSize: 10,
-          itemStyle: { color: '#3b82f6' },
-          label: {
-            show: true,
-            formatter: ({ data }) => data.name,
-            position: 'top',
-            distance: 4,
-            color: CHART_TEXT,
-            fontSize: isMobile() ? 10 : 11,
-            hideOverlap: true
-          },
-          labelLayout: buildVoteLabelLayout(items),
-          emphasis: {
-            scale: 1.4,
-            itemStyle: { color: '#2563eb' },
-            label: { show: true }
-          },
-          markLine: averageOrigin.markLine,
-          markPoint: averageOrigin.markPoint
-        }],
-        animationDuration: 600
-      };
-
-      chart.setOption(option, true);
-      chart.resize();
-    }
-
     function renderChart(column) {
       if (column === OTHER_DATA_KEY && hasOtherData()) {
         renderOtherDataChart();
@@ -2231,6 +2213,12 @@
         } else if (skillSubMode === 'dream') {
           if (hasDreamFirstComboData()) {
             renderDreamFirstComboChart();
+          } else {
+            renderSkillDataEmptyChart();
+          }
+        } else if (skillSubMode === 'hunter') {
+          if (hasHunterSkillComboData()) {
+            renderHunterSkillComboChart();
           } else {
             renderSkillDataEmptyChart();
           }
@@ -2445,6 +2433,125 @@
               position: 'right',
               color: CHART_TEXT,
               formatter: (p) => String(items[p.dataIndex].witch)
+            }
+          }
+        ],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function renderHunterSkillComboChart() {
+      const items = getHunterSkillComboItems();
+      const layout = getChartLayout();
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        chart.setOption({
+          backgroundColor: 'transparent',
+          title: {
+            subtext: '暂无出场次数>=9且猎人次数>0的玩家',
+            left: 'center',
+            top: 'center',
+            subtextStyle: { color: CHART_AXIS, fontSize: 12 }
+          },
+          series: []
+        }, true);
+        chart.resize();
+        return;
+      }
+
+      const option = {
+        backgroundColor: 'transparent',
+        legend: {
+          data: [HUNTER_COUNT_COL, HUNTER_SKILL_USE_COL, HUNTER_SKILL_WOLF_COL],
+          bottom: layout.legendBottom,
+          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
+        },
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: '#ffffff',
+          borderColor: '#e0e0e0',
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const name = params[0]?.name ?? '';
+            const idx = params[0]?.dataIndex ?? 0;
+            const row = items[idx];
+            return [
+              name,
+              `${HUNTER_SKILL_RATE_COL}：${formatPercent(row.rate)}`,
+              `${HUNTER_COUNT_COL}：${row.hunter}`,
+              `${HUNTER_SKILL_USE_COL}：${row.use}`,
+              `${HUNTER_SKILL_WOLF_COL}：${row.wolf}`
+            ].join('<br/>');
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [
+          {
+            name: HUNTER_SKILL_WOLF_COL,
+            type: 'bar',
+            stack: 'hunterSkill',
+            data: items.map(d => d.wolf),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: HUNTER_SKILL_USE_COL,
+            type: 'bar',
+            stack: 'hunterSkill',
+            data: items.map(d => d.useOther),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: { color: APPEARANCE_WOLF_COLOR },
+            label: {
+              show: layout.showBarLabel,
+              position: 'inside',
+              color: '#ffffff',
+              fontSize: 11,
+              formatter: ({ value }) => (value > 0 ? String(value) : '')
+            }
+          },
+          {
+            name: HUNTER_COUNT_COL,
+            type: 'bar',
+            stack: 'hunterSkill',
+            data: items.map(d => d.other),
+            barMaxWidth: layout.barMaxWidth,
+            itemStyle: {
+              color: WITCH_POISON_GRAY,
+              borderColor: WITCH_POISON_GRAY_BORDER,
+              borderWidth: 1,
+              borderRadius: [0, 4, 4, 0]
+            },
+            label: {
+              show: layout.showBarLabel,
+              position: 'right',
+              color: CHART_TEXT,
+              formatter: (p) => String(items[p.dataIndex].hunter)
             }
           }
         ],
@@ -3393,10 +3500,17 @@
       otherCols.forEach(col => assigned.add(col));
       if (otherCols.length) groups.push({ title: '其他', columns: otherCols });
 
+      const trailingCols = RADAR_TABLE_TRAILING_COLUMNS.filter(
+        col => available.has(col) && !assigned.has(col)
+      );
+      trailingCols.forEach(col => assigned.add(col));
+      if (trailingCols.length) groups.push({ title: '', columns: trailingCols });
+
       return groups;
     }
 
     function isRadarTableCountColumn(col) {
+      if (col === APPEARANCE_COMBO_TOTAL) return false;
       return col.includes('次数');
     }
 
@@ -3404,7 +3518,21 @@
       return RADAR_TABLE_TEXT_COLUMNS.has(col);
     }
 
+    function renderRadarDetailTextRow(name, col) {
+      const playerVal = getRadarTablePlayer(name, col);
+      const valueHtml = formatRadarDetailText(playerVal);
+      return `<div class="radar-stats-row is-text">
+          <span class="col-metric">${formatColumnLabel(col)}</span>
+          <span class="col-value">${valueHtml || '—'}</span>
+          <span class="col-rank"><span class="radar-rank-empty">—</span></span>
+          <span class="col-avg"><span class="radar-rank-empty">—</span></span>
+        </div>`;
+    }
+
     function renderRadarTableRow(name, col) {
+      if (RADAR_TABLE_DETAIL_TEXT_COLUMNS.has(col)) {
+        return renderRadarDetailTextRow(name, col);
+      }
       if (isRadarTableTextColumn(col)) {
         const playerVal = getRadarTablePlayer(name, col);
         const displayText = col === STAND_WOLF_BADGE_COL
@@ -3442,11 +3570,14 @@
           <span class="col-avg"><span class="radar-rank-empty">—</span></span>
         </div>`;
       }
+      const hideAvg = RADAR_TABLE_RANK_NO_AVG_COLUMNS.has(col);
       return `<div class="radar-stats-row${rankClass ? ` ${rankClass}` : ''}">
         <span class="col-metric">${metricLabel}</span>
         <span class="col-value">${displayValue}</span>
         <span class="col-rank">${rankHtml}</span>
-        <span class="col-avg">${formatRadarTableAverage(avgVal, rankCol)}</span>
+        <span class="col-avg">${hideAvg
+          ? '<span class="radar-rank-empty">—</span>'
+          : formatRadarTableAverage(avgVal, rankCol)}</span>
       </div>`;
     }
 
@@ -3463,7 +3594,7 @@
 
       body.innerHTML = groups.map(({ title, columns }) => `
         <section class="radar-stats-group">
-          <h3 class="radar-stats-group-title">${escapeHtml(title)}</h3>
+          ${title ? `<h3 class="radar-stats-group-title">${escapeHtml(title)}</h3>` : ''}
           <div class="radar-stats-group-grid">
             <div class="radar-stats-row radar-stats-head" aria-hidden="true">
               <span class="col-metric">指标</span>
@@ -3507,10 +3638,14 @@
     function getMetricRankMap(column) {
       const rows = getMetricRankEligibleRows();
       const sorted = rows
-        .map(item => ({
-          name: item[NAME_KEY],
-          value: getMetricRankCompareValue(parseValue(item[column], column), column)
-        }))
+        .map(item => {
+          const raw = parseValue(item[column], column);
+          return {
+            name: item[NAME_KEY],
+            value: getMetricRankCompareValue(raw, column),
+            displayKey: formatValue(raw, column),
+          };
+        })
         .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name, 'zh-CN'));
       const rankMap = new Map();
       sorted.forEach((item, index) => {
@@ -3521,7 +3656,7 @@
         const prev = sorted[index - 1];
         rankMap.set(
           item.name,
-          item.value === prev.value ? rankMap.get(prev.name) : index + 1
+          item.displayKey === prev.displayKey ? rankMap.get(prev.name) : index + 1
         );
       });
       return { rankMap, total: sorted.length };
@@ -3545,12 +3680,19 @@
     }
 
     function formatRadarDetailText(text) {
-      if (!text) return '-';
-      const normalized = text.replace(/（1）/g, '');
-      const escaped = escapeHtml(normalized);
-      return escaped.replace(/（[^）]*）/g, match =>
-        `<span class="radar-text-count">${match}</span>`
-      );
+      if (!text || !String(text).trim()) return '';
+      return String(text)
+        .split('、')
+        .map(part => part.trim())
+        .filter(Boolean)
+        .map(part => {
+          const normalized = part.replace(/（1）/g, '');
+          const escaped = escapeHtml(normalized);
+          return escaped.replace(/（[^）]*）/g, match =>
+            `<span class="radar-text-count">${match}</span>`
+          );
+        })
+        .join('、');
     }
 
     function renderRadarChart(name) {
