@@ -24,83 +24,129 @@
 
     <div class="toolbar">
       <div class="toolbar-main">
-        <select id="seriesSelect" class="series-select" aria-label="选择系列">
-          <option value="jingcheng" selected>京城大师赛</option>
-          <option value="yuexiao">粤小</option>
-        </select>
-        <select id="seasonSelect" class="season-select" aria-label="选择赛季"></select>
-        <button type="button" class="view-btn active" data-view="bar">可视化图表</button>
-        <button type="button" class="view-btn" data-view="radar">个人数据</button>
-        <button type="button" class="view-btn" data-view="tongbian">同边数据</button>
-        <button type="button" class="view-btn" data-view="table">原始数据</button>
-        <div class="view-btn-compare-group">
-          <button type="button" class="view-btn" data-view="compare">个人赛季数据对比</button>
-          <button type="button" class="view-btn" data-view="banxing">版型数据</button>
+        <div class="toolbar-group toolbar-group-source">
+          <select id="seriesSelect" class="series-select" aria-label="选择系列">
+            <option value="jingcheng" selected>京城大师赛</option>
+            <option value="yuexiao">粤小</option>
+          </select>
+          <select id="seasonSelect" class="season-select" aria-label="选择赛季"></select>
+        </div>
+        <div class="toolbar-divider" aria-hidden="true"></div>
+        <div class="toolbar-group toolbar-group-views">
+          <button type="button" class="view-btn active" data-view="bar">
+            <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M1 14h14v1H1v-1zM3 13V8h2v5H3zm4 0V5h2v8H7zm4 0V9h2v4h-2z"/>
+            </svg>
+            赛季排行
+          </button>
+          <button type="button" class="view-btn" data-view="radar">
+            <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M8 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM3.5 14v-.5c0-1.9 1.6-3.5 3.5-3.5s3.5 1.6 3.5 3.5V14H3.5z"/>
+            </svg>
+            个人数据
+          </button>
+          <button type="button" class="view-btn" data-view="compare">
+            <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M2 12.5 5.5 8l2 2.2L11.5 5 14 8.2V13H2v-.5zM2 3h12v1.2H2V3z"/>
+            </svg>
+            赛季对比
+          </button>
+        </div>
+        <div class="toolbar-divider" aria-hidden="true"></div>
+        <div class="toolbar-group toolbar-group-extra">
+          <button type="button" class="view-btn" data-view="banxing">
+            <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M2 2h4.5v4.5H2V2zm7.5 0H14v4.5H9.5V2zM2 9.5h4.5V14H2V9.5zm7.5 0H14V14H9.5V9.5z"/>
+            </svg>
+            版型统计
+          </button>
+          <button type="button" class="view-btn" data-view="tongbian">
+            <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M5.5 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm5 1a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5zM1.5 13.5c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5v.5H1.5v-.5zm7 0c0-1.5 1.2-2.5 2.5-2.5 1.1 0 2 .7 2.3 1.7l-1.1.3c-.2-.5-.6-.8-1.2-.8-.9 0-1.5.6-1.5 1.5v.5H8.5v-.5z"/>
+            </svg>
+            同边数据
+          </button>
+          <button type="button" class="view-btn" data-view="table">
+            <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M2 2.5h12v1.5H2V2.5zm0 3.5h12v1H2V6zm0 3h12v1H2V9zm0 3h8v1H2v-1z"/>
+            </svg>
+            原始数据
+          </button>
         </div>
       </div>
     
       <div id="barControls" class="control-group bar-controls-wrap">
-        <label for="columnSelect">选择指标：</label>
+        <label for="columnSelect">数据类型</label>
         <select id="columnSelect"></select>
         <div id="wolfSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-wolf-mode="rate">狼人率</button>
-          <button type="button" class="wolf-mode-btn" data-wolf-mode="hjt">悍跳数据</button>
-          <button type="button" class="wolf-mode-btn" data-wolf-mode="self">自爆数据</button>
-          <button type="button" class="wolf-mode-btn" data-wolf-mode="knife">自刀数据</button>
-          <button type="button" class="wolf-mode-btn" data-wolf-mode="witchknife">首刀女巫数据</button>
-          <button type="button" class="wolf-mode-btn" data-wolf-mode="lagan">拉杆数据</button>
-          <button type="button" class="wolf-mode-btn" data-wolf-mode="jixie">机械狼数据</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="hjt">悍跳</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="self">自爆</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="knife">自刀</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="witchknife">首刀女巫</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="jixie">机械狼</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="lagan">拉杆</button>
         </div>
         <div id="voteSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-vote-mode="badge">警徽票</button>
-          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-badge">平民阵营警徽票</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-badge">平民警徽</button>
           <button type="button" class="wolf-mode-btn" data-vote-mode="exile">放逐票</button>
-          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-exile">平民阵营放逐票</button>
-          <button type="button" class="wolf-mode-btn" data-vote-mode="noprophet">无预通放逐票</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-exile">平民放逐</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="noprophet">无预通放逐</button>
         </div>
         <div id="otherSubControls" class="wolf-sub-controls" style="display: none;">
-          <button type="button" class="wolf-mode-btn active" data-other-mode="blind">被盲毒次数</button>
-          <button type="button" class="wolf-mode-btn" data-other-mode="first">被首验次数</button>
-          <button type="button" class="wolf-mode-btn" data-other-mode="model">混血儿榜样次数</button>
-          <button type="button" class="wolf-mode-btn" data-other-mode="fake">接狼人金水次数</button>
+          <button type="button" class="wolf-mode-btn active" data-other-mode="blind">被盲毒</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="first">被首验</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="model">混血榜样</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="fake">接狼金水</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="rate">好人警下率</button>
-          <button type="button" class="wolf-mode-btn" data-other-mode="avg">平均存活天数</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="avg">平均存活</button>
         </div>
         <div id="skillSubControls" class="wolf-sub-controls" style="display: none;">
-          <button type="button" class="wolf-mode-btn active" data-skill-mode="witch">女巫毒师数据</button>
-          <button type="button" class="wolf-mode-btn" data-skill-mode="hunter">猎人技能数据</button>
-          <button type="button" class="wolf-mode-btn" data-skill-mode="blindwolf">盲毒数据</button>
-          <button type="button" class="wolf-mode-btn" data-skill-mode="dream">摄梦人首摄数据</button>
+          <button type="button" class="wolf-mode-btn active" data-skill-mode="witch">女巫毒药</button>
+          <button type="button" class="wolf-mode-btn" data-skill-mode="hunter">猎人技能</button>
+          <button type="button" class="wolf-mode-btn" data-skill-mode="blindwolf">盲毒狼人率</button>
+          <button type="button" class="wolf-mode-btn" data-skill-mode="dream">摄梦首摄</button>
+        </div>
+        <div id="winRateSubControls" class="wolf-sub-controls" style="display: none;">
+          <button type="button" class="wolf-mode-btn active" data-winrate-mode="camp">阵营</button>
+          <button type="button" class="wolf-mode-btn" data-winrate-mode="identity">身份</button>
+          <button type="button" class="wolf-mode-btn" data-winrate-mode="banxing">版型</button>
+        </div>
+        <div id="winRateFiltersRow" class="winrate-filters-row" style="display: none;">
+          <div id="winRateIdentityControls" class="wolf-sub-controls winrate-sub-filters" style="display: none;"></div>
+          <div id="winRateBanxingControls" class="wolf-sub-controls winrate-sub-filters" style="display: none;"></div>
         </div>
       </div>
       <div id="tongbianControls" class="control-group" style="display: none;">
-        <label for="tongbianNameSelect">选择姓名</label>
+        <label for="tongbianNameSelect">玩家</label>
         <select id="tongbianNameSelect"></select>
       </div>
       <div id="banxingControls" class="wolf-sub-controls" style="display: none;">
         <button type="button" class="wolf-mode-btn active" data-banxing-mode="all">全部版型</button>
-        <button type="button" class="wolf-mode-btn" data-banxing-mode="jixie">机械狼版型</button>
-        <button type="button" class="wolf-mode-btn" data-banxing-mode="daobao">盗宝大师版型</button>
-        <button type="button" class="wolf-mode-btn" data-banxing-mode="yvlhb">预女猎白混版型</button>
+        <button type="button" class="wolf-mode-btn" data-banxing-mode="jixie">机械狼</button>
+        <button type="button" class="wolf-mode-btn" data-banxing-mode="daobao">盗宝大师</button>
+        <button type="button" class="wolf-mode-btn" data-banxing-mode="yvlhb">预女猎白混</button>
       </div>
       <div id="radarControls" class="control-group" style="display: none;">
-        <label for="nameSelect">选择玩家</label>
+        <label for="nameSelect">玩家</label>
         <select id="nameSelect"></select>
         <div id="radarSubControls" class="wolf-sub-controls">
           <button type="button" class="wolf-mode-btn active" data-radar-mode="table">详细数据</button>
           <button type="button" class="wolf-mode-btn" data-radar-mode="radar">雷达图</button>
+          <button type="button" class="wolf-mode-btn" data-radar-mode="winrate">胜率</button>
           <button type="button" class="wolf-mode-btn" data-radar-mode="games">参与场次</button>
         </div>
       </div>
       <div id="compareControls" class="control-group" style="display: none;">
-        <label for="compareNameSelect">选择玩家</label>
+        <label for="compareNameSelect">玩家</label>
         <select id="compareNameSelect"></select>
-        <label for="compareMetricSelect">选择指标</label>
+        <label for="compareMetricSelect">指标</label>
         <select id="compareMetricSelect"></select>
       </div>
       <div id="tableControls" class="table-controls" style="display: none;">
         <div class="control-group">
-          <label for="dateSelect">选择日期</label>
+          <label for="dateSelect">日期</label>
           <select id="dateSelect"></select>
         </div>
         <p id="rawTableGameInfo" class="raw-table-game-info"></p>
@@ -110,9 +156,15 @@
       <div id="radarMetricControls" class="radar-metric-controls" style="display: none;">
         <div class="radar-game-filters">
           <div class="radar-filter-group">
-            <span class="radar-filter-label">雷达指标</span>
+            <span class="radar-filter-label">指标</span>
             <div id="radarMetricFilters" class="radar-filter-checkboxes"></div>
           </div>
+        </div>
+      </div>
+      <div id="radarWinrateControls" class="radar-winrate-controls" style="display: none;">
+        <div class="segment-toggle" role="group" aria-label="胜率维度">
+          <button type="button" class="segment-toggle-btn active" data-radar-winrate-dim="banxing">版型胜率</button>
+          <button type="button" class="segment-toggle-btn" data-radar-winrate-dim="identity">身份胜率</button>
         </div>
       </div>
       <div id="chartWrap" class="chart-wrap">
@@ -130,9 +182,9 @@
       <div id="radarTableWrap" class="data-table-wrap radar-table-wrap" style="display: none;">
         <div class="radar-stats-toolbar">
           <h2 id="radarTablePlayerName" class="radar-stats-player-name"></h2>
-          <p class="radar-stats-legend-text">排名基于出场≥9玩家；前三名与末三档（且低于赛季平均）分别高亮</p>
+          <p class="radar-stats-legend-text">出场≥9玩家排名；前三与末三（低于均值）高亮</p>
         </div>
-        <div class="table-scroll radar-table-scroll">
+        <div class="radar-table-scroll">
           <div id="radarTableBody" class="radar-stats-cards"></div>
         </div>
       </div>
@@ -155,15 +207,15 @@
       <p class="radar-games-legend">
         <span class="radar-games-legend-item">
           <span class="radar-games-legend-swatch is-win" aria-hidden="true"></span>
-          淡蓝色底为胜利场次
+          淡色底为胜利场次
         </span>
         <span class="radar-games-legend-item">
           <span class="radar-games-legend-swatch is-other" aria-hidden="true"></span>
-          淡灰色底为其他场次
+          淡灰紫底为其他场次
         </span>
       </p>
     </div>
-    <p id="chartDataNotice" class="chart-footnote" style="display: none;">注：仅显示出场次数>=9的玩家</p>
+    <p id="chartDataNotice" class="chart-footnote" style="display: none;">仅统计出场≥9玩家</p>
     <div id="dataTable" class="data-table-wrap" style="display: none;">
       <div class="table-scroll">
         <table class="raw-table">
@@ -196,7 +248,12 @@
     <div class="rules-modal-backdrop" data-rules-close></div>
     <div class="rules-modal-panel" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle">
       <div class="rules-modal-header">
-        <h2 id="rulesModalTitle">统计规则</h2>
+        <div class="rules-modal-heading">
+          <svg class="rules-modal-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+            <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4ZM11 10.2a1 1 0 0 1 2 0v5.6a1 1 0 1 1-2 0v-5.6Zm0-3.4a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/>
+          </svg>
+          <h2 id="rulesModalTitle">统计规则</h2>
+        </div>
         <button type="button" class="rules-close-btn" data-rules-close aria-label="关闭">×</button>
       </div>
       <div id="rulesContent" class="rules-modal-body">
@@ -251,10 +308,21 @@
 
     let rulesDocumentCache = null;
 
+    function renderRulesString(value) {
+      return `<span class="rules-value">${escapeHtml(value)}</span>`;
+    }
+
+    function renderRulesEntry(key, item) {
+      if (typeof item === 'string') {
+        return `<div class="rules-kv"><span class="rules-term">${escapeHtml(key)}</span>${renderRulesString(item)}</div>`;
+      }
+      return `<div class="rules-subblock"><div class="rules-subblock-head">${escapeHtml(key)}</div><div class="rules-subblock-body">${renderRulesValue(item)}</div></div>`;
+    }
+
     function renderRulesValue(value) {
       if (value == null) return '';
       if (typeof value === 'string') {
-        return `<p class="rules-text">${escapeHtml(value)}</p>`;
+        return `<p class="rules-text">${renderRulesString(value)}</p>`;
       }
       if (Array.isArray(value)) {
         return `<ul class="rules-list">${value.map(item =>
@@ -262,12 +330,11 @@
         ).join('')}</ul>`;
       }
       if (typeof value === 'object') {
-        return `<dl class="rules-dl">${Object.entries(value).map(([key, item]) => {
-          if (typeof item === 'string') {
-            return `<div class="rules-item"><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(item)}</dd></div>`;
-          }
-          return `<div class="rules-subblock"><dt class="rules-subblock-title">${escapeHtml(key)}</dt><dd>${renderRulesValue(item)}</dd></div>`;
-        }).join('')}</dl>`;
+        const entries = Object.entries(value);
+        const useGrid = entries.length > 1 && entries.every(([, item]) => typeof item === 'string');
+        return `<div class="rules-kv-wrap${useGrid ? ' is-grid' : ''}">${entries.map(([key, item]) =>
+          renderRulesEntry(key, item)
+        ).join('')}</div>`;
       }
       return '';
     }
@@ -275,11 +342,12 @@
     const RULES_HIDDEN_SECTIONS = new Set(['说明', '数据来源与处理流程', '原始数据导出', '角色常量']);
 
     function renderRulesDocument(rules) {
-      let html = '';
+      let html = '<div class="rules-sections">';
       Object.entries(rules).forEach(([section, content]) => {
         if (RULES_HIDDEN_SECTIONS.has(section)) return;
-        html += `<section class="rules-section"><h3>${escapeHtml(section)}</h3>${renderRulesValue(content)}</section>`;
+        html += `<section class="rules-section"><h3 class="rules-section-title">${escapeHtml(section)}</h3><div class="rules-section-body">${renderRulesValue(content)}</div></section>`;
       });
+      html += '</div>';
       return html;
     }
 
@@ -385,11 +453,28 @@
     const DREAM_WALKER_COL = '摄梦人次数';
     const DREAM_FIRST_WOLF_COL = '首摄狼人次数';
     const DREAM_FIRST_SPECIAL_COL = '首摄狼王/盗宝猎人次数';
-    const WITCH_POISON_LIGHT_BLUE = '#dbeafe';
-    const WITCH_POISON_GREEN = '#22c55e';
-    const WITCH_POISON_GRAY = '#f1f5f9';
-    const WITCH_POISON_GRAY_BORDER = '#e2e8f0';
-    const DREAM_DARK_GREEN = '#15803d';
+    const CHART_BLUE = '#5eb0e8';
+    const CHART_BLUE_LIGHT = '#a8d4f5';
+    const CHART_GREEN = '#52c488';
+    const CHART_GREEN_LIGHT = '#8fe0bf';
+    const CHART_GREEN_DARK = '#2d8a5e';
+    const CHART_RED = '#f07878';
+    const CHART_RED_DARK = '#e05858';
+    const CHART_AMBER = '#f0c860';
+    const CHART_AMBER_LIGHT = '#f8e8b8';
+    const CHART_ORANGE = '#f0a878';
+    const CHART_PURPLE = '#a898e8';
+    const CHART_GRAY = '#f5f5f6';
+    const CHART_GRAY_BORDER = '#e8e8e8';
+    const CHART_RADAR_BAND_A = '#ffffff';
+    const CHART_RADAR_BAND_B = '#f8f8f8';
+    const CHART_RADAR_PLAYER_AREA = '#a8d4f5';
+    const CHART_RADAR_AVG_AREA = '#8fe0bf';
+    const WITCH_POISON_LIGHT_BLUE = CHART_BLUE_LIGHT;
+    const WITCH_POISON_GREEN = CHART_GREEN;
+    const WITCH_POISON_GRAY = CHART_GRAY;
+    const WITCH_POISON_GRAY_BORDER = CHART_GRAY_BORDER;
+    const DREAM_DARK_GREEN = CHART_GREEN;
     const APPEARANCE_DATA_KEY = '身份数据';
     const APPEARANCE_COMBO_TOTAL = '出场次数';
     const APPEARANCE_COMBO_WOLF = '狼次数';
@@ -399,10 +484,10 @@
     const YUTONG_RATE_COL = '预通率';
     const APPEARANCE_COMBO_IDENTITY_SEG = '神职次数';
     const APPEARANCE_COMBO_OTHER = '平民';
-    const APPEARANCE_WOLF_COLOR = '#ef4444';
-    const APPEARANCE_SKILL_WOLF_COLOR = '#991b1b';
-    const APPEARANCE_YUTONG_COLOR = '#eab308';
-    const APPEARANCE_IDENTITY_COLOR = '#22c55e';
+    const APPEARANCE_WOLF_COLOR = CHART_RED;
+    const APPEARANCE_SKILL_WOLF_COLOR = CHART_RED_DARK;
+    const APPEARANCE_YUTONG_COLOR = CHART_AMBER;
+    const APPEARANCE_IDENTITY_COLOR = CHART_GREEN;
     const WOLF_DATA_KEY = '狼人数据';
     const VOTE_DATA_KEY = '投票数据';
     const VOTE_BADGE_COUNT = '警徽票次数';
@@ -457,10 +542,11 @@
     const WOLF_COMBO_TOTAL = '狼次数';
     const WOLF_COMBO_HJT = '悍跳次数';
     const WOLF_COMBO_SELF = '自爆次数';
-    const WOLF_COMBO_SELF_GREEN = '#22c55e';
+    const WOLF_COMBO_SELF_GREEN = CHART_GREEN;
     const WOLF_RATE_COL = '狼人率';
     const RED_WOLF_COL = '非盗宝红狼次数';
     const SELF_KNIFE_COL = '自刀次数';
+    const SELF_KNIFE_GREEN = CHART_GREEN_DARK;
     const TEAMMATE_SELF_KNIFE_COL = '狼队友自刀次数';
     const FIRST_KNIFE_WITCH_COL = '首刀女巫次数';
     const LAGAN_RECORD_COL = '拉杆记录';
@@ -473,18 +559,18 @@
     const JIXIE_HUNTER_COL = '机械猎人次数';
     const JIXIE_MEDIUM_COL = '机械通灵师次数';
     const JIXIE_WOLF_SEGMENTS = [
-      { field: 'base', label: JIXIE_WOLF_TOTAL_COL, color: '#ffffff', labelColor: '#1a1a1a', borderColor: '#d1d5db' },
-      { field: 'civilian', label: JIXIE_CIVILIAN_COL, color: '#3b82f6' },
-      { field: 'dual', label: JIXIE_DUAL_COL, color: '#ef4444' },
-      { field: 'witch', label: JIXIE_WITCH_COL, color: '#fb923c' },
-      { field: 'guard', label: JIXIE_GUARD_COL, color: '#fde68a', labelColor: '#1a1a1a' },
-      { field: 'hunter', label: JIXIE_HUNTER_COL, color: '#86efac', labelColor: '#1a1a1a' },
-      { field: 'medium', label: JIXIE_MEDIUM_COL, color: '#c4b5fd' },
+      { field: 'base', label: JIXIE_WOLF_TOTAL_COL, color: '#ffffff', labelColor: '#333333', borderColor: CHART_GRAY_BORDER },
+      { field: 'civilian', label: JIXIE_CIVILIAN_COL, color: CHART_BLUE },
+      { field: 'dual', label: JIXIE_DUAL_COL, color: CHART_RED },
+      { field: 'witch', label: JIXIE_WITCH_COL, color: CHART_ORANGE },
+      { field: 'guard', label: JIXIE_GUARD_COL, color: CHART_AMBER_LIGHT, labelColor: '#333333' },
+      { field: 'hunter', label: JIXIE_HUNTER_COL, color: CHART_GREEN_LIGHT, labelColor: '#333333' },
+      { field: 'medium', label: JIXIE_MEDIUM_COL, color: CHART_PURPLE },
     ];
-    const APPEARANCE_COLOR = '#0ea5e9';
-    const WOLF_COLOR = '#22c55e';
-    const COMPARE_AVG_COLOR = '#22c55e';
-    const COMPARE_PLAYER_COLOR = '#3b82f6';
+    const APPEARANCE_COLOR = CHART_BLUE;
+    const WOLF_COLOR = CHART_GREEN;
+    const COMPARE_AVG_COLOR = CHART_GREEN;
+    const COMPARE_PLAYER_COLOR = CHART_BLUE;
     const COMPARE_METRIC_COLUMNS = [
       '狼人率', '总胜率', '狼人胜率', '好人胜率',
       '警徽票正确率', '放逐票正确率', '毒药技能正确率',
@@ -496,6 +582,17 @@
     const FAKE_GOLD_GIVER_COL = '接狼人金水';
     const PARTICIPATION_COL = '参与场次';
     const WIN_SESSIONS_COL = '胜利场次';
+    const BANXING_WIN_RATE_COL = '版型胜率';
+    const IDENTITY_WIN_RATE_COL = '身份胜率';
+    const WIN_RATE_IDENTITY_GROUPS = [
+      { label: '平民', identities: ['平民'] },
+      { label: '女巫毒师', identities: ['女巫', '毒师'] },
+      { label: '预通', identities: ['预言家', '通灵师'] },
+      { label: '猎人', identities: ['猎人'] },
+      { label: '守卫', identities: ['守卫'] },
+      { label: '白神', identities: ['白神'] },
+      { label: '摄梦人', identities: ['摄梦人'] },
+    ];
     const RADAR_TABLE_DETAIL_TEXT_COLUMNS = new Set([
       PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL,
       BLIND_POISON_WOLVES_COL, POISON_RECORD_COL, HUNTER_SKILL_RECORD_COL,
@@ -577,9 +674,14 @@
       ...RADAR_TABLE_TRAILING_COLUMNS,
     ];
 
-    const CHART_TEXT = '#1a1a1a';
-    const CHART_AXIS = '#666666';
-    const CHART_LINE = '#e0e0e0';
+    const CHART_TEXT = '#333333';
+    const CHART_AXIS = '#888888';
+    const CHART_LINE = '#ebebeb';
+    const CHART_TOOLTIP_BG = '#ffffff';
+    const CHART_TOOLTIP_BORDER = '#e8e8e8';
+    const CHART_SURFACE = '#ffffff';
+    const BAR_COLOR = CHART_BLUE;
+    const BAR_COLOR_BELOW_AVG = CHART_GREEN;
     // 普通数据视图可选指标（按顺序）
     const RANKING_COLUMNS = [
       APPEARANCE_DATA_KEY, WOLF_DATA_KEY, VOTE_DATA_KEY, WIN_RATE_DATA_KEY,
@@ -600,7 +702,11 @@
     let voteSubMode = 'badge';
     let otherSubMode = 'blind';
     let skillSubMode = 'witch';
+    let winRateSubMode = 'camp';
+    let winRateIdentityFilter = '平民';
+    let winRateBanxingFilter = '';
     let radarSubMode = 'table';
+    let radarWinrateDim = 'banxing';
     let lastRadarGamesPlayer = '';
     let currentSeason = DEFAULT_SEASON;
     let resizeTimer = null;
@@ -633,6 +739,7 @@
       [VOTE_DATA_KEY, 'voteSubControls', hasVoteData],
       [OTHER_DATA_KEY, 'otherSubControls', hasOtherData],
       [SKILL_DATA_KEY, 'skillSubControls', hasSkillData],
+      [WIN_RATE_DATA_KEY, 'winRateSubControls', hasWinRateData],
     ];
 
     const VIEW_PANEL_ROWS = [
@@ -648,6 +755,7 @@
       ['vote-mode', 'voteMode'],
       ['other-mode', 'otherMode'],
       ['skill-mode', 'skillMode'],
+      ['winrate-mode', 'winrateMode'],
       ['banxing-mode', 'banxingMode'],
       ['radar-mode', 'radarMode'],
     ];
@@ -972,8 +1080,8 @@
         },
         tooltip: {
           trigger: 'axis',
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter: tooltipFormatter
         },
@@ -1190,15 +1298,9 @@
 
     function getBarColor(value, average, belowAvgGreen) {
       if (belowAvgGreen && value < average) {
-        return new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-          { offset: 0, color: '#4ade80' },
-          { offset: 1, color: '#22c55e' }
-        ]);
+        return BAR_COLOR_BELOW_AVG;
       }
-      return new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-        { offset: 0, color: '#0ea5e9' },
-        { offset: 1, color: '#6366f1' }
-      ]);
+      return BAR_COLOR;
     }
 
     function hasBlindPoisonedComboData() {
@@ -1646,10 +1748,22 @@
       );
     }
 
-    function hasWinRateData() {
+    function hasWinRateCampData() {
       return rawData.length > 0
         && WOLF_WIN_RATE_COL in rawData[0]
         && GOOD_WIN_RATE_COL in rawData[0];
+    }
+
+    function hasWinRateIdentityData() {
+      return rawData.length > 0 && IDENTITY_WIN_RATE_COL in rawData[0];
+    }
+
+    function hasWinRateBanxingData() {
+      return rawData.length > 0 && BANXING_WIN_RATE_COL in rawData[0];
+    }
+
+    function hasWinRateData() {
+      return hasWinRateCampData() || hasWinRateIdentityData() || hasWinRateBanxingData();
     }
 
     function hasSurvivalData() {
@@ -1709,6 +1823,12 @@
       BAR_SUB_CONTROL_ROWS.forEach(([colKey, elId, hasData]) => {
         $show(elId, isBar && col === colKey && hasData());
       });
+      const showWinRateBar = isBar && col === WIN_RATE_DATA_KEY && hasWinRateData();
+      const showWinRateIdentity = showWinRateBar && winRateSubMode === 'identity' && hasWinRateIdentityData();
+      const showWinRateBanxing = showWinRateBar && winRateSubMode === 'banxing' && hasWinRateBanxingData();
+      $show('winRateIdentityControls', showWinRateIdentity);
+      $show('winRateBanxingControls', showWinRateBanxing);
+      $show('winRateFiltersRow', showWinRateIdentity || showWinRateBanxing);
       updateRadarPanelsVisibility();
     }
 
@@ -1718,12 +1838,14 @@
       const col = $('columnSelect').value;
       const showWolfLagan = view === 'bar' && col === WOLF_DATA_KEY && wolfSubMode === 'lagan';
       const showRadarChartView = isRadar && radarSubMode === 'radar';
+      const showRadarWinrateView = isRadar && radarSubMode === 'winrate';
       const showRadarTableView = isRadar && radarSubMode === 'table';
       const showRadarGames = isRadar && radarSubMode === 'games';
       const hideVisual = ['table', 'banxing', 'tongbian'].includes(view);
       const visualPanel = $('visualPanel');
 
       $show('radarSubControls', isRadar);
+      $show('radarWinrateControls', showRadarWinrateView, 'block');
       $show('radarMetricControls', showRadarChartView, 'block');
       $show('radarGamesWrap', showRadarGames, 'block');
       $show('radarTableWrap', showRadarTableView, 'block');
@@ -1732,10 +1854,11 @@
       visualPanel.style.display = showVisual ? '' : 'none';
       visualPanel.classList.remove('radar-layout');
       visualPanel.classList.toggle('radar-chart-view', showRadarChartView);
+      visualPanel.classList.toggle('radar-winrate-view', showRadarWinrateView);
 
-      $show('chartWrap', showVisual && !showWolfLagan && (view !== 'radar' || showRadarChartView), 'block');
+      $show('chartWrap', showVisual && !showWolfLagan && (view !== 'radar' || showRadarChartView || showRadarWinrateView), 'block');
       $show('laganTable', showWolfLagan, 'block');
-      $show('chartDataNotice', view === 'bar' || view === 'compare' || showRadarChartView || showRadarTableView, 'block');
+      $show('chartDataNotice', view === 'bar' || view === 'compare' || showRadarChartView || showRadarWinrateView || showRadarTableView, 'block');
     }
 
     const setWolfSubMode = makeBarSubModeSetter(
@@ -1750,6 +1873,29 @@
     const setSkillSubMode = makeBarSubModeSetter(
       m => { skillSubMode = m; }, '[data-skill-mode]', 'skillMode', SKILL_DATA_KEY
     );
+    const setWinRateSubMode = makeBarSubModeSetter(
+      m => { winRateSubMode = m; }, '[data-winrate-mode]', 'winrateMode', WIN_RATE_DATA_KEY, updateChartFootnotes
+    );
+
+    function setWinRateIdentityFilter(label) {
+      winRateIdentityFilter = label;
+      syncModeButtons('[data-winrate-identity]', 'winrateIdentity', label);
+      refreshBarChartIf(WIN_RATE_DATA_KEY);
+    }
+
+    function setWinRateBanxingFilter(label) {
+      winRateBanxingFilter = label;
+      syncModeButtons('[data-winrate-banxing]', 'winrateBanxing', label);
+      refreshBarChartIf(WIN_RATE_DATA_KEY);
+    }
+
+    function setRadarWinrateDim(dim) {
+      radarWinrateDim = dim;
+      syncModeButtons('[data-radar-winrate-dim]', 'radarWinrateDim', dim);
+      if (currentView === 'radar' && radarSubMode === 'winrate') {
+        renderRadarWinrateChart($('nameSelect').value);
+      }
+    }
 
     function setRadarSubMode(mode) {
       radarSubMode = mode;
@@ -1762,6 +1908,10 @@
         renderRadarChart(name);
       }
       else if (mode === 'table') renderRadarPersonalTable(name);
+      else if (mode === 'winrate') {
+        syncModeButtons('[data-radar-winrate-dim]', 'radarWinrateDim', radarWinrateDim);
+        renderRadarWinrateChart(name);
+      }
       else renderRadarGamesSection(name);
     }
 
@@ -1818,7 +1968,7 @@
         result.markLine = {
           silent: true,
           symbol: 'none',
-          lineStyle: { color: '#94a3b8', type: 'dashed', width: 1.5 },
+          lineStyle: { color: CHART_AXIS, type: 'dashed', width: 1.5 },
           label: {
             show: true,
             color: CHART_AXIS,
@@ -1832,7 +1982,7 @@
           silent: true,
           symbol: 'circle',
           symbolSize: 8,
-          itemStyle: { color: '#64748b', borderColor: '#ffffff', borderWidth: 1 },
+          itemStyle: { color: CHART_AXIS, borderColor: CHART_SURFACE, borderWidth: 1 },
           label: {
             show: true,
             formatter: '均值',
@@ -1901,8 +2051,8 @@
         backgroundColor: 'transparent',
         tooltip: {
           trigger: 'item',
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             return [
@@ -1922,7 +2072,7 @@
           type: 'scatter',
           data: items,
           symbolSize: 10,
-          itemStyle: { color: '#3b82f6' },
+          itemStyle: { color: COMPARE_PLAYER_COLOR },
           label: {
             show: true,
             formatter: ({ data }) => data.name,
@@ -1935,7 +2085,7 @@
           labelLayout: buildVoteLabelLayout(items),
           emphasis: {
             scale: 1.4,
-            itemStyle: { color: '#2563eb' },
+            itemStyle: { color: CHART_BLUE },
             label: { show: true }
           },
           ...(averageOrigin.markLine ? { markLine: averageOrigin.markLine } : {}),
@@ -1945,6 +2095,206 @@
       };
 
       chart.setOption(option, true);
+      chart.resize();
+    }
+
+    function parseWinRateBreakdown(text) {
+      if (text == null || !String(text).trim()) return [];
+      const items = [];
+      String(text).split('、').forEach((part) => {
+        const trimmed = part.trim();
+        if (!trimmed) return;
+        const match = trimmed.match(/^(.+?)（(\d+)次，([\d.]+%)）$/);
+        if (!match) return;
+        items.push({
+          label: match[1],
+          count: Number(match[2]),
+          rate: parseValue(match[3], match[3]),
+        });
+      });
+      return items;
+    }
+
+    function sortWinrateForChart(items) {
+      return [...items].sort((a, b) => a.rate - b.rate || a.count - b.count);
+    }
+
+    function getWinrateAxisMax(items) {
+      const peak = Math.max(...items.map(d => d.rate), 0);
+      return peak >= 99.5 ? 118 : 100;
+    }
+
+    function buildWinrateBarLabel(d) {
+      const text = `${formatPercent(d.rate)}（${d.count}次）`;
+      if (d.rate >= 92) {
+        return {
+          show: true,
+          formatter: text,
+          position: 'insideRight',
+          color: CHART_SURFACE,
+          fontSize: isMobile() ? 10 : 11,
+        };
+      }
+      return {
+        show: true,
+        formatter: text,
+        position: 'right',
+        color: CHART_TEXT,
+        fontSize: isMobile() ? 10 : 11,
+      };
+    }
+
+    function getWinRateIdentityGroupLabels() {
+      return WIN_RATE_IDENTITY_GROUPS.map(group => group.label);
+    }
+
+    function getWinRateIdentityGroup(groupLabel) {
+      return WIN_RATE_IDENTITY_GROUPS.find(group => group.label === groupLabel);
+    }
+
+    function getMergedIdentityWinRate(player, identityLabels) {
+      const items = parseWinRateBreakdown(player[IDENTITY_WIN_RATE_COL]);
+      let totalCount = 0;
+      let totalWins = 0;
+      items.forEach(item => {
+        if (!identityLabels.includes(item.label)) return;
+        totalCount += item.count;
+        totalWins += item.count * item.rate / 100;
+      });
+      if (totalCount === 0) return null;
+      return {
+        count: totalCount,
+        rate: totalWins / totalCount * 100,
+      };
+    }
+
+    function getWinRateIdentityGroupRanking(groupLabel) {
+      const group = getWinRateIdentityGroup(groupLabel);
+      if (!group) return [];
+      return getMinAppearanceRows()
+        .map(player => {
+          const merged = getMergedIdentityWinRate(player, group.identities);
+          if (!merged) return null;
+          return { name: player[NAME_KEY], rate: merged.rate, count: merged.count };
+        })
+        .filter(Boolean);
+    }
+
+    function collectWinrateDimensionLabels(dimensionCol) {
+      const counts = new Map();
+      getMinAppearanceRows().forEach(player => {
+        parseWinRateBreakdown(player[dimensionCol]).forEach(item => {
+          counts.set(item.label, (counts.get(item.label) || 0) + item.count);
+        });
+      });
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([label]) => label);
+    }
+
+    function getWinRateDimensionRanking(dimensionCol, label) {
+      return getMinAppearanceRows()
+        .map(player => {
+          const match = parseWinRateBreakdown(player[dimensionCol]).find(item => item.label === label);
+          if (!match) return null;
+          return { name: player[NAME_KEY], rate: match.rate, count: match.count };
+        })
+        .filter(Boolean);
+    }
+
+    function renderWinRateEmptyChart(message) {
+      setChartHeight(0);
+      chart.setOption({
+        backgroundColor: 'transparent',
+        title: {
+          subtext: message,
+          left: 'center',
+          top: 'center',
+          subtextStyle: { color: CHART_AXIS, fontSize: 12 },
+        },
+        series: [],
+      }, true);
+      chart.resize();
+    }
+
+    function renderWinrateBarChart(rawItems, { title, average, emptySubtext } = {}) {
+      const layout = getChartLayout();
+      const display = sortWinrateForChart(
+        rawItems.map(d => ({
+          label: d.label ?? d.name,
+          rate: d.rate ?? d.value ?? 0,
+          count: d.count ?? 0,
+        }))
+      );
+
+      setChartHeight(Math.max(display.length, 1));
+
+      if (!display.length) {
+        renderWinRateEmptyChart(emptySubtext || '暂无数据');
+        return;
+      }
+
+      const axisMax = getWinrateAxisMax(display);
+      const avg = average ?? display.reduce((sum, d) => sum + d.rate, 0) / display.length;
+      const gridTop = title ? layout.gridTop + 24 : layout.gridTop;
+
+      chart.clear();
+      chart.setOption({
+        backgroundColor: 'transparent',
+        title: title ? {
+          text: title,
+          left: 'center',
+          top: layout.gridTop,
+          textStyle: {
+            color: CHART_TEXT,
+            fontSize: layout.titleFontSize - 2,
+            fontWeight: 600,
+          },
+        } : undefined,
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const count = params.data?.count ?? 0;
+            return `${params.name}<br/>胜率：${formatPercent(params.value)}<br/>场次：${count}次`;
+          },
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: gridTop,
+          bottom: layout.gridBottom,
+          containLabel: true,
+        },
+        xAxis: {
+          type: 'value',
+          min: 0,
+          max: axisMax,
+          axisLabel: {
+            color: CHART_AXIS,
+            fontSize: layout.axisFontSize,
+            formatter: (v) => (v <= 100 ? formatPercent(v) : ''),
+          },
+          splitLine: { lineStyle: { color: CHART_LINE } },
+        },
+        yAxis: buildBarCategoryYAxis(display.map(d => d.label), layout),
+        series: [{
+          type: 'bar',
+          data: display.map(d => ({
+            value: d.rate,
+            count: d.count,
+            itemStyle: {
+              borderRadius: [0, 4, 4, 0],
+              color: getBarColor(d.rate, avg, true),
+            },
+            label: buildWinrateBarLabel(d),
+          })),
+          barMaxWidth: layout.barMaxWidth,
+        }],
+        animationDuration: 600,
+      }, true);
       chart.resize();
     }
 
@@ -1965,8 +2315,8 @@
         backgroundColor: 'transparent',
         tooltip: {
           trigger: 'item',
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             return [
@@ -1989,7 +2339,7 @@
           type: 'scatter',
           data: items,
           symbolSize: 10,
-          itemStyle: { color: '#3b82f6' },
+          itemStyle: { color: COMPARE_PLAYER_COLOR },
           label: {
             show: true,
             formatter: ({ data }) => data.name,
@@ -2002,7 +2352,7 @@
           labelLayout: buildVoteLabelLayout(items),
           emphasis: {
             scale: 1.4,
-            itemStyle: { color: '#2563eb' },
+            itemStyle: { color: CHART_BLUE },
             label: { show: true }
           },
           markLine: averageOrigin.markLine,
@@ -2035,8 +2385,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const p = params[0];
@@ -2124,8 +2474,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const name = params[0]?.name ?? '';
@@ -2163,7 +2513,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2196,7 +2546,35 @@
         return;
       }
       if (column === WIN_RATE_DATA_KEY && hasWinRateData()) {
-        renderWinRateScatterChart();
+        if (winRateSubMode === 'camp') {
+          if (hasWinRateCampData()) {
+            renderWinRateScatterChart();
+          } else {
+            renderWinRateEmptyChart('当前赛季数据暂无阵营胜率字段');
+          }
+        } else if (winRateSubMode === 'identity') {
+          if (hasWinRateIdentityData() && winRateIdentityFilter) {
+            renderWinrateBarChart(
+              getWinRateIdentityGroupRanking(winRateIdentityFilter),
+              {
+                title: `${winRateIdentityFilter} · 身份胜率`,
+                emptySubtext: `暂无「${winRateIdentityFilter}」身份胜率数据`,
+              }
+            );
+          } else {
+            renderWinRateEmptyChart('当前赛季数据暂无身份胜率字段');
+          }
+        } else if (hasWinRateBanxingData() && winRateBanxingFilter) {
+          renderWinrateBarChart(
+            getWinRateDimensionRanking(BANXING_WIN_RATE_COL, winRateBanxingFilter),
+            {
+              title: `${winRateBanxingFilter} · 版型胜率`,
+              emptySubtext: `暂无「${winRateBanxingFilter}」版型胜率数据`,
+            }
+          );
+        } else {
+          renderWinRateEmptyChart('当前赛季数据暂无版型胜率字段');
+        }
         return;
       }
       if (column === VOTE_DATA_KEY && hasVoteData()) {
@@ -2275,8 +2653,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const p = params[0];
@@ -2355,8 +2733,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const name = params[0]?.name ?? '';
@@ -2396,7 +2774,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2411,7 +2789,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2474,8 +2852,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const name = params[0]?.name ?? '';
@@ -2515,7 +2893,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2530,7 +2908,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2583,8 +2961,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const idx = params[0]?.dataIndex ?? 0;
@@ -2622,7 +3000,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2699,8 +3077,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const name = params[0]?.name ?? '';
@@ -2739,7 +3117,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2754,7 +3132,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2789,10 +3167,6 @@
     function renderAppearanceComboChart() {
       const items = getAppearanceComboItems();
       const layout = getChartLayout();
-      const blueGradient = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-        { offset: 0, color: APPEARANCE_COLOR },
-        { offset: 1, color: '#6366f1' }
-      ]);
 
       setChartHeight(items.length);
 
@@ -2812,8 +3186,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const name = params[0]?.name ?? '';
@@ -2859,7 +3233,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2881,7 +3255,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2896,7 +3270,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#1a1a1a',
+              color: CHART_TEXT,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2911,7 +3285,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -2923,7 +3297,7 @@
             data: items.map(d => d.other),
             barMaxWidth: layout.barMaxWidth,
             itemStyle: {
-              color: blueGradient,
+              color: APPEARANCE_COLOR,
               borderRadius: [0, 4, 4, 0]
             },
             label: {
@@ -2977,8 +3351,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const name = params[0]?.name ?? '';
@@ -3017,7 +3391,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -3028,11 +3402,11 @@
             stack: 'selfKnife',
             data: items.map(d => d.selfKnife),
             barMaxWidth: layout.barMaxWidth,
-            itemStyle: { color: DREAM_DARK_GREEN },
+            itemStyle: { color: SELF_KNIFE_GREEN },
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -3080,8 +3454,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const name = params[0]?.name ?? '';
@@ -3119,7 +3493,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -3150,10 +3524,6 @@
       const isHjtMode = wolfSubMode === 'hjt';
       const items = getWolfComboItems(wolfSubMode);
       const layout = getChartLayout();
-      const blueGradient = new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-        { offset: 0, color: APPEARANCE_COLOR },
-        { offset: 1, color: '#6366f1' }
-      ]);
       const accentCol = isHjtMode ? WOLF_COMBO_HJT : WOLF_COMBO_SELF;
       const accentLabel = isHjtMode ? '悍跳数据' : '自爆数据';
       const accentColor = isHjtMode ? WOLF_COLOR : WOLF_COMBO_SELF_GREEN;
@@ -3185,8 +3555,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const name = params[0]?.name ?? '';
@@ -3228,7 +3598,7 @@
             label: {
               show: layout.showBarLabel,
               position: 'inside',
-              color: '#ffffff',
+              color: CHART_SURFACE,
               fontSize: 11,
               formatter: ({ value }) => (value > 0 ? String(value) : '')
             }
@@ -3240,7 +3610,7 @@
             data: items.map(d => (isHjtMode ? d.hjtOther : d.selfOther)),
             barMaxWidth: layout.barMaxWidth,
             itemStyle: {
-              color: blueGradient,
+              color: APPEARANCE_COLOR,
               borderRadius: [0, 4, 4, 0]
             },
             label: {
@@ -3291,8 +3661,8 @@
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const name = params[0]?.name ?? '';
@@ -3327,7 +3697,7 @@
         series: JIXIE_WOLF_SEGMENTS.map((seg, idx) => {
           const isFirst = idx === 0;
           const isLast = idx === JIXIE_WOLF_SEGMENTS.length - 1;
-          const labelColor = seg.labelColor || '#ffffff';
+          const labelColor = seg.labelColor || CHART_SURFACE;
           return {
             name: seg.label,
             type: 'bar',
@@ -3730,8 +4100,8 @@
         },
         tooltip: {
           trigger: 'item',
-          backgroundColor: '#ffffff',
-          borderColor: '#e0e0e0',
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const lines = params.value.map((v, i) =>
@@ -3745,7 +4115,7 @@
           radius: radarSideLayout ? layout.radarSideRadius : layout.radarRadius,
           axisName: { color: CHART_TEXT, fontSize: layout.radarNameFontSize },
           splitLine: { lineStyle: { color: CHART_LINE } },
-          splitArea: { areaStyle: { color: ['rgba(0,0,0,0.02)', 'rgba(0,0,0,0.04)'] } },
+          splitArea: { areaStyle: { color: [CHART_RADAR_BAND_A, CHART_RADAR_BAND_B] } },
           axisLine: { lineStyle: { color: CHART_LINE } },
           indicator: buildRadarIndicators(columns)
         },
@@ -3757,18 +4127,18 @@
               name,
               symbol: 'circle',
               symbolSize: 6,
-              lineStyle: { color: '#3b82f6', width: 2 },
-              itemStyle: { color: '#3b82f6' },
-              areaStyle: { color: 'rgba(59, 130, 246, 0.35)' }
+              lineStyle: { color: COMPARE_PLAYER_COLOR, width: 2 },
+              itemStyle: { color: COMPARE_PLAYER_COLOR },
+              areaStyle: { color: CHART_RADAR_PLAYER_AREA }
             },
             {
               value: avgValues,
               name: avgLabel,
               symbol: 'circle',
               symbolSize: 6,
-              lineStyle: { color: '#22c55e', width: 2 },
-              itemStyle: { color: '#22c55e' },
-              areaStyle: { color: 'rgba(34, 197, 94, 0.25)' }
+              lineStyle: { color: COMPARE_AVG_COLOR, width: 2 },
+              itemStyle: { color: COMPARE_AVG_COLOR },
+              areaStyle: { color: CHART_RADAR_AVG_AREA }
             }
           ]
         }],
@@ -3777,6 +4147,22 @@
 
       chart.setOption(option, true);
       chart.resize();
+    }
+
+    function renderRadarWinrateChart(name) {
+      const player = getMinAppearanceRows().find(item => item[NAME_KEY] === name)
+        || rawData.find(item => item[NAME_KEY] === name);
+      const isBanxing = radarWinrateDim === 'banxing';
+      const col = isBanxing ? BANXING_WIN_RATE_COL : IDENTITY_WIN_RATE_COL;
+      const dimLabel = isBanxing ? '版型' : '身份';
+      const items = parseWinRateBreakdown(player?.[col]);
+      const overallRate = parseValue(player?.['总胜率'], '总胜率');
+
+      renderWinrateBarChart(items, {
+        title: `${name} · ${dimLabel}胜率`,
+        average: overallRate,
+        emptySubtext: `${name}：暂无${dimLabel}胜率数据`,
+      });
     }
 
     function escapeHtml(text) {
@@ -4037,6 +4423,7 @@
       'vote-mode': setVoteSubMode,
       'other-mode': setOtherSubMode,
       'skill-mode': setSkillSubMode,
+      'winrate-mode': setWinRateSubMode,
       'banxing-mode': setBanxingSubMode,
       'radar-mode': setRadarSubMode,
     };
@@ -4196,6 +4583,7 @@
           if (!getRadarItemCheckboxes('radarMetricFilters').length) refreshRadarMetricFilters();
           renderRadarChart(name);
         } else if (radarSubMode === 'table') renderRadarPersonalTable(name);
+        else if (radarSubMode === 'winrate') renderRadarWinrateChart(name);
         else renderRadarGamesSection(name);
       }
     }
@@ -4300,8 +4688,60 @@
       refreshTableControls();
       refreshCompareControls();
       refreshRadarMetricFilters();
+      refreshWinRateSubControls();
       updateRadarGamesVisibility();
       updateChartFootnotes();
+    }
+
+    function renderWinRateDimensionButtons(containerId, attrName, labels, activeLabel) {
+      const el = $(containerId);
+      if (!labels.length) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = labels.map(label => {
+        const active = label === activeLabel ? ' active' : '';
+        return `<button type="button" class="wolf-mode-btn${active}" data-${attrName}="${escapeHtml(label)}">${escapeHtml(label)}</button>`;
+      }).join('');
+    }
+
+    function refreshWinRateSubControls() {
+      if (!hasWinRateData()) return;
+
+      if (winRateSubMode === 'camp' && !hasWinRateCampData()) {
+        winRateSubMode = hasWinRateIdentityData() ? 'identity' : 'banxing';
+        syncModeButtons('[data-winrate-mode]', 'winrateMode', winRateSubMode);
+      } else if (winRateSubMode === 'identity' && !hasWinRateIdentityData()) {
+        winRateSubMode = hasWinRateCampData() ? 'camp' : 'banxing';
+        syncModeButtons('[data-winrate-mode]', 'winrateMode', winRateSubMode);
+      } else if (winRateSubMode === 'banxing' && !hasWinRateBanxingData()) {
+        winRateSubMode = hasWinRateCampData() ? 'camp' : 'identity';
+        syncModeButtons('[data-winrate-mode]', 'winrateMode', winRateSubMode);
+      }
+
+      if (hasWinRateIdentityData()) {
+        const identities = getWinRateIdentityGroupLabels();
+        if (!identities.includes(winRateIdentityFilter)) {
+          winRateIdentityFilter = identities[0] || '平民';
+        }
+        renderWinRateDimensionButtons(
+          'winRateIdentityControls', 'winrate-identity', identities, winRateIdentityFilter
+        );
+      } else {
+        $('winRateIdentityControls').innerHTML = '';
+      }
+
+      if (hasWinRateBanxingData()) {
+        const banxings = collectWinrateDimensionLabels(BANXING_WIN_RATE_COL);
+        if (!banxings.includes(winRateBanxingFilter)) {
+          winRateBanxingFilter = banxings[0] || '';
+        }
+        renderWinRateDimensionButtons(
+          'winRateBanxingControls', 'winrate-banxing', banxings, winRateBanxingFilter
+        );
+      } else {
+        $('winRateBanxingControls').innerHTML = '';
+      }
     }
 
     function refreshCompareControls() {
@@ -4340,6 +4780,21 @@
         document.querySelectorAll(`.wolf-mode-btn[data-${attr}]`).forEach(btn => {
           btn.addEventListener('click', () => MODE_SETTERS[attr](btn.dataset[dataKey]));
         });
+      });
+      $('barControls').addEventListener('click', (e) => {
+        const identityBtn = e.target.closest('.wolf-mode-btn[data-winrate-identity]');
+        if (identityBtn) {
+          setWinRateIdentityFilter(identityBtn.dataset.winrateIdentity);
+          return;
+        }
+        const banxingBtn = e.target.closest('.wolf-mode-btn[data-winrate-banxing]');
+        if (banxingBtn) {
+          setWinRateBanxingFilter(banxingBtn.dataset.winrateBanxing);
+        }
+      });
+      $('radarWinrateControls').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-radar-winrate-dim]');
+        if (btn) setRadarWinrateDim(btn.dataset.radarWinrateDim);
       });
       $('nameSelect').addEventListener('change', updateChart);
       $('radarMetricFilters').addEventListener('change', handleRadarMetricFilterChange);
