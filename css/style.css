@@ -1168,68 +1168,136 @@ button.game-session-chip:active {
     font-size: 0.85rem; }
 
   .toolbar {
-    gap: 10px;
-    padding: 10px 12px;
-    margin-bottom: 12px; }
+    gap: 8px;
+    padding: 8px;
+    margin-bottom: 12px;
+    background: var(--bg-surface);
+    border-radius: var(--radius); }
 
   .toolbar-main {
+    flex-direction: column;
     gap: 8px; }
 
   .toolbar-group {
-    gap: 5px; }
+    gap: 6px; }
+
+  .toolbar-group-source,
+  .toolbar-group-views,
+  .toolbar-group-extra {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    padding: 10px 8px 8px;
+    background: var(--bg-page);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm); }
 
   .toolbar-group-source {
-    flex: 1 1 100%;
-    width: 100%; }
+    grid-template-columns: 1fr 1fr; }
+
+  .toolbar-group-source::before,
+  .toolbar-group-views::before,
+  .toolbar-group-extra::before {
+    grid-column: 1 / -1;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    line-height: 1.2;
+    margin-bottom: 2px; }
+
+  .toolbar-group-source::before {
+    content: '数据源'; }
+
+  .toolbar-group-views::before {
+    content: '分析视图'; }
+
+  .toolbar-group-extra::before {
+    content: '专项数据'; }
 
   .toolbar-divider {
     display: none; }
 
   .toolbar-group-views,
   .toolbar-group-extra {
-    flex: 1 1 100%;
-    width: 100%; }
+    grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
   .view-btn {
-    flex: 1 1 auto;
-    min-width: 0;
+    flex: none;
+    flex-direction: column;
     justify-content: center;
-    padding: 7px 6px;
-    font-size: 0.75rem;
-    gap: 4px; }
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    min-height: 56px;
+    padding: 7px 4px;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    text-align: center;
+    white-space: normal;
+    background: var(--bg-surface);
+    border-color: transparent; }
 
   .view-btn-icon {
-    width: 13px;
-    height: 13px; }
+    width: 18px;
+    height: 18px;
+    opacity: 0.7; }
 
-  .series-select {
-    flex: 1 1 7rem;
-    min-width: 6.5rem;
-    font-size: 0.75rem;
-    padding: 6px 26px 6px 8px; }
+  .view-btn.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(94, 176, 232, 0.15); }
 
+  .view-btn.active .view-btn-icon {
+    opacity: 1;
+    color: var(--accent-hover); }
+
+  .series-select,
   .season-select {
-    flex: 1 1 4rem;
-    min-width: 3.5rem;
-    font-size: 0.75rem;
-    padding: 6px 26px 6px 8px; }
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    font-size: 0.8125rem;
+    padding: 9px 28px 9px 10px;
+    background-color: var(--bg-surface); }
 
   .control-group {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    gap: 6px; }
+    gap: 8px;
+    padding: 10px 8px 8px;
+    background: var(--bg-page);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm); }
+
+  .control-group > label {
+    width: 100%;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-muted); }
+
+  #banxingControls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    padding: 10px 8px 8px;
+    background: var(--bg-page);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm); }
 
   .bar-controls-wrap {
     gap: 8px; }
 
   .bar-controls-wrap > label {
-    font-size: 0.75rem;
-    color: var(--text-muted); }
+    margin-bottom: -2px; }
 
   .toolbar .wolf-sub-controls {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     width: 100%; }
 
@@ -1237,54 +1305,93 @@ button.game-session-chip:active {
   #banxingControls[style*="display: flex"] {
     display: grid !important; }
 
-  .bar-controls-wrap .wolf-sub-controls {
-    padding-top: 6px;
-    border-top: 1px solid var(--border-light); }
+  .bar-controls-wrap .wolf-sub-controls,
+  #radarControls .wolf-sub-controls,
+  .winrate-filters-row .winrate-sub-filters {
+    padding-top: 8px;
+    margin-top: 2px;
+    border-top: 1px dashed var(--border); }
 
   #winRateSubControls {
     border-top: none;
-    padding-top: 0; }
-
-  .winrate-filters-row .winrate-sub-filters {
-    padding-top: 6px;
-    border-top: 1px solid var(--border-light); }
-
-  #radarControls .wolf-sub-controls {
-    padding-top: 6px;
-    border-top: 1px solid var(--border-light); }
+    padding-top: 0;
+    margin-top: 0; }
 
   .toolbar .wolf-sub-controls:only-child {
     border-top: none;
-    padding-top: 0; }
+    padding-top: 0;
+    margin-top: 0; }
+
+  #winRateFiltersRow {
+    width: 100%;
+    padding: 8px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm); }
+
+  #winRateFiltersRow .winrate-sub-filters {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0; }
 
   #skillSubControls,
   #otherSubControls {
-    grid-template-columns: 1fr; }
+    grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  #voteSubControls {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  #wolfSubControls {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
   #otherSubControls .wolf-mode-btn:last-child:nth-child(odd) {
-    grid-column: 1 / -1; }
+    grid-column: auto; }
 
   .toolbar .wolf-mode-btn {
     flex: none;
     width: 100%;
     min-width: 0;
     max-width: none;
-    padding: 9px 8px;
-    font-size: 0.72rem;
-    line-height: 1.3;
+    justify-content: center;
+    min-height: 36px;
+    padding: 8px 4px;
+    font-size: 0.6875rem;
+    line-height: 1.25;
     white-space: normal;
-    text-align: center; }
+    text-align: center;
+    background: var(--bg-surface); }
 
-  #banxingControls {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-    width: 100%; }
+  .toolbar .wolf-mode-btn.active {
+    box-shadow: 0 1px 2px rgba(94, 176, 232, 0.12); }
 
   .radar-controls {
     flex-direction: column;
     align-items: stretch;
     width: 100%; }
+
+  #radarSubControls {
+    grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .radar-winrate-controls {
+    padding: 8px 10px;
+    border-radius: var(--radius) var(--radius) 0 0; }
+
+  .segment-toggle {
+    display: flex;
+    width: 100%; }
+
+  .segment-toggle-btn {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    text-align: center; }
+
+  .radar-metric-controls {
+    padding: 8px 10px;
+    border-radius: var(--radius) var(--radius) 0 0; }
+
+  .radar-filter-checkboxes {
+    gap: 6px; }
 
   .visual-panel.radar-layout {
     flex-direction: column; }
