@@ -1003,6 +1003,9 @@ button.game-session-chip:active {
   overflow: auto;
   max-height: calc(100vh - 180px); }
 
+.banxing-table-wrap {
+  overflow: visible; }
+
 .raw-table {
   width: 100%;
   border-collapse: separate;
