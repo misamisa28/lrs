@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>大师赛数据统计</title>
   <script src="js/echarts.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="stylesheet" href="css/style.css" type="text/css">
 </head>
 <body>
@@ -13,13 +14,19 @@
       <div class="header-row">
         <div class="header-text">
           <h1>大师赛数据统计</h1>
-          <div class="subtitle">misamisa28.github.io/lrs/</div>
         </div>
-        <button type="button" id="rulesBtn" class="rules-btn" style="display: none;" aria-hidden="true" hidden>
-          <svg class="rules-btn-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-            <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4ZM11 10.2a1 1 0 0 1 2 0v5.6a1 1 0 1 1-2 0v-5.6Zm0-3.4a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/>
-          </svg>
-        </button>
+        <div class="header-actions">
+          <button type="button" id="screenshotBtn" class="icon-btn screenshot-btn" aria-label="全页截图" title="全页截图">
+            <svg class="icon-btn-svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M9 4a2 2 0 0 0-2 2H5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-8a3 3 0 0 0-3-3h-2a2 2 0 0 0-2-2h-1.5a1.5 1.5 0 0 0-1.5-1.5h-3A1.5 1.5 0 0 0 9 4Zm0 2h3v1H9V6Zm-4 3h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Zm7 2.25a4.75 4.75 0 1 0 0 9.5 4.75 4.75 0 0 0 0-9.5Zm0 2a2.75 2.75 0 1 1 0 5.5 2.75 2.75 0 0 1 0-5.5Z"/>
+            </svg>
+          </button>
+          <button type="button" id="rulesBtn" class="icon-btn rules-btn" style="display: none;" aria-hidden="true" hidden title="统计规则">
+            <svg class="icon-btn-svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 1.8a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4ZM11 10.2a1 1 0 0 1 2 0v5.6a1 1 0 1 1-2 0v-5.6Zm0-3.4a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -33,6 +40,7 @@
           <select id="seasonSelect" class="season-select" aria-label="选择赛季"></select>
         </div>
         <div class="toolbar-divider" aria-hidden="true"></div>
+        <div class="toolbar-nav-scroll">
         <div class="toolbar-group toolbar-group-views">
           <button type="button" class="view-btn active" data-view="bar">
             <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
@@ -73,6 +81,7 @@
             </svg>
             原始数据
           </button>
+        </div>
         </div>
       </div>
 
@@ -150,7 +159,7 @@
           <label for="dateSelect">日期</label>
           <select id="dateSelect"></select>
         </div>
-        <p id="rawTableGameInfo" class="raw-table-game-info"></p>
+        <div id="rawTableGameInfo" class="raw-table-game-info" hidden></div>
       </div>
     </div>
     <div id="visualPanel" class="visual-panel">
@@ -216,7 +225,6 @@
         </span>
       </p>
     </div>
-    <p id="chartDataNotice" class="chart-footnote" style="display: none;">仅统计出场≥9玩家</p>
     <div id="dataTable" class="data-table-wrap" style="display: none;">
       <div class="table-scroll">
         <table class="raw-table">
@@ -226,10 +234,12 @@
       </div>
     </div>
     <div id="banxingTable" class="data-table-wrap banxing-table-wrap" style="display: none;">
-      <table class="raw-table banxing-table">
-        <thead id="banxingHead"></thead>
-        <tbody id="banxingBody"></tbody>
-      </table>
+      <div class="banxing-table-scroll">
+        <table class="raw-table banxing-table">
+          <thead id="banxingHead"></thead>
+          <tbody id="banxingBody"></tbody>
+        </table>
+      </div>
     </div>
     <div id="tongbianTable" class="data-table-wrap" style="display: none;">
       <p id="tongbianEmptyNotice" class="empty-notice" style="display: none;"></p>
@@ -241,6 +251,10 @@
       </div>
     </div>
     <div id="error" class="error" style="display: none;"></div>
+    <footer id="pageMetaBar" class="page-meta-bar">
+      <p id="chartDataNotice" class="page-meta-note" style="display: none;">仅统计出场 ≥9 的玩家</p>
+      <a class="page-source-link" href="https://misamisa28.github.io/lrs/" target="_blank" rel="noopener noreferrer">misamisa28.github.io/lrs</a>
+    </footer>
   </div>
 
   <div id="rulesModal" class="rules-modal" aria-hidden="true">
@@ -390,11 +404,246 @@
       });
     }
 
-    async function fetchJson(url) {
-      const bustUrl = `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`;
-      const res = await fetch(bustUrl, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
-      return res.json();
+    function getScreenshotFilename() {
+      const viewLabels = {
+        bar: '赛季排行',
+        radar: '个人数据',
+        compare: '赛季对比',
+        banxing: '版型统计',
+        tongbian: '同边数据',
+        table: '原始数据',
+      };
+      const view = viewLabels[currentView] || currentView;
+      const season = currentSeason ? `-${currentSeason}` : '';
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      return `大师赛统计-${view}${season}-${ts}.png`;
+    }
+
+    function isScreenshotVisible(el) {
+      if (!el) return false;
+      const style = window.getComputedStyle(el);
+      return style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && el.getClientRects().length > 0;
+    }
+
+    const SCREENSHOT_WATERMARK = 'misamisa28.github.io/lrs';
+
+    function replaceSelectForScreenshot(clonedDoc, liveSelect) {
+      const cloneSelect = liveSelect.id
+        ? clonedDoc.getElementById(liveSelect.id)
+        : null;
+      if (!cloneSelect || cloneSelect.tagName !== 'SELECT') return;
+
+      const computed = window.getComputedStyle(liveSelect);
+      const selectedText = liveSelect.options[liveSelect.selectedIndex]?.text?.trim() || '';
+
+      const fake = clonedDoc.createElement('div');
+      fake.className = `${cloneSelect.className} screenshot-select-fake`.trim();
+      fake.setAttribute('aria-hidden', 'true');
+
+      const text = clonedDoc.createElement('span');
+      text.className = 'screenshot-select-fake-text';
+      text.textContent = selectedText;
+
+      const arrow = clonedDoc.createElement('span');
+      arrow.className = 'screenshot-select-fake-arrow';
+      arrow.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4.5 6L8 9.5L11.5 6" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+      fake.appendChild(text);
+      fake.appendChild(arrow);
+
+      fake.style.boxSizing = 'border-box';
+      fake.style.position = 'relative';
+      fake.style.display = 'inline-flex';
+      fake.style.alignItems = 'center';
+      fake.style.width = computed.width;
+      fake.style.height = computed.height;
+      fake.style.minWidth = computed.minWidth;
+      fake.style.maxWidth = computed.maxWidth;
+      fake.style.padding = computed.padding;
+      fake.style.paddingRight = '28px';
+      fake.style.border = computed.border;
+      fake.style.borderRadius = computed.borderRadius;
+      fake.style.backgroundColor = computed.backgroundColor;
+      fake.style.backgroundImage = 'none';
+      fake.style.color = computed.color;
+      fake.style.fontSize = computed.fontSize;
+      fake.style.fontFamily = computed.fontFamily;
+      fake.style.fontWeight = computed.fontWeight;
+      fake.style.lineHeight = '1.4';
+      fake.style.whiteSpace = 'nowrap';
+      fake.style.overflow = 'hidden';
+
+      cloneSelect.replaceWith(fake);
+    }
+
+    function applyScreenshotWatermark(sourceCanvas) {
+      const output = document.createElement('canvas');
+      output.width = sourceCanvas.width;
+      output.height = sourceCanvas.height;
+      const ctx = output.getContext('2d');
+      ctx.drawImage(sourceCanvas, 0, 0);
+
+      const ratio = output.width / Math.max(document.documentElement.scrollWidth, 1);
+      const fontSize = Math.max(18, Math.round(20 * ratio));
+      const font = `700 ${fontSize}px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`;
+
+      ctx.save();
+      ctx.font = font;
+      ctx.fillStyle = 'rgba(170, 170, 170, 0.1)';
+      ctx.textBaseline = 'middle';
+      const gapX = fontSize * 26;
+      const gapY = fontSize * 16;
+      ctx.rotate(-Math.PI / 5);
+      let row = 0;
+      for (let y = -output.height; y < output.height * 1.5; y += gapY, row++) {
+        const rowOffset = (row % 2) * (gapX / 2);
+        for (let x = -output.width + rowOffset; x < output.width * 1.5; x += gapX) {
+          ctx.fillText(SCREENSHOT_WATERMARK, x, y);
+        }
+      }
+      ctx.restore();
+
+      ctx.font = font;
+      ctx.fillStyle = 'rgba(160, 160, 160, 0.38)';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(
+        SCREENSHOT_WATERMARK,
+        output.width - Math.round(14 * ratio),
+        output.height - Math.round(12 * ratio)
+      );
+
+      return output;
+    }
+
+    function prepareScreenshotClone(clonedDoc) {
+      const actions = clonedDoc.querySelector('.header-actions');
+      if (actions) actions.style.visibility = 'hidden';
+
+      const modal = clonedDoc.getElementById('rulesModal');
+      if (modal) modal.style.display = 'none';
+
+      const metaBar = clonedDoc.getElementById('pageMetaBar');
+      if (metaBar) metaBar.style.visibility = 'hidden';
+
+      document.querySelectorAll('select').forEach(liveSelect => {
+        if (isScreenshotVisible(liveSelect)) {
+          replaceSelectForScreenshot(clonedDoc, liveSelect);
+        } else {
+          const cloneSelect = liveSelect.id ? clonedDoc.getElementById(liveSelect.id) : null;
+          if (cloneSelect) cloneSelect.style.display = 'none';
+        }
+      });
+
+      if (chart && !chart.isDisposed()) {
+        const liveDom = chart.getDom();
+        const cloneDom = clonedDoc.getElementById('chart');
+        if (cloneDom && liveDom && liveDom.offsetParent !== null) {
+          const img = clonedDoc.createElement('img');
+          img.src = chart.getDataURL({
+            type: 'png',
+            pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+            backgroundColor: '#ffffff',
+          });
+          img.style.width = `${cloneDom.clientWidth}px`;
+          img.style.height = `${cloneDom.clientHeight}px`;
+          img.style.display = 'block';
+          cloneDom.replaceChildren(img);
+        }
+      }
+    }
+
+    async function captureFullscreenScreenshot() {
+      if (typeof html2canvas !== 'function') {
+        showTransientError('截图组件未加载，请检查网络后刷新页面。');
+        return;
+      }
+
+      const btn = $('screenshotBtn');
+      btn.disabled = true;
+      btn.classList.add('is-busy');
+
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
+
+      try {
+        if (chart && !chart.isDisposed()) {
+          chart.resize();
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        }
+
+        const canvas = await html2canvas(document.body, {
+          backgroundColor: getComputedStyle(document.body).backgroundColor,
+          scale: Math.min(window.devicePixelRatio || 1, 2),
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          width: document.documentElement.scrollWidth,
+          height: document.documentElement.scrollHeight,
+          windowWidth: document.documentElement.scrollWidth,
+          windowHeight: document.documentElement.scrollHeight,
+          onclone: prepareScreenshotClone,
+        });
+
+        const watermarked = applyScreenshotWatermark(canvas);
+        const link = document.createElement('a');
+        link.download = getScreenshotFilename();
+        link.href = watermarked.toDataURL('image/png');
+        link.click();
+      } catch (err) {
+        showTransientError(`截图失败：${err.message}`);
+      } finally {
+        window.scrollTo(scrollX, scrollY);
+        btn.disabled = false;
+        btn.classList.remove('is-busy');
+      }
+    }
+
+    function bindScreenshotButton() {
+      $('screenshotBtn').addEventListener('click', captureFullscreenScreenshot);
+    }
+
+    async function fetchJson(url, { force = false } = {}) {
+      const cacheKey = url.split('?')[0];
+      if (!force && jsonFetchCache.has(cacheKey)) {
+        return jsonFetchCache.get(cacheKey);
+      }
+
+      const request = (async () => {
+        const bustUrl = `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`;
+        const res = await fetch(bustUrl, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
+        return res.json();
+      })();
+
+      if (!force) jsonFetchCache.set(cacheKey, request);
+
+      try {
+        const data = await request;
+        if (!force) jsonFetchCache.set(cacheKey, Promise.resolve(data));
+        return data;
+      } catch (err) {
+        if (!force) jsonFetchCache.delete(cacheKey);
+        throw err;
+      }
+    }
+
+    async function fetchJsonWithRetry(url, retries = 1) {
+      let lastErr;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          return await fetchJson(url);
+        } catch (err) {
+          lastErr = err;
+          if (attempt < retries) {
+            await new Promise(resolve => setTimeout(resolve, 180 * (attempt + 1)));
+          }
+        }
+      }
+      throw lastErr;
     }
     const NAME_A_KEY = '姓名A';
     const NAME_B_KEY = '姓名B';
@@ -688,6 +937,8 @@
       SKILL_DATA_KEY, OTHER_DATA_KEY,
     ];
     let seasonStats = { S20: [],S21: [], S22: [], S1: [], S2: [] };
+    let seasonPayloadCache = {};
+    const jsonFetchCache = new Map();
     let rawData = [];
     let rawTableData = [];
     let banxingData = [];
@@ -709,6 +960,8 @@
     let radarWinrateDim = 'banxing';
     let lastRadarGamesPlayer = '';
     let currentSeason = DEFAULT_SEASON;
+    let seasonLoadSeq = 0;
+    let transientErrorTimer = null;
     let resizeTimer = null;
     let uiBound = false;
 
@@ -1858,7 +2111,18 @@
 
       $show('chartWrap', showVisual && !showWolfLagan && (view !== 'radar' || showRadarChartView || showRadarWinrateView), 'block');
       $show('laganTable', showWolfLagan, 'block');
-      $show('chartDataNotice', view === 'bar' || view === 'compare' || showRadarChartView || showRadarWinrateView || showRadarTableView, 'block');
+      updatePageMetaBar(view, showRadarChartView, showRadarWinrateView, showRadarTableView);
+    }
+
+    function updatePageMetaBar(view, showRadarChartView, showRadarWinrateView, showRadarTableView) {
+      const showNotice = view === 'bar'
+        || view === 'compare'
+        || showRadarChartView
+        || showRadarWinrateView
+        || showRadarTableView;
+      $show('pageMetaBar', true, 'flex');
+      $show('chartDataNotice', showNotice, 'block');
+      $('pageMetaBar').classList.toggle('page-meta-bar-link-only', !showNotice);
     }
 
     const setWolfSubMode = makeBarSubModeSetter(
@@ -4520,16 +4784,37 @@
       return row ? String(row[key]).trim() : '—';
     }
 
+    function getRawTableWinClass(winText) {
+      const text = String(winText || '');
+      if (/狼/.test(text)) return 'is-wolf';
+      if (/好|神|民/.test(text)) return 'is-good';
+      return '';
+    }
+
     function updateRawTableGameInfo(selectedDate) {
       const infoEl = document.getElementById('rawTableGameInfo');
       const rows = rawTableData.filter(row => String(row['日期']) === selectedDate);
       if (!rows.length) {
-        infoEl.textContent = '';
+        infoEl.innerHTML = '';
+        infoEl.hidden = true;
         return;
       }
       const banxing = getFirstFieldValue(rows, BANXING_KEY);
       const win = getFirstFieldValue(rows, WIN_KEY);
-      infoEl.textContent = `版型：${banxing}\t胜利：${win}`;
+      const winClass = getRawTableWinClass(win);
+      infoEl.innerHTML = `
+        <div class="raw-game-info-inner">
+          <div class="raw-game-info-item">
+            <span class="raw-game-info-label">版型</span>
+            <span class="raw-game-info-value">${escapeHtml(banxing)}</span>
+          </div>
+          <span class="raw-game-info-divider" aria-hidden="true"></span>
+          <div class="raw-game-info-item">
+            <span class="raw-game-info-label">胜利</span>
+            <span class="raw-game-info-value raw-game-info-win ${winClass}">${escapeHtml(win)}</span>
+          </div>
+        </div>`;
+      infoEl.hidden = false;
     }
 
     function renderTable() {
@@ -4612,6 +4897,7 @@
       VIEW_TABLE_ROWS.forEach(([id, v, display]) => $show(id, view === v, display));
       if (view === 'compare') {
         refreshCompareControls();
+        prefetchSeasonStats(getCompareSeasonList(getCurrentSeriesKey()));
         updateChart();
         return;
       }
@@ -4648,7 +4934,7 @@
         if (col === VOTE_DATA_KEY) return hasVoteData();
         if (col === WIN_RATE_DATA_KEY) return hasWinRateData();
         if (col === OTHER_DATA_KEY) return hasOtherData();
-        return col in rawData[0];
+        return rawData.length > 0 && col in rawData[0];
       });
     }
 
@@ -4772,6 +5058,7 @@
       if (uiBound) return;
       uiBound = true;
       bindRulesModal();
+      bindScreenshotButton();
       $('columnSelect').addEventListener('change', () => {
         updateChartFootnotes();
         updateChart();
@@ -4852,14 +5139,98 @@
       document.querySelector('.toolbar').style.display = 'none';
     }
 
-    async function loadAllPlayerStats() {
-      await Promise.all(SEASONS.map(async (season) => {
-        const files = getSeasonFiles(season);
-        seasonStats[season] = await fetchJson(files.stats);
-        if (!Array.isArray(seasonStats[season]) || seasonStats[season].length === 0) {
-          throw new Error(`${files.stats} 数据为空或格式不正确`);
-        }
+    function showTransientError(message) {
+      const errEl = $('error');
+      errEl.innerHTML = message;
+      $show('error', true, 'block');
+      $('chart').style.display = '';
+      document.querySelector('.toolbar').style.display = '';
+      clearTimeout(transientErrorTimer);
+      transientErrorTimer = setTimeout(() => {
+        $show('error', false);
+      }, 6000);
+    }
+
+    function validateSeasonPayload(season, stats, rawTable, banxing, tongbian, files) {
+      const normalizedStats = normalizePlayerStatsColumns(stats);
+      const normalizedRaw = normalizeRawTableColumns(rawTable);
+
+      if (!Array.isArray(normalizedStats) || normalizedStats.length === 0) {
+        throw new Error(`${files.stats} 数据为空或格式不正确`);
+      }
+      if (!Array.isArray(normalizedRaw) || normalizedRaw.length === 0) {
+        throw new Error(`${files.raw} 数据为空或格式不正确`);
+      }
+      if (!Array.isArray(banxing) || banxing.length === 0) {
+        throw new Error(`${files.banxing} 数据为空或格式不正确`);
+      }
+      if (!Array.isArray(tongbian)) {
+        throw new Error(`${files.tongbian} 格式不正确（应为 JSON 数组）`);
+      }
+
+      return {
+        season,
+        stats: normalizedStats,
+        rawTable: normalizedRaw,
+        banxing,
+        tongbian,
+      };
+    }
+
+    function applySeasonPayload(payload) {
+      seasonStats[payload.season] = payload.stats;
+      rawData = payload.stats;
+      rawTableData = payload.rawTable;
+      banxingData = payload.banxing;
+      tongbianData = payload.tongbian;
+      currentSeason = payload.season;
+      seasonPayloadCache[payload.season] = payload;
+    }
+
+    async function loadSeasonStatsOnly(season) {
+      if (seasonStats[season]?.length) return seasonStats[season];
+      const files = getSeasonFiles(season);
+      const stats = normalizePlayerStatsColumns(await fetchJson(files.stats));
+      if (!Array.isArray(stats) || stats.length === 0) {
+        throw new Error(`${files.stats} 数据为空或格式不正确`);
+      }
+      seasonStats[season] = stats;
+      return stats;
+    }
+
+    async function prefetchSeasonStats(seasons = SEASONS) {
+      await Promise.allSettled(seasons.map(season => loadSeasonStatsOnly(season)));
+    }
+
+    async function prefetchSeasonPayloads(seasons) {
+      await Promise.allSettled(seasons.map(async (season) => {
+        if (seasonPayloadCache[season] || season === currentSeason) return;
+        try {
+          seasonPayloadCache[season] = await loadSeasonData(season);
+        } catch (_) { /* 后台预加载失败可忽略 */ }
       }));
+    }
+
+    async function loadSeasonData(season) {
+      if (seasonPayloadCache[season]) {
+        return seasonPayloadCache[season];
+      }
+
+      const files = getSeasonFiles(season);
+      const statsPromise = seasonStats[season]?.length
+        ? Promise.resolve(seasonStats[season])
+        : fetchJsonWithRetry(files.stats).then(rows => normalizePlayerStatsColumns(rows));
+
+      const [stats, rawTable, banxing, tongbian] = await Promise.all([
+        statsPromise,
+        fetchJsonWithRetry(files.raw),
+        fetchJsonWithRetry(files.banxing),
+        fetchJsonWithRetry(files.tongbian),
+      ]);
+
+      const payload = validateSeasonPayload(season, stats, rawTable, banxing, tongbian, files);
+      seasonPayloadCache[season] = payload;
+      return payload;
     }
 
     async function loadTotalBanxingData(seriesKey) {
@@ -4870,49 +5241,40 @@
       }
     }
 
-    async function loadSeasonData(season) {
-      const files = getSeasonFiles(season);
-      const [stats, rawTable, banxing, tongbian] = await Promise.all([
-        fetchJson(files.stats),
-        fetchJson(files.raw),
-        fetchJson(files.banxing),
-        fetchJson(files.tongbian),
-      ]);
-
-      seasonStats[season] = normalizePlayerStatsColumns(stats);
-      rawData = seasonStats[season];
-      rawTableData = normalizeRawTableColumns(rawTable);
-      banxingData = banxing;
-      tongbianData = tongbian;
-
-      if (!Array.isArray(rawData) || rawData.length === 0) {
-        throw new Error(`${files.stats} 数据为空或格式不正确`);
-      }
-      if (!Array.isArray(rawTableData) || rawTableData.length === 0) {
-        throw new Error(`${files.raw} 数据为空或格式不正确`);
-      }
-      if (!Array.isArray(banxingData) || banxingData.length === 0) {
-        throw new Error(`${files.banxing} 数据为空或格式不正确`);
-      }
-      if (!Array.isArray(tongbianData)) {
-        throw new Error(`${files.tongbian} 格式不正确（应为 JSON 数组）`);
-      }
-      currentSeason = season;
-    }
-
     async function setSeason(season) {
-      if (!SEASONS.includes(season) || season === currentSeason) return;
+      if (!SEASONS.includes(season)) return;
+
+      const seq = ++seasonLoadSeq;
+      if (season === currentSeason && rawData.length > 0) {
+        $('seasonSelect').value = currentSeason;
+        return;
+      }
+
+      const seasonEl = $('seasonSelect');
+      seasonEl.disabled = true;
+
       try {
-        await loadSeasonData(season);
+        const payload = await loadSeasonData(season);
+        if (seq !== seasonLoadSeq) return;
+
+        applySeasonPayload(payload);
+        $show('error', false);
         updateSeasonSelect();
         refreshControls();
         updateChart();
       } catch (err) {
+        if (seq !== seasonLoadSeq) return;
+        $('seasonSelect').value = currentSeason;
         const files = getSeasonFiles(season);
-        showError(
-          `无法加载 ${season} 数据：${err.message}<br><br>` +
+        showTransientError(
+          `无法加载 ${season} 数据：${err.message}<br>` +
           `请确认 <strong>${files.stats}</strong>、<strong>${files.raw}</strong>、<strong>${files.banxing}</strong> 与 <strong>${files.tongbian}</strong> 存在。`
         );
+        updateChart();
+      } finally {
+        if (seq === seasonLoadSeq) {
+          seasonEl.disabled = false;
+        }
       }
     }
 
@@ -4920,14 +5282,16 @@
       try {
         chart = echarts.init(document.getElementById('chart'));
         bindUiOnce();
-        await loadAllPlayerStats();
         document.getElementById('seriesSelect').value = DEFAULT_SERIES_KEY;
         refreshSeasonSelectOptions();
-        await loadSeasonData(DEFAULT_SEASON);
-        currentSeason = DEFAULT_SEASON;
+        applySeasonPayload(await loadSeasonData(DEFAULT_SEASON));
         updateSeasonSelect();
         refreshControls();
         updateChart();
+
+        const otherSeasons = SEASONS.filter(season => season !== DEFAULT_SEASON);
+        prefetchSeasonStats(otherSeasons);
+        prefetchSeasonPayloads(getCompareSeasonList(DEFAULT_SERIES_KEY).filter(s => s !== DEFAULT_SEASON));
 
         window.addEventListener('resize', () => {
           clearTimeout(resizeTimer);
