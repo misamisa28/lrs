@@ -578,19 +578,66 @@
         && !chart.isDisposed();
     }
 
-    function waitForImageLoad(img) {
-      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-      return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error('图表图片加载超时')), 8000);
-        img.onload = () => {
-          clearTimeout(timer);
-          resolve();
-        };
-        img.onerror = () => {
-          clearTimeout(timer);
-          reject(new Error('图表图片加载失败'));
-        };
+    let pendingChartCapture = null;
+
+    function hideChartForScreenshot(restores) {
+      if (!isChartVisibleForScreenshot()) return;
+
+      const chartEl = chart.getDom();
+      Array.from(chartEl.children).forEach(child => {
+        const prev = child.style.visibility;
+        child.style.visibility = 'hidden';
+        restores.push(() => { child.style.visibility = prev; });
       });
+    }
+
+    function injectChartImageForScreenshot(clonedDoc, chartCapture) {
+      if (!chartCapture?.dataUrl) return;
+
+      const liveChart = chart.getDom();
+      const cloneChart = clonedDoc.getElementById('chart');
+      const liveWrap = document.getElementById('chartWrap');
+      const cloneWrap = clonedDoc.getElementById('chartWrap');
+      if (!liveChart || !cloneChart) return;
+
+      const computed = window.getComputedStyle(liveChart);
+      cloneChart.innerHTML = '';
+      cloneChart.style.width = computed.width;
+      cloneChart.style.height = computed.height;
+      cloneChart.style.minHeight = computed.minHeight;
+      cloneChart.style.maxHeight = computed.maxHeight;
+      cloneChart.style.maxWidth = computed.maxWidth;
+      cloneChart.style.boxSizing = computed.boxSizing;
+      cloneChart.style.padding = computed.padding;
+      cloneChart.style.border = computed.border;
+      cloneChart.style.borderRadius = computed.borderRadius;
+      cloneChart.style.background = computed.backgroundColor || '#ffffff';
+      cloneChart.style.overflow = 'hidden';
+      cloneChart.style.display = computed.display;
+      cloneChart.style.flex = computed.flex;
+
+      if (liveWrap && cloneWrap) {
+        const wrapStyle = window.getComputedStyle(liveWrap);
+        cloneWrap.style.width = wrapStyle.width;
+        cloneWrap.style.height = wrapStyle.height;
+        cloneWrap.style.minHeight = wrapStyle.minHeight;
+        cloneWrap.style.maxWidth = wrapStyle.maxWidth;
+        cloneWrap.style.flex = wrapStyle.flex;
+        cloneWrap.style.display = wrapStyle.display;
+      }
+
+      const img = clonedDoc.createElement('img');
+      img.src = chartCapture.dataUrl;
+      img.alt = '';
+      img.setAttribute('aria-hidden', 'true');
+      img.style.display = 'block';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.margin = '0';
+      img.style.padding = '0';
+      img.style.border = 'none';
+      img.style.objectFit = 'fill';
+      cloneChart.appendChild(img);
     }
 
     async function prepareLiveDomForScreenshot() {
@@ -603,66 +650,25 @@
         restores.push(() => { headerActions.style.visibility = prev; });
       }
 
+      hideChartForScreenshot(restores);
+
       return () => restores.reverse().forEach(restore => restore());
     }
 
-    async function captureChartForScreenshot() {
+    async function captureChartForScreenshot(screenshotScale) {
       if (!isChartVisibleForScreenshot()) return null;
 
-      const chartEl = chart.getDom();
       chart.resize();
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      chart.resize();
 
-      const rect = chartEl.getBoundingClientRect();
       return {
         dataUrl: chart.getDataURL({
           type: 'png',
-          pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+          pixelRatio: screenshotScale,
           backgroundColor: '#ffffff',
         }),
-        left: rect.left + window.scrollX,
-        top: rect.top + window.scrollY,
-        width: chartEl.offsetWidth,
-        height: chartEl.offsetHeight,
       };
-    }
-
-    async function loadScreenshotImage(dataUrl) {
-      const img = new Image();
-      img.decoding = 'async';
-
-      let blobUrl = null;
-      try {
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        blobUrl = URL.createObjectURL(blob);
-        img.src = blobUrl;
-      } catch {
-        img.src = dataUrl;
-      }
-
-      try {
-        await waitForImageLoad(img);
-        return img;
-      } finally {
-        if (blobUrl) URL.revokeObjectURL(blobUrl);
-      }
-    }
-
-    async function compositeChartOntoCanvas(canvas, chartCapture, scale) {
-      if (!chartCapture) return canvas;
-
-      const img = await loadScreenshotImage(chartCapture.dataUrl);
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(
-        img,
-        chartCapture.left * scale,
-        chartCapture.top * scale,
-        chartCapture.width * scale,
-        chartCapture.height * scale
-      );
-      return canvas;
     }
 
     function prepareScreenshotClone(clonedDoc) {
@@ -684,6 +690,7 @@
       if (modal) modal.style.display = 'none';
 
       fixPageMetaBarForScreenshot(clonedDoc);
+      injectChartImageForScreenshot(clonedDoc, pendingChartCapture);
 
       document.querySelectorAll('select').forEach(liveSelect => {
         if (isScreenshotVisible(liveSelect)) {
@@ -710,9 +717,12 @@
       let restoreLiveDom = null;
 
       try {
-        const chartCapture = await captureChartForScreenshot();
-        restoreLiveDom = await prepareLiveDomForScreenshot();
+        window.scrollTo(0, 0);
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
         const scale = Math.min(window.devicePixelRatio || 1, 2);
+        pendingChartCapture = await captureChartForScreenshot(scale);
+        restoreLiveDom = await prepareLiveDomForScreenshot();
 
         const canvas = await html2canvas(document.body, {
           backgroundColor: getComputedStyle(document.body).backgroundColor,
@@ -730,8 +740,6 @@
           onclone: prepareScreenshotClone,
         });
 
-        await compositeChartOntoCanvas(canvas, chartCapture, scale);
-
         const watermarked = applyScreenshotWatermark(canvas, scale);
         const link = document.createElement('a');
         link.download = getScreenshotFilename();
@@ -740,6 +748,7 @@
       } catch (err) {
         showTransientError(`截图失败：${err.message}`);
       } finally {
+        pendingChartCapture = null;
         restoreLiveDom?.();
         window.scrollTo(scrollX, scrollY);
         btn.disabled = false;
