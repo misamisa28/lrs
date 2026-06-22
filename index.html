@@ -580,6 +580,55 @@
 
     let pendingChartCapture = null;
 
+    function screenshotPx(value) {
+      return `${Math.round(value * 100) / 100}px`;
+    }
+
+    function getScreenshotDocumentSize() {
+      const clientWidth = document.documentElement.clientWidth;
+      const scrollWidth = document.documentElement.scrollWidth;
+      // 移动端宽表格会让 scrollWidth 大于视口，html2canvas 按 scrollWidth 渲染时会把图表拉宽
+      const width = scrollWidth > clientWidth + 1 ? clientWidth : scrollWidth;
+      return {
+        width,
+        height: document.documentElement.scrollHeight,
+        windowWidth: clientWidth,
+        windowHeight: window.innerHeight,
+      };
+    }
+
+    function syncScreenshotLayoutChain(clonedDoc) {
+      const chain = [
+        ['.container', '.container'],
+        ['#visualPanel', '#visualPanel'],
+        ['#chartWrap', '#chartWrap'],
+        ['#chart', '#chart'],
+      ];
+
+      chain.forEach(([selector]) => {
+        const liveEl = selector.startsWith('#')
+          ? document.getElementById(selector.slice(1))
+          : document.querySelector(selector);
+        const cloneEl = clonedDoc.querySelector(selector);
+        if (!liveEl || !cloneEl || !isScreenshotVisible(liveEl)) return;
+
+        const rect = liveEl.getBoundingClientRect();
+        const computed = window.getComputedStyle(liveEl);
+        cloneEl.style.width = screenshotPx(rect.width);
+        cloneEl.style.maxWidth = screenshotPx(rect.width);
+        cloneEl.style.minWidth = '0';
+        cloneEl.style.boxSizing = computed.boxSizing;
+        cloneEl.style.flex = selector === '#chart' || selector === '#chartWrap' ? 'none' : computed.flex;
+        cloneEl.style.display = computed.display;
+
+        if (selector === '#visualPanel') {
+          cloneEl.style.flexDirection = computed.flexDirection;
+          cloneEl.style.alignItems = computed.alignItems;
+          cloneEl.style.gap = computed.gap;
+        }
+      });
+    }
+
     function hideChartForScreenshot(restores) {
       if (!isChartVisibleForScreenshot()) return;
 
@@ -596,46 +645,38 @@
 
       const liveChart = chart.getDom();
       const cloneChart = clonedDoc.getElementById('chart');
-      const liveWrap = document.getElementById('chartWrap');
-      const cloneWrap = clonedDoc.getElementById('chartWrap');
       if (!liveChart || !cloneChart) return;
 
+      const chartRect = liveChart.getBoundingClientRect();
       const computed = window.getComputedStyle(liveChart);
+
       cloneChart.innerHTML = '';
-      cloneChart.style.width = computed.width;
-      cloneChart.style.height = computed.height;
-      cloneChart.style.minHeight = computed.minHeight;
-      cloneChart.style.maxHeight = computed.maxHeight;
-      cloneChart.style.maxWidth = computed.maxWidth;
+      cloneChart.style.width = screenshotPx(chartRect.width);
+      cloneChart.style.height = screenshotPx(chartRect.height);
+      cloneChart.style.minWidth = screenshotPx(chartRect.width);
+      cloneChart.style.maxWidth = screenshotPx(chartRect.width);
+      cloneChart.style.minHeight = screenshotPx(chartRect.height);
+      cloneChart.style.maxHeight = screenshotPx(chartRect.height);
       cloneChart.style.boxSizing = computed.boxSizing;
       cloneChart.style.padding = computed.padding;
       cloneChart.style.border = computed.border;
       cloneChart.style.borderRadius = computed.borderRadius;
       cloneChart.style.background = computed.backgroundColor || '#ffffff';
       cloneChart.style.overflow = 'hidden';
-      cloneChart.style.display = computed.display;
-      cloneChart.style.flex = computed.flex;
-
-      if (liveWrap && cloneWrap) {
-        const wrapStyle = window.getComputedStyle(liveWrap);
-        cloneWrap.style.width = wrapStyle.width;
-        cloneWrap.style.height = wrapStyle.height;
-        cloneWrap.style.minHeight = wrapStyle.minHeight;
-        cloneWrap.style.maxWidth = wrapStyle.maxWidth;
-        cloneWrap.style.flex = wrapStyle.flex;
-        cloneWrap.style.display = wrapStyle.display;
-      }
+      cloneChart.style.display = 'block';
+      cloneChart.style.flex = 'none';
 
       const img = clonedDoc.createElement('img');
       img.src = chartCapture.dataUrl;
       img.alt = '';
       img.setAttribute('aria-hidden', 'true');
       img.style.display = 'block';
-      img.style.width = '100%';
-      img.style.height = '100%';
+      img.style.width = screenshotPx(liveChart.clientWidth);
+      img.style.height = screenshotPx(liveChart.clientHeight);
       img.style.margin = '0';
       img.style.padding = '0';
       img.style.border = 'none';
+      img.style.boxSizing = 'border-box';
       img.style.objectFit = 'fill';
       cloneChart.appendChild(img);
     }
@@ -672,15 +713,17 @@
     }
 
     function prepareScreenshotClone(clonedDoc) {
-      clonedDoc.documentElement.style.width = `${window.innerWidth}px`;
-      clonedDoc.body.style.width = `${window.innerWidth}px`;
-      clonedDoc.body.style.maxWidth = `${window.innerWidth}px`;
+      const docSize = getScreenshotDocumentSize();
+
+      clonedDoc.documentElement.style.width = screenshotPx(docSize.width);
+      clonedDoc.body.style.width = screenshotPx(docSize.width);
+      clonedDoc.body.style.maxWidth = screenshotPx(docSize.width);
       clonedDoc.body.style.webkitTextSizeAdjust = '100%';
       clonedDoc.body.style.textSizeAdjust = '100%';
 
       const viewportMeta = clonedDoc.querySelector('meta[name="viewport"]');
       if (viewportMeta) {
-        viewportMeta.setAttribute('content', `width=${window.innerWidth}, initial-scale=1`);
+        viewportMeta.setAttribute('content', `width=${docSize.windowWidth}, initial-scale=1`);
       }
 
       const actions = clonedDoc.querySelector('.header-actions');
@@ -690,6 +733,7 @@
       if (modal) modal.style.display = 'none';
 
       fixPageMetaBarForScreenshot(clonedDoc);
+      syncScreenshotLayoutChain(clonedDoc);
       injectChartImageForScreenshot(clonedDoc, pendingChartCapture);
 
       document.querySelectorAll('select').forEach(liveSelect => {
@@ -721,6 +765,7 @@
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
         const scale = Math.min(window.devicePixelRatio || 1, 2);
+        const docSize = getScreenshotDocumentSize();
         pendingChartCapture = await captureChartForScreenshot(scale);
         restoreLiveDom = await prepareLiveDomForScreenshot();
 
@@ -733,10 +778,10 @@
           logging: false,
           scrollX: 0,
           scrollY: 0,
-          width: document.documentElement.scrollWidth,
-          height: document.documentElement.scrollHeight,
-          windowWidth: window.innerWidth,
-          windowHeight: window.innerHeight,
+          width: docSize.width,
+          height: docSize.height,
+          windowWidth: docSize.windowWidth,
+          windowHeight: docSize.windowHeight,
           onclone: prepareScreenshotClone,
         });
 
