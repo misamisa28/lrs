@@ -1280,13 +1280,19 @@
         gridTop: mobile ? 12 : 20,
         gridBottom: mobile ? 12 : 32,
         showBarLabel: !mobile,
-        barMaxWidth: mobile ? 16 : 28,
+        barMaxWidth: mobile ? 12 : 28,
+        barCategoryGap: mobile ? '6%' : '20%',
+        barGap: mobile ? '4%' : '15%',
         radarRadius: mobile ? '45%' : '55%',
         radarCenter: mobile ? ['50%', '44%'] : ['50%', '50%'],
         radarSideRadius: '48%',
         radarNameFontSize: mobile ? 10 : 13,
-        legendBottom: mobile ? 0 : 16,
-        legendFontSize: mobile ? 11 : 12,
+        legendBottom: mobile ? 2 : 16,
+        legendFontSize: mobile ? 9 : 12,
+        legendItemWidth: mobile ? 12 : 25,
+        legendItemHeight: mobile ? 7 : 14,
+        legendItemGap: mobile ? 6 : 10,
+        legendReserve: mobile ? 22 : 28,
         scatterGridLeft: mobile ? 56 : 88,
         scatterGridRight: mobile ? 16 : 48,
         scatterGridTop: mobile ? 48 : 64,
@@ -1294,6 +1300,86 @@
         scatterYNameGap: mobile ? 42 : 58,
         scatterXNameGap: mobile ? 28 : 36
       };
+    }
+
+    function buildChartLegend(data, layout) {
+      const legend = {
+        data,
+        bottom: layout.legendBottom,
+        itemWidth: layout.legendItemWidth,
+        itemHeight: layout.legendItemHeight,
+        itemGap: layout.legendItemGap,
+        textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize },
+      };
+      if (isMobile() && data.length > 3) {
+        legend.type = 'scroll';
+        legend.width = '90%';
+        legend.pageIconSize = 10;
+        legend.pageTextStyle = { fontSize: layout.legendFontSize };
+      }
+      return legend;
+    }
+
+    function getBarSeriesLayout(layout) {
+      return {
+        barMaxWidth: layout.barMaxWidth,
+        barCategoryGap: layout.barCategoryGap,
+        barGap: layout.barGap,
+      };
+    }
+
+    function getCompareChartGrid(layout) {
+      const mobile = isMobile();
+      const pad = mobile ? 40 : 48;
+      return {
+        left: mobile ? 44 : 56,
+        right: mobile ? 12 : 28,
+        top: pad,
+        bottom: pad + layout.legendReserve,
+        containLabel: true,
+      };
+    }
+
+    function setCompareChartHeight() {
+      const el = document.getElementById('chart');
+      if (isMobile()) {
+        el.style.height = `${Math.max(300, Math.min(window.innerHeight - 280, 360))}px`;
+      } else {
+        el.style.height = `${Math.min(460, Math.max(380, window.innerHeight * 0.42))}px`;
+      }
+    }
+
+    function getCompareYAxisRange(values, metric) {
+      const nums = values.filter(v => v != null && Number.isFinite(Number(v))).map(Number);
+      if (!nums.length) {
+        return metric.includes('率') ? { min: 0, max: 100 } : {};
+      }
+
+      const dataMin = Math.min(...nums);
+      const dataMax = Math.max(...nums);
+      const span = Math.max(dataMax - dataMin, 0);
+      const isRate = metric.includes('率');
+      const pad = Math.max(span * 0.15, isRate ? 3 : Math.max(span * 0.1, 0.5));
+
+      let min = dataMin - pad;
+      let max = dataMax + pad;
+
+      if (isRate) {
+        min = Math.max(0, Math.floor(min * 10) / 10);
+        max = Math.min(100, Math.ceil(max * 10) / 10);
+        if (max - min < 10) {
+          const mid = (dataMin + dataMax) / 2;
+          min = Math.max(0, Math.floor((mid - 5) * 10) / 10);
+          max = Math.min(100, Math.ceil((mid + 5) * 10) / 10);
+        }
+      } else if (dataMin >= 0 && min < 0) {
+        min = 0;
+      } else {
+        min = Math.floor(min * 10) / 10;
+        max = Math.ceil(max * 10) / 10;
+      }
+
+      return { min, max };
     }
 
     function getScatterGrid(layout) {
@@ -1354,9 +1440,9 @@
         return;
       }
       const mobile = isMobile();
-      const rowHeight = mobile ? 32 : 36;
-      const chrome = mobile ? 80 : 120;
-      const minHeight = mobile ? 320 : 520;
+      const rowHeight = mobile ? 22 : 36;
+      const chrome = mobile ? 48 : 120;
+      const minHeight = mobile ? 260 : 520;
       el.style.height = Math.max(minHeight, itemCount * rowHeight + chrome) + 'px';
     }
 
@@ -1514,7 +1600,7 @@
       const compareSeasons = getCompareSeasonList(seriesKey);
       const layout = getChartLayout();
       const avgLabel = '赛季平均值';
-      setChartHeight(isMobile() ? 8 : 0);
+      setCompareChartHeight();
 
       const playerData = compareSeasons.map(season => {
         if (!hasCompareSeasonPlayer(season, name)) return null;
@@ -1526,6 +1612,7 @@
         return getSeasonAverage(season, metric);
       });
       const yAxisFormatter = metric.includes('率') ? (v) => formatPercent(v) : '{value}';
+      const yAxisRange = getCompareYAxisRange([...playerData, ...avgData], metric);
       const tooltipFormatter = (params) => {
         const season = params[0]?.axisValue;
         if (!season) return '';
@@ -1540,11 +1627,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [name, avgLabel],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([name, avgLabel], layout),
         tooltip: {
           trigger: 'axis',
           backgroundColor: CHART_TOOLTIP_BG,
@@ -1552,13 +1635,7 @@
           textStyle: { color: CHART_TEXT },
           formatter: tooltipFormatter
         },
-        grid: {
-          left: 48,
-          right: 24,
-          top: layout.gridTop,
-          bottom: isMobile() ? 72 : 88,
-          containLabel: true
-        },
+        grid: getCompareChartGrid(layout),
         xAxis: {
           type: 'category',
           data: [...compareSeasons],
@@ -1567,6 +1644,8 @@
         },
         yAxis: {
           type: 'value',
+          min: yAxisRange.min,
+          max: yAxisRange.max,
           axisLabel: {
             color: CHART_AXIS,
             fontSize: layout.axisFontSize,
@@ -2769,7 +2848,7 @@
             },
             label: buildWinrateBarLabel(d),
           })),
-          barMaxWidth: layout.barMaxWidth,
+          ...getBarSeriesLayout(layout),
         }],
         animationDuration: 600,
       }, true);
@@ -2897,7 +2976,7 @@
               color: getBarColor(d.value, average, isRateColumn)
             }
           })),
-          barMaxWidth: layout.barMaxWidth,
+          ...getBarSeriesLayout(layout),
           label: {
             show: layout.showBarLabel,
             position: 'right',
@@ -2944,11 +3023,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [BLIND_POISON_COL, NON_WOLF_BLIND_POISON_COL],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([BLIND_POISON_COL, NON_WOLF_BLIND_POISON_COL], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -2970,7 +3045,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -2986,7 +3061,7 @@
             type: 'bar',
             stack: 'blindPoisoned',
             data: items.map(d => d.nonWolf),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
             label: {
               show: layout.showBarLabel,
@@ -3001,7 +3076,7 @@
             type: 'bar',
             stack: 'blindPoisoned',
             data: items.map(d => d.other),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: APPEARANCE_COLOR, borderRadius: [0, 4, 4, 0] },
             label: {
               show: layout.showBarLabel,
@@ -3165,7 +3240,7 @@
               color: getBarColor(d.value, average, isRateColumn)
             }
           })),
-          barMaxWidth: layout.barMaxWidth,
+          ...getBarSeriesLayout(layout),
           label: {
             show: layout.showBarLabel,
             position: 'right',
@@ -3203,11 +3278,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [WITCH_POISON_WITCH_COL, WITCH_POISON_USE_COL, WITCH_POISON_WOLF_COL],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([WITCH_POISON_WITCH_COL, WITCH_POISON_USE_COL, WITCH_POISON_WOLF_COL], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -3231,7 +3302,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -3247,7 +3318,7 @@
             type: 'bar',
             stack: 'witchPoison',
             data: items.map(d => d.wolf),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
             label: {
               show: layout.showBarLabel,
@@ -3262,7 +3333,7 @@
             type: 'bar',
             stack: 'witchPoison',
             data: items.map(d => d.useOther),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: APPEARANCE_WOLF_COLOR },
             label: {
               show: layout.showBarLabel,
@@ -3277,7 +3348,7 @@
             type: 'bar',
             stack: 'witchPoison',
             data: items.map(d => d.other),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: {
               color: WITCH_POISON_GRAY,
               borderColor: WITCH_POISON_GRAY_BORDER,
@@ -3322,11 +3393,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [HUNTER_COUNT_COL, HUNTER_SKILL_USE_COL, HUNTER_SKILL_WOLF_COL],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([HUNTER_COUNT_COL, HUNTER_SKILL_USE_COL, HUNTER_SKILL_WOLF_COL], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -3350,7 +3417,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -3366,7 +3433,7 @@
             type: 'bar',
             stack: 'hunterSkill',
             data: items.map(d => d.wolf),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
             label: {
               show: layout.showBarLabel,
@@ -3381,7 +3448,7 @@
             type: 'bar',
             stack: 'hunterSkill',
             data: items.map(d => d.useOther),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: APPEARANCE_WOLF_COLOR },
             label: {
               show: layout.showBarLabel,
@@ -3396,7 +3463,7 @@
             type: 'bar',
             stack: 'hunterSkill',
             data: items.map(d => d.other),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: {
               color: WITCH_POISON_GRAY,
               borderColor: WITCH_POISON_GRAY_BORDER,
@@ -3431,11 +3498,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [BLIND_POISON_USE_COL, BLIND_POISON_WOLF_COUNT_COL],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([BLIND_POISON_USE_COL, BLIND_POISON_WOLF_COUNT_COL], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -3457,7 +3520,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -3473,7 +3536,7 @@
             type: 'bar',
             stack: 'blindPoison',
             data: items.map(d => d.blindWolf),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
             label: {
               show: layout.showBarLabel,
@@ -3488,7 +3551,7 @@
             type: 'bar',
             stack: 'blindPoison',
             data: items.map(d => d.blindOther),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: APPEARANCE_WOLF_COLOR, borderRadius: [0, 4, 4, 0] },
             label: {
               show: layout.showBarLabel,
@@ -3547,11 +3610,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [DREAM_WALKER_COL, DREAM_FIRST_WOLF_COL, DREAM_FIRST_SPECIAL_COL],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([DREAM_WALKER_COL, DREAM_FIRST_WOLF_COL, DREAM_FIRST_SPECIAL_COL], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -3574,7 +3633,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -3590,7 +3649,7 @@
             type: 'bar',
             stack: 'dreamFirst',
             data: items.map(d => d.special),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: DREAM_DARK_GREEN, borderRadius: [4, 0, 0, 4] },
             label: {
               show: layout.showBarLabel,
@@ -3605,7 +3664,7 @@
             type: 'bar',
             stack: 'dreamFirst',
             data: items.map(d => d.wolfOther),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: WITCH_POISON_GREEN },
             label: {
               show: layout.showBarLabel,
@@ -3620,7 +3679,7 @@
             type: 'bar',
             stack: 'dreamFirst',
             data: items.map(d => d.other),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: {
               color: WITCH_POISON_GRAY,
               borderColor: WITCH_POISON_GRAY_BORDER,
@@ -3650,17 +3709,13 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [
-            APPEARANCE_COMBO_SKILL_WOLF,
-            APPEARANCE_COMBO_WOLF,
-            APPEARANCE_COMBO_YUTONG,
-            APPEARANCE_COMBO_IDENTITY_SEG,
-            APPEARANCE_COMBO_OTHER
-          ],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([
+          APPEARANCE_COMBO_SKILL_WOLF,
+          APPEARANCE_COMBO_WOLF,
+          APPEARANCE_COMBO_YUTONG,
+          APPEARANCE_COMBO_IDENTITY_SEG,
+          APPEARANCE_COMBO_OTHER
+        ], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -3687,7 +3742,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -3703,7 +3758,7 @@
             type: 'bar',
             stack: 'appearance',
             data: items.map(d => d.skillWolf),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: {
               color: APPEARANCE_SKILL_WOLF_COLOR,
               borderRadius: [4, 0, 0, 4]
@@ -3726,7 +3781,7 @@
                 borderRadius: d.skillWolf > 0 ? 0 : [4, 0, 0, 4]
               }
             })),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: {
               color: APPEARANCE_WOLF_COLOR
             },
@@ -3743,7 +3798,7 @@
             type: 'bar',
             stack: 'appearance',
             data: items.map(d => d.yutong),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: APPEARANCE_YUTONG_COLOR },
             label: {
               show: layout.showBarLabel,
@@ -3758,7 +3813,7 @@
             type: 'bar',
             stack: 'appearance',
             data: items.map(d => d.identityGreen),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: APPEARANCE_IDENTITY_COLOR },
             label: {
               show: layout.showBarLabel,
@@ -3773,7 +3828,7 @@
             type: 'bar',
             stack: 'appearance',
             data: items.map(d => d.other),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: {
               color: APPEARANCE_COLOR,
               borderRadius: [0, 4, 4, 0]
@@ -3821,11 +3876,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [RED_WOLF_COL, SELF_KNIFE_COL, TEAMMATE_SELF_KNIFE_COL],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([RED_WOLF_COL, SELF_KNIFE_COL, TEAMMATE_SELF_KNIFE_COL], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -3848,7 +3899,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -3864,7 +3915,7 @@
             type: 'bar',
             stack: 'selfKnife',
             data: items.map(d => d.teammateKnife),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: WITCH_POISON_GREEN, borderRadius: [4, 0, 0, 4] },
             label: {
               show: layout.showBarLabel,
@@ -3879,7 +3930,7 @@
             type: 'bar',
             stack: 'selfKnife',
             data: items.map(d => d.selfKnife),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: SELF_KNIFE_GREEN },
             label: {
               show: layout.showBarLabel,
@@ -3894,7 +3945,7 @@
             type: 'bar',
             stack: 'selfKnife',
             data: items.map(d => d.other),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: APPEARANCE_COLOR, borderRadius: [0, 4, 4, 0] },
             label: {
               show: layout.showBarLabel,
@@ -3924,11 +3975,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [FIRST_KNIFE_WITCH_COL, RED_WOLF_COL],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([FIRST_KNIFE_WITCH_COL, RED_WOLF_COL], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -3950,7 +3997,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -3966,7 +4013,7 @@
             type: 'bar',
             stack: 'firstKnifeWitch',
             data: items.map(d => d.firstKnifeWitch),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: WOLF_COLOR, borderRadius: [4, 0, 0, 4] },
             label: {
               show: layout.showBarLabel,
@@ -3981,7 +4028,7 @@
             type: 'bar',
             stack: 'firstKnifeWitch',
             data: items.map(d => d.other),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: { color: APPEARANCE_COLOR, borderRadius: [0, 4, 4, 0] },
             label: {
               show: layout.showBarLabel,
@@ -4025,11 +4072,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [accentCol, WOLF_COMBO_TOTAL],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([accentCol, WOLF_COMBO_TOTAL], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -4052,7 +4095,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -4068,7 +4111,7 @@
             type: 'bar',
             stack: 'wolf',
             data: items.map(d => (isHjtMode ? d.hjt : d.self)),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: {
               color: accentColor,
               borderRadius: [4, 0, 0, 4]
@@ -4086,7 +4129,7 @@
             type: 'bar',
             stack: 'wolf',
             data: items.map(d => (isHjtMode ? d.hjtOther : d.selfOther)),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: {
               color: APPEARANCE_COLOR,
               borderRadius: [0, 4, 4, 0]
@@ -4131,11 +4174,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: JIXIE_WOLF_SEGMENTS.map(seg => seg.label),
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend(JIXIE_WOLF_SEGMENTS.map(seg => seg.label), layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -4162,7 +4201,7 @@
           left: layout.gridLeft,
           right: layout.gridRight,
           top: layout.gridTop,
-          bottom: layout.gridBottom + (layout.legendBottom ? 28 : 8),
+          bottom: layout.gridBottom + layout.legendReserve,
           containLabel: true
         },
         xAxis: {
@@ -4181,7 +4220,7 @@
             type: 'bar',
             stack: 'jixieWolf',
             data: items.map(d => d[seg.field]),
-            barMaxWidth: layout.barMaxWidth,
+            ...getBarSeriesLayout(layout),
             itemStyle: {
               color: seg.color,
               borderColor: seg.borderColor || seg.color,
@@ -4571,11 +4610,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: {
-          data: [name, avgLabel],
-          bottom: layout.legendBottom,
-          textStyle: { color: CHART_TEXT, fontSize: layout.legendFontSize }
-        },
+        legend: buildChartLegend([name, avgLabel], layout),
         tooltip: {
           trigger: 'item',
           backgroundColor: CHART_TOOLTIP_BG,
