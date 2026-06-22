@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20250622" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20250623" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -482,23 +482,81 @@
       cloneSelect.replaceWith(fake);
     }
 
-    function applyScreenshotWatermark(sourceCanvas) {
+    function getScreenshotWatermarkMetrics(canvasScale) {
+      const linkEl = document.querySelector('.page-source-link');
+      const linkStyle = linkEl ? window.getComputedStyle(linkEl) : null;
+      const basePx = linkStyle ? parseFloat(linkStyle.fontSize) : 11;
+      const fontFamily = linkStyle?.fontFamily || '"Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
+      const fontSize = Math.max(9, Math.round(basePx * canvasScale));
+
+      return {
+        fontSize,
+        font: `700 ${fontSize}px ${fontFamily}`,
+        gapX: fontSize * 22,
+        gapY: fontSize * 14,
+      };
+    }
+
+    function syncElementTypography(liveEl, cloneEl) {
+      if (!liveEl || !cloneEl) return;
+      const cs = window.getComputedStyle(liveEl);
+      const fontPx = parseFloat(cs.fontSize);
+      if (Number.isFinite(fontPx)) {
+        cloneEl.style.fontSize = `${fontPx}px`;
+      } else {
+        cloneEl.style.fontSize = cs.fontSize;
+      }
+      cloneEl.style.lineHeight = cs.lineHeight;
+      cloneEl.style.fontWeight = cs.fontWeight;
+      cloneEl.style.fontFamily = cs.fontFamily;
+      cloneEl.style.color = cs.color;
+      cloneEl.style.opacity = cs.opacity;
+      cloneEl.style.letterSpacing = cs.letterSpacing;
+      cloneEl.style.webkitTextSizeAdjust = '100%';
+      cloneEl.style.textSizeAdjust = '100%';
+    }
+
+    function fixPageMetaBarForScreenshot(clonedDoc) {
+      const liveMeta = document.getElementById('pageMetaBar');
+      const cloneMeta = clonedDoc.getElementById('pageMetaBar');
+      if (!liveMeta || !cloneMeta || !isScreenshotVisible(liveMeta)) return;
+
+      const barStyle = window.getComputedStyle(liveMeta);
+      cloneMeta.style.visibility = 'visible';
+      cloneMeta.style.display = barStyle.display;
+      cloneMeta.style.justifyContent = barStyle.justifyContent;
+      cloneMeta.style.alignItems = barStyle.alignItems;
+      cloneMeta.style.gap = barStyle.gap;
+      cloneMeta.style.padding = barStyle.padding;
+      cloneMeta.style.marginTop = barStyle.marginTop;
+      cloneMeta.style.webkitTextSizeAdjust = '100%';
+      cloneMeta.style.textSizeAdjust = '100%';
+
+      syncElementTypography(
+        liveMeta.querySelector('.page-source-link'),
+        cloneMeta.querySelector('.page-source-link')
+      );
+
+      const liveNote = liveMeta.querySelector('.page-meta-note');
+      const cloneNote = cloneMeta.querySelector('.page-meta-note');
+      if (liveNote && cloneNote && isScreenshotVisible(liveNote)) {
+        syncElementTypography(liveNote, cloneNote);
+      }
+    }
+
+    function applyScreenshotWatermark(sourceCanvas, canvasScale) {
       const output = document.createElement('canvas');
       output.width = sourceCanvas.width;
       output.height = sourceCanvas.height;
       const ctx = output.getContext('2d');
       ctx.drawImage(sourceCanvas, 0, 0);
 
-      const ratio = output.width / Math.max(document.documentElement.scrollWidth, 1);
-      const fontSize = Math.max(18, Math.round(20 * ratio));
-      const font = `700 ${fontSize}px "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`;
+      const { font, gapX, gapY } = getScreenshotWatermarkMetrics(canvasScale);
 
       ctx.save();
       ctx.font = font;
       ctx.fillStyle = 'rgba(170, 170, 170, 0.1)';
       ctx.textBaseline = 'middle';
-      const gapX = fontSize * 26;
-      const gapY = fontSize * 16;
       ctx.rotate(-Math.PI / 5);
       let row = 0;
       for (let y = -output.height; y < output.height * 1.5; y += gapY, row++) {
@@ -509,28 +567,123 @@
       }
       ctx.restore();
 
-      ctx.font = font;
-      ctx.fillStyle = 'rgba(160, 160, 160, 0.38)';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'bottom';
-      ctx.fillText(
-        SCREENSHOT_WATERMARK,
-        output.width - Math.round(14 * ratio),
-        output.height - Math.round(12 * ratio)
-      );
-
       return output;
     }
 
+    function isChartVisibleForScreenshot() {
+      const wrap = document.getElementById('chartWrap');
+      return wrap
+        && isScreenshotVisible(wrap)
+        && chart
+        && !chart.isDisposed();
+    }
+
+    function waitForImageLoad(img) {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('图表图片加载超时')), 8000);
+        img.onload = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+        img.onerror = () => {
+          clearTimeout(timer);
+          reject(new Error('图表图片加载失败'));
+        };
+      });
+    }
+
+    async function prepareLiveDomForScreenshot() {
+      const restores = [];
+
+      const headerActions = document.querySelector('.header-actions');
+      if (headerActions) {
+        const prev = headerActions.style.visibility;
+        headerActions.style.visibility = 'hidden';
+        restores.push(() => { headerActions.style.visibility = prev; });
+      }
+
+      return () => restores.reverse().forEach(restore => restore());
+    }
+
+    async function captureChartForScreenshot() {
+      if (!isChartVisibleForScreenshot()) return null;
+
+      const chartEl = chart.getDom();
+      chart.resize();
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+      const rect = chartEl.getBoundingClientRect();
+      return {
+        dataUrl: chart.getDataURL({
+          type: 'png',
+          pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+          backgroundColor: '#ffffff',
+        }),
+        left: rect.left + window.scrollX,
+        top: rect.top + window.scrollY,
+        width: chartEl.offsetWidth,
+        height: chartEl.offsetHeight,
+      };
+    }
+
+    async function loadScreenshotImage(dataUrl) {
+      const img = new Image();
+      img.decoding = 'async';
+
+      let blobUrl = null;
+      try {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        blobUrl = URL.createObjectURL(blob);
+        img.src = blobUrl;
+      } catch {
+        img.src = dataUrl;
+      }
+
+      try {
+        await waitForImageLoad(img);
+        return img;
+      } finally {
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+      }
+    }
+
+    async function compositeChartOntoCanvas(canvas, chartCapture, scale) {
+      if (!chartCapture) return canvas;
+
+      const img = await loadScreenshotImage(chartCapture.dataUrl);
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(
+        img,
+        chartCapture.left * scale,
+        chartCapture.top * scale,
+        chartCapture.width * scale,
+        chartCapture.height * scale
+      );
+      return canvas;
+    }
+
     function prepareScreenshotClone(clonedDoc) {
+      clonedDoc.documentElement.style.width = `${window.innerWidth}px`;
+      clonedDoc.body.style.width = `${window.innerWidth}px`;
+      clonedDoc.body.style.maxWidth = `${window.innerWidth}px`;
+      clonedDoc.body.style.webkitTextSizeAdjust = '100%';
+      clonedDoc.body.style.textSizeAdjust = '100%';
+
+      const viewportMeta = clonedDoc.querySelector('meta[name="viewport"]');
+      if (viewportMeta) {
+        viewportMeta.setAttribute('content', `width=${window.innerWidth}, initial-scale=1`);
+      }
+
       const actions = clonedDoc.querySelector('.header-actions');
       if (actions) actions.style.visibility = 'hidden';
 
       const modal = clonedDoc.getElementById('rulesModal');
       if (modal) modal.style.display = 'none';
 
-      const metaBar = clonedDoc.getElementById('pageMetaBar');
-      if (metaBar) metaBar.style.visibility = 'hidden';
+      fixPageMetaBarForScreenshot(clonedDoc);
 
       document.querySelectorAll('select').forEach(liveSelect => {
         if (isScreenshotVisible(liveSelect)) {
@@ -540,23 +693,6 @@
           if (cloneSelect) cloneSelect.style.display = 'none';
         }
       });
-
-      if (chart && !chart.isDisposed()) {
-        const liveDom = chart.getDom();
-        const cloneDom = clonedDoc.getElementById('chart');
-        if (cloneDom && liveDom && liveDom.offsetParent !== null) {
-          const img = clonedDoc.createElement('img');
-          img.src = chart.getDataURL({
-            type: 'png',
-            pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
-            backgroundColor: '#ffffff',
-          });
-          img.style.width = `${cloneDom.clientWidth}px`;
-          img.style.height = `${cloneDom.clientHeight}px`;
-          img.style.display = 'block';
-          cloneDom.replaceChildren(img);
-        }
-      }
     }
 
     async function captureFullscreenScreenshot() {
@@ -571,28 +707,32 @@
 
       const scrollX = window.scrollX;
       const scrollY = window.scrollY;
+      let restoreLiveDom = null;
 
       try {
-        if (chart && !chart.isDisposed()) {
-          chart.resize();
-          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-        }
+        const chartCapture = await captureChartForScreenshot();
+        restoreLiveDom = await prepareLiveDomForScreenshot();
+        const scale = Math.min(window.devicePixelRatio || 1, 2);
 
         const canvas = await html2canvas(document.body, {
           backgroundColor: getComputedStyle(document.body).backgroundColor,
-          scale: Math.min(window.devicePixelRatio || 1, 2),
+          scale,
           useCORS: true,
+          allowTaint: true,
+          foreignObjectRendering: false,
           logging: false,
           scrollX: 0,
           scrollY: 0,
           width: document.documentElement.scrollWidth,
           height: document.documentElement.scrollHeight,
-          windowWidth: document.documentElement.scrollWidth,
-          windowHeight: document.documentElement.scrollHeight,
+          windowWidth: window.innerWidth,
+          windowHeight: window.innerHeight,
           onclone: prepareScreenshotClone,
         });
 
-        const watermarked = applyScreenshotWatermark(canvas);
+        await compositeChartOntoCanvas(canvas, chartCapture, scale);
+
+        const watermarked = applyScreenshotWatermark(canvas, scale);
         const link = document.createElement('a');
         link.download = getScreenshotFilename();
         link.href = watermarked.toDataURL('image/png');
@@ -600,6 +740,7 @@
       } catch (err) {
         showTransientError(`截图失败：${err.message}`);
       } finally {
+        restoreLiveDom?.();
         window.scrollTo(scrollX, scrollY);
         btn.disabled = false;
         btn.classList.remove('is-busy');
