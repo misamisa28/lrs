@@ -621,6 +621,18 @@
         cloneEl.style.flex = selector === '#chart' || selector === '#chartWrap' ? 'none' : computed.flex;
         cloneEl.style.display = computed.display;
 
+        if (selector === '#chart' || selector === '#chartWrap') {
+          cloneEl.style.height = screenshotPx(rect.height);
+          cloneEl.style.minHeight = screenshotPx(rect.height);
+        }
+
+        if (selector === '#chart') {
+          cloneEl.style.border = computed.border;
+          cloneEl.style.borderRadius = computed.borderRadius;
+          cloneEl.style.background = computed.backgroundColor || '#ffffff';
+          cloneEl.style.overflow = 'hidden';
+        }
+
         if (selector === '#visualPanel') {
           cloneEl.style.flexDirection = computed.flexDirection;
           cloneEl.style.alignItems = computed.alignItems;
@@ -629,56 +641,14 @@
       });
     }
 
-    function hideChartForScreenshot(restores) {
-      if (!isChartVisibleForScreenshot()) return;
+    function hideChartInScreenshotClone(clonedDoc) {
+      if (!pendingChartCapture) return;
 
-      const chartEl = chart.getDom();
-      Array.from(chartEl.children).forEach(child => {
-        const prev = child.style.visibility;
-        child.style.visibility = 'hidden';
-        restores.push(() => { child.style.visibility = prev; });
-      });
-    }
-
-    function injectChartImageForScreenshot(clonedDoc, chartCapture) {
-      if (!chartCapture?.dataUrl) return;
-
-      const liveChart = chart.getDom();
       const cloneChart = clonedDoc.getElementById('chart');
-      if (!liveChart || !cloneChart) return;
-
-      const chartRect = liveChart.getBoundingClientRect();
-      const computed = window.getComputedStyle(liveChart);
+      if (!cloneChart) return;
 
       cloneChart.innerHTML = '';
-      cloneChart.style.width = screenshotPx(chartRect.width);
-      cloneChart.style.height = screenshotPx(chartRect.height);
-      cloneChart.style.minWidth = screenshotPx(chartRect.width);
-      cloneChart.style.maxWidth = screenshotPx(chartRect.width);
-      cloneChart.style.minHeight = screenshotPx(chartRect.height);
-      cloneChart.style.maxHeight = screenshotPx(chartRect.height);
-      cloneChart.style.boxSizing = computed.boxSizing;
-      cloneChart.style.padding = computed.padding;
-      cloneChart.style.border = computed.border;
-      cloneChart.style.borderRadius = computed.borderRadius;
-      cloneChart.style.background = computed.backgroundColor || '#ffffff';
-      cloneChart.style.overflow = 'hidden';
-      cloneChart.style.display = 'block';
-      cloneChart.style.flex = 'none';
-
-      const img = clonedDoc.createElement('img');
-      img.src = chartCapture.dataUrl;
-      img.alt = '';
-      img.setAttribute('aria-hidden', 'true');
-      img.style.display = 'block';
-      img.style.width = screenshotPx(liveChart.clientWidth);
-      img.style.height = screenshotPx(liveChart.clientHeight);
-      img.style.margin = '0';
-      img.style.padding = '0';
-      img.style.border = 'none';
-      img.style.boxSizing = 'border-box';
-      img.style.objectFit = 'fill';
-      cloneChart.appendChild(img);
+      cloneChart.style.background = '#ffffff';
     }
 
     async function prepareLiveDomForScreenshot() {
@@ -691,25 +661,80 @@
         restores.push(() => { headerActions.style.visibility = prev; });
       }
 
-      hideChartForScreenshot(restores);
-
       return () => restores.reverse().forEach(restore => restore());
     }
 
     async function captureChartForScreenshot(screenshotScale) {
       if (!isChartVisibleForScreenshot()) return null;
 
+      const chartEl = chart.getDom();
       chart.resize();
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       chart.resize();
 
+      const rect = chartEl.getBoundingClientRect();
       return {
         dataUrl: chart.getDataURL({
           type: 'png',
           pixelRatio: screenshotScale,
           backgroundColor: '#ffffff',
         }),
+        left: rect.left + window.pageXOffset,
+        top: rect.top + window.pageYOffset,
+        width: rect.width,
+        height: rect.height,
       };
+    }
+
+    async function loadScreenshotImage(dataUrl) {
+      const img = new Image();
+      img.decoding = 'async';
+
+      let blobUrl = null;
+      try {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        blobUrl = URL.createObjectURL(blob);
+        img.src = blobUrl;
+      } catch {
+        img.src = dataUrl;
+      }
+
+      try {
+        if (img.complete && img.naturalWidth > 0) return img;
+        await new Promise((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error('图表图片加载超时')), 8000);
+          img.onload = () => {
+            clearTimeout(timer);
+            resolve();
+          };
+          img.onerror = () => {
+            clearTimeout(timer);
+            reject(new Error('图表图片加载失败'));
+          };
+        });
+        return img;
+      } finally {
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+      }
+    }
+
+    async function compositeChartOntoCanvas(canvas, chartCapture, scale) {
+      if (!chartCapture) return canvas;
+
+      const img = await loadScreenshotImage(chartCapture.dataUrl);
+      const ctx = canvas.getContext('2d');
+      const destX = Math.round(chartCapture.left * scale);
+      const destY = Math.round(chartCapture.top * scale);
+      const destW = Math.round(chartCapture.width * scale);
+      const destH = Math.round(chartCapture.height * scale);
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(destX, destY, destW, destH);
+      ctx.drawImage(img, destX, destY, destW, destH);
+      ctx.restore();
+      return canvas;
     }
 
     function prepareScreenshotClone(clonedDoc) {
@@ -734,7 +759,7 @@
 
       fixPageMetaBarForScreenshot(clonedDoc);
       syncScreenshotLayoutChain(clonedDoc);
-      injectChartImageForScreenshot(clonedDoc, pendingChartCapture);
+      hideChartInScreenshotClone(clonedDoc);
 
       document.querySelectorAll('select').forEach(liveSelect => {
         if (isScreenshotVisible(liveSelect)) {
@@ -784,6 +809,8 @@
           windowHeight: docSize.windowHeight,
           onclone: prepareScreenshotClone,
         });
+
+        await compositeChartOntoCanvas(canvas, pendingChartCapture, scale);
 
         const watermarked = applyScreenshotWatermark(canvas, scale);
         const link = document.createElement('a');
