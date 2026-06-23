@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20250623" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20250624" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -1309,12 +1309,125 @@
 
     function getBarChartGrid(layout, extra = {}) {
       return {
-        left: layout.gridLeft,
-        right: layout.gridRight,
+        left: extra.left ?? layout.gridLeft,
+        right: extra.right ?? layout.gridRight,
         top: extra.top ?? layout.gridTop,
         bottom: (extra.bottom ?? layout.gridBottom) + (extra.legendBottom ?? 0),
         containLabel: true
       };
+    }
+
+    function getBarPeakValue(items, getValue = (item) => item.value) {
+      if (!items.length) return 0;
+      return Math.max(...items.map(item => Number(getValue(item)) || 0));
+    }
+
+    function estimateRightLabelWidth(options = {}) {
+      const mobile = isMobile();
+      const { isPercent = false, peak = 0, maxCount = 0 } = options;
+      if (isPercent) {
+        const text = formatPercent(peak) + (maxCount > 0 ? `（${maxCount}）` : '');
+        const charWidth = mobile ? 5.2 : 6.2;
+        return Math.ceil(text.length * charWidth + 2);
+      }
+      const text = String(Math.round(maxCount || peak || 0));
+      return Math.ceil(text.length * (mobile ? 6.5 : 7.5) + 2);
+    }
+
+    function getBarPlotWidth(layout) {
+      const chartEl = document.getElementById('chart');
+      const chartWidth = chartEl?.clientWidth ?? window.innerWidth;
+      const sideReserve = isMobile() ? 76 : 96;
+      return Math.max(100, chartWidth - sideReserve - layout.gridRight);
+    }
+
+    function getBarValueAxisLayout(items, layout, options = {}) {
+      const {
+        isPercent = false,
+        labelIsPercent = isPercent,
+        showRightLabel = false,
+        labelExtraWidth = 0,
+        getPeak = null,
+        labelPeak = null,
+        labelMaxCount = null,
+      } = options;
+      const mobile = isMobile();
+      const peak = getPeak ? getPeak(items) : getBarPeakValue(items);
+      let max;
+      let gridRight = layout.gridRight;
+
+      if (peak <= 0) {
+        return { max, gridRight };
+      }
+
+      if (showRightLabel) {
+        const labelValuePeak = labelPeak ?? peak;
+        const labelCountPeak = labelMaxCount ?? (labelIsPercent ? 0 : Math.round(peak));
+        const labelWidth = Math.max(
+          labelExtraWidth,
+          estimateRightLabelWidth({ isPercent: labelIsPercent, peak: labelValuePeak, maxCount: labelCountPeak })
+        );
+        const plotWidth = getBarPlotWidth(layout);
+
+        if (mobile) {
+          const fitMax = peak * plotWidth / Math.max(plotWidth - labelWidth, 60);
+          max = isPercent
+            ? Math.min(120, Math.ceil(fitMax * 10) / 10)
+            : Math.ceil(fitMax);
+        } else {
+          max = isPercent
+            ? Math.min(100, Math.ceil(peak * 10) / 10)
+            : Math.max(Math.ceil(peak), 1);
+          gridRight = Math.max(layout.gridRight, labelWidth + 4);
+        }
+        return { max, gridRight };
+      }
+
+      if (isPercent) {
+        max = Math.min(100, Math.ceil(peak * 1.01 * 10) / 10);
+      } else {
+        max = Math.max(Math.ceil(peak * 10) / 10, 1);
+      }
+      return { max, gridRight };
+    }
+
+    function hasVisibleRightBarLabel(option) {
+      const seriesList = Array.isArray(option.series) ? option.series : (option.series ? [option.series] : []);
+      return seriesList.some((series) => series?.label?.show && series?.label?.position === 'right');
+    }
+
+    function finalizeBarChartOption(option, items, layout, axisOptions = {}) {
+      const resolvedOptions = {
+        ...axisOptions,
+        showRightLabel: axisOptions.showRightLabel ?? hasVisibleRightBarLabel(option),
+      };
+      const axisLayout = getBarValueAxisLayout(items, layout, resolvedOptions);
+      if (option.grid) {
+        option.grid.right = Math.max(option.grid.right ?? layout.gridRight, axisLayout.gridRight);
+      }
+      if (option.xAxis && axisLayout.max != null) {
+        option.xAxis.max = axisLayout.max;
+        if (axisOptions.isPercent && axisLayout.max > 100 && option.xAxis.axisLabel) {
+          const baseFormatter = option.xAxis.axisLabel.formatter;
+          option.xAxis.axisLabel.formatter = (value) => {
+            if (value > 100) return '';
+            if (typeof baseFormatter === 'function') return baseFormatter(value);
+            if (baseFormatter && baseFormatter !== '{value}') {
+              return String(baseFormatter).replace('{value}', value);
+            }
+            return formatPercent(value);
+          };
+        }
+      }
+      if (resolvedOptions.showRightLabel && option.series && !isMobile()) {
+        const seriesList = Array.isArray(option.series) ? option.series : [option.series];
+        seriesList.forEach((series) => {
+          if (series?.label?.position === 'right' && series.label.show !== false) {
+            series.clip = false;
+          }
+        });
+      }
+      return option;
     }
 
     function buildChartLegend(data, layout) {
@@ -2177,7 +2290,11 @@
         ))
         .map(item => ({
           name: item[NAME_KEY],
-          value: parseValue(item[column], column)
+          value: parseValue(item[column], column),
+          appearances: parseValue(item['出场次数'], '出场次数'),
+          wolfCount: '狼次数' in item
+            ? parseValue(item['狼次数'], '狼次数')
+            : null,
         }))
         .filter(d => !excludeZero || d.value !== 0)
         .sort((a, b) => a.value - b.value);
@@ -3285,7 +3402,9 @@
     }
 
     function renderMetricBarChart(column, options = {}) {
-      const items = getChartData(column, options);
+      const { excludeZero = false, requirePositiveCol = null } = options;
+      const items = getChartData(column, { excludeZero, requirePositiveCol });
+      const isWolfRateChart = column === WOLF_RATE_COL;
       const isPercent = PERCENT_COLUMNS.has(column);
       const isRateColumn = column.includes('率');
       const average = getColumnAverage(column);
@@ -3299,6 +3418,25 @@
           ? (v) => Number(v).toFixed(1)
           : '{value}';
 
+      const barLabel = {
+        show: isWolfRateChart ? true : layout.showBarLabel,
+        position: 'right',
+        color: CHART_TEXT,
+      };
+      if (isWolfRateChart) {
+        barLabel.rich = {
+          rate: { color: CHART_TEXT, fontSize: isMobile() ? 10 : 11, fontWeight: 'normal' },
+          meta: { color: CHART_AXIS, fontSize: isMobile() ? 8 : 9, fontWeight: 'normal' },
+        };
+        barLabel.formatter = (params) => {
+          const rateText = formatValue(params.value, column);
+          const wolf = params.data?.wolfCount;
+          return wolf != null ? `{rate|${rateText}}{meta|（${wolf}）}` : rateText;
+        };
+      } else {
+        barLabel.formatter = ({ value }) => formatValue(value, column);
+      }
+
       const option = {
         backgroundColor: 'transparent',
         tooltip: {
@@ -3309,6 +3447,15 @@
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const p = params[0];
+            const item = items[p.dataIndex];
+            if (isWolfRateChart && item) {
+              return [
+                item.name,
+                `出场次数：${item.appearances}`,
+                `狼次数：${item.wolfCount ?? 0}`,
+                `${column}：${formatValue(p.value, column)}`,
+              ].join('<br/>');
+            }
             return `${p.name}<br/>${column}：${formatValue(p.value, column)}`;
           }
         },
@@ -3327,21 +3474,28 @@
           type: 'bar',
           data: items.map(d => ({
             value: d.value,
+            wolfCount: d.wolfCount,
             itemStyle: {
               borderRadius: [0, 4, 4, 0],
               color: getBarColor(d.value, average, isRateColumn)
             }
           })),
           ...getBarSeriesLayout(layout),
-          label: {
-            show: layout.showBarLabel,
-            position: 'right',
-            color: CHART_TEXT,
-            formatter: ({ value }) => formatValue(value, column)
-          }
+          label: barLabel,
         }],
         animationDuration: 600
       };
+
+      finalizeBarChartOption(option, items, layout, {
+        isPercent,
+        showRightLabel: isWolfRateChart || layout.showBarLabel,
+        labelPeak: isWolfRateChart && items.length
+          ? Math.max(...items.map(d => d.value))
+          : null,
+        labelMaxCount: isWolfRateChart && items.length
+          ? Math.max(...items.map(d => d.wolfCount ?? 0))
+          : null,
+      });
 
       chart.setOption(option, true);
       chart.resize();
@@ -3429,6 +3583,10 @@
         animationDuration: 600
       };
 
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+      });
+
       chart.setOption(option, true);
       chart.resize();
     }
@@ -3505,6 +3663,11 @@
         ],
         animationDuration: 600
       };
+
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+        getPeak: (rows) => Math.max(...rows.map(r => r.blind)),
+      });
 
       chart.setOption(option, true);
       chart.resize();
@@ -3662,6 +3825,11 @@
         animationDuration: 600
       };
 
+      finalizeBarChartOption(option, items, layout, {
+        isPercent,
+        showRightLabel: layout.showBarLabel,
+      });
+
       chart.setOption(option, true);
       chart.resize();
     }
@@ -3770,6 +3938,11 @@
         ],
         animationDuration: 600
       };
+
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+        getPeak: (rows) => Math.max(...rows.map(r => r.witch)),
+      });
 
       chart.setOption(option, true);
       chart.resize();
@@ -3880,6 +4053,11 @@
         animationDuration: 600
       };
 
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+        getPeak: (rows) => Math.max(...rows.map(r => r.hunter)),
+      });
+
       chart.setOption(option, true);
       chart.resize();
     }
@@ -3959,6 +4137,14 @@
         ],
         animationDuration: 600
       };
+
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel || isMobile(),
+        getPeak: (rows) => Math.max(...rows.map(r => r.blindUse)),
+        labelIsPercent: true,
+        labelPeak: items.length ? Math.max(...items.map(r => r.rate)) : 0,
+        labelMaxCount: items.length ? Math.max(...items.map(r => r.blindUse)) : 0,
+      });
 
       chart.setOption(option, true);
       chart.resize();
@@ -4083,6 +4269,11 @@
         ],
         animationDuration: 600
       };
+
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+        getPeak: (rows) => Math.max(...rows.map(r => r.dreamer)),
+      });
 
       chart.setOption(option, true);
       chart.resize();
@@ -4225,6 +4416,11 @@
         animationDuration: 600
       };
 
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+        getPeak: (rows) => Math.max(...rows.map(r => r.total)),
+      });
+
       chart.setOption(option, true);
       chart.resize();
     }
@@ -4333,6 +4529,11 @@
         animationDuration: 600
       };
 
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+        getPeak: (rows) => Math.max(...rows.map(r => r.redWolf)),
+      });
+
       chart.setOption(option, true);
       chart.resize();
     }
@@ -4409,6 +4610,11 @@
         ],
         animationDuration: 600
       };
+
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+        getPeak: (rows) => Math.max(...rows.map(r => r.redWolf)),
+      });
 
       chart.setOption(option, true);
       chart.resize();
@@ -4508,6 +4714,11 @@
         animationDuration: 600
       };
 
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+        getPeak: (rows) => Math.max(...rows.map(r => r.total)),
+      });
+
       chart.setOption(option, true);
       chart.resize();
     }
@@ -4604,6 +4815,11 @@
         }),
         animationDuration: 600
       };
+
+      finalizeBarChartOption(option, items, layout, {
+        showRightLabel: layout.showBarLabel,
+        getPeak: (rows) => Math.max(...rows.map(r => r.total)),
+      });
 
       chart.setOption(option, true);
       chart.resize();

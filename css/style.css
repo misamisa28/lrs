@@ -1583,6 +1583,10 @@ body.tongbian-sessions-modal-open {
   transform: translate(-50%, -50%) scale(1); }
 
 @media (max-width: 768px) {
+  html {
+    overflow-x: hidden;
+    overscroll-behavior-x: none; }
+
   body {
     padding: 10px;
     overflow-x: hidden;
@@ -1593,6 +1597,14 @@ body.tongbian-sessions-modal-open {
     width: 100%;
     min-width: 0;
     overflow-x: hidden; }
+
+  .visual-panel,
+  .chart-wrap,
+  #chart {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    touch-action: pan-y; }
 
   header {
     margin-bottom: 8px; }
