@@ -452,8 +452,6 @@
         && el.getClientRects().length > 0;
     }
 
-    const SCREENSHOT_WATERMARK = 'misamisa28.github.io/lrs';
-
     function replaceSelectForScreenshot(clonedDoc, liveSelect) {
       const cloneSelect = liveSelect.id
         ? clonedDoc.getElementById(liveSelect.id)
@@ -503,21 +501,6 @@
       cloneSelect.replaceWith(fake);
     }
 
-    function getScreenshotWatermarkMetrics(canvasScale) {
-      const linkEl = document.querySelector('.page-meta-text');
-      const linkStyle = linkEl ? window.getComputedStyle(linkEl) : null;
-      const basePx = linkStyle ? parseFloat(linkStyle.fontSize) : 11;
-      const fontFamily = linkStyle?.fontFamily || '"Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
-      const fontSize = Math.max(9, Math.round(basePx * canvasScale));
-
-      return {
-        fontSize,
-        font: `700 ${fontSize}px ${fontFamily}`,
-        gapX: fontSize * 22,
-        gapY: fontSize * 14,
-      };
-    }
-
     function syncElementTypography(liveEl, cloneEl) {
       if (!liveEl || !cloneEl) return;
       const cs = window.getComputedStyle(liveEl);
@@ -563,32 +546,6 @@
       if (liveNote && cloneNote && isScreenshotVisible(liveNote)) {
         syncElementTypography(liveNote, cloneNote);
       }
-    }
-
-    function applyScreenshotWatermark(sourceCanvas, canvasScale) {
-      const output = document.createElement('canvas');
-      output.width = sourceCanvas.width;
-      output.height = sourceCanvas.height;
-      const ctx = output.getContext('2d');
-      ctx.drawImage(sourceCanvas, 0, 0);
-
-      const { font, gapX, gapY } = getScreenshotWatermarkMetrics(canvasScale);
-
-      ctx.save();
-      ctx.font = font;
-      ctx.fillStyle = 'rgba(170, 170, 170, 0.1)';
-      ctx.textBaseline = 'middle';
-      ctx.rotate(-Math.PI / 5);
-      let row = 0;
-      for (let y = -output.height; y < output.height * 1.5; y += gapY, row++) {
-        const rowOffset = (row % 2) * (gapX / 2);
-        for (let x = -output.width + rowOffset; x < output.width * 1.5; x += gapX) {
-          ctx.fillText(SCREENSHOT_WATERMARK, x, y);
-        }
-      }
-      ctx.restore();
-
-      return output;
     }
 
     function getScreenshotScale() {
@@ -831,10 +788,9 @@
           onclone: prepareScreenshotClone,
         });
 
-        const watermarked = applyScreenshotWatermark(canvas, scale);
         const link = document.createElement('a');
         link.download = getScreenshotFilename();
-        link.href = watermarked.toDataURL('image/png');
+        link.href = canvas.toDataURL('image/png');
         link.click();
       } catch (err) {
         showTransientError(`截图失败：${err.message}`);
