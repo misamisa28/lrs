@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20250624" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20250627" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -103,24 +103,24 @@
         </div>
         <div id="voteSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-vote-mode="badge">警徽票</button>
-          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-badge">平民警徽</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-badge">平民警徽票</button>
           <button type="button" class="wolf-mode-btn" data-vote-mode="exile">放逐票</button>
-          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-exile">平民放逐</button>
-          <button type="button" class="wolf-mode-btn" data-vote-mode="noprophet">无预通放逐</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-exile">平民放逐票</button>
+          <button type="button" class="wolf-mode-btn" data-vote-mode="noprophet">生推放逐票</button>
         </div>
         <div id="otherSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-other-mode="blind">被盲毒</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="first">被首验</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="model">混血榜样</button>
-          <button type="button" class="wolf-mode-btn" data-other-mode="fake">接狼金水</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="fake">接狼金</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="rate">好人警下率</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="avg">平均存活</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="seat">座位号</button>
         </div>
         <div id="skillSubControls" class="wolf-sub-controls" style="display: none;">
-          <button type="button" class="wolf-mode-btn active" data-skill-mode="witch">女巫毒药</button>
+          <button type="button" class="wolf-mode-btn active" data-skill-mode="witch">毒药技能</button>
           <button type="button" class="wolf-mode-btn" data-skill-mode="hunter">猎人技能</button>
-          <button type="button" class="wolf-mode-btn" data-skill-mode="blindwolf">盲毒狼人率</button>
+          <button type="button" class="wolf-mode-btn" data-skill-mode="blindwolf">盲毒</button>
           <button type="button" class="wolf-mode-btn" data-skill-mode="dream">摄梦首摄</button>
         </div>
         <div id="winRateSubControls" class="wolf-sub-controls" style="display: none;">
@@ -286,12 +286,8 @@
       <div class="rules-modal-header">
         <div class="rules-modal-heading">
           <div class="tongbian-sessions-title-row">
-            <svg class="rules-modal-icon" viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" focusable="false">
-              <path fill="currentColor" d="M5.5 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm5 1a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5zM1.5 13.5c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5v.5H1.5v-.5zm7 0c0-1.5 1.2-2.5 2.5-2.5 1.1 0 2 .7 2.3 1.7l-1.1.3c-.2-.5-.6-.8-1.2-.8-.9 0-1.5.6-1.5 1.5v.5H8.5v-.5z"/>
-            </svg>
             <h2 id="tongbianSessionsModalTitle">同边场次</h2>
           </div>
-          <p id="tongbianSessionsModalSubtitle" class="tongbian-sessions-subtitle" hidden></p>
         </div>
         <button type="button" class="rules-close-btn" data-tongbian-sessions-close aria-label="关闭">×</button>
       </div>
@@ -902,7 +898,9 @@
     const POISON_RATE_COLS = [POISON_SKILL_RATE_COL, POISON_RATE_COL];
     const HUNTER_COUNT_COL = '猎人次数';
     const HUNTER_SKILL_USE_COL = '猎人技能次数';
+    const HUNTER_SKILL_USE_DISPLAY = '猎人开枪次数';
     const HUNTER_SKILL_WOLF_COL = '猎人技能狼人次数';
+    const HUNTER_SKILL_WOLF_DISPLAY = '猎人开枪带狼次数';
     const HUNTER_SKILL_RATE_COL = '猎人技能正确率';
     const HUNTER_SKILL_RECORD_COL = '猎人技能记录';
     const DREAM_WALKER_COL = '摄梦人次数';
@@ -955,20 +953,27 @@
     const VOTE_NO_PROPHET_EXILE_COUNT = '无预通放逐票次数';
     const VOTE_NO_PROPHET_EXILE_CORRECT_COUNT = '无预通正确放逐票次数';
     const VOTE_NO_PROPHET_EXILE_RATE = '无预通放逐票正确率';
-    const SHERIFF_VOTE_ERROR_RECORD_COL = '警徽票错误记录';
-    const STAND_WOLF_BADGE_COL = '站狼边（警徽票阶段）';
+    const STAND_WOLF_BADGE_DATA_COL = '警上站狼边';
+    const STAND_WOLF_BADGE_COL = '站狼边（警徽票）';
+    const FAKE_GOLD_COUNT_DISPLAY = '接狼金次数';
+    const FAKE_GOLD_GIVER_DISPLAY = '接狼金';
+    const BLIND_POISON_WOLVES_DISPLAY = '盲毒狼记录';
+    const HUNTER_SKILL_RECORD_DISPLAY = '开枪记录';
+    const MERGED_BLIND_POISON_RATE_LABEL = '盲毒狼率（次数）';
+    const MERGED_POISON_RATE_LABEL = '毒狼率（次数）';
+    const MERGED_HUNTER_RATE_LABEL = '枪狼率（次数）';
+    const MERGED_NOPROPHT_EXILE_LABEL = '生推放逐票正确率';
+    const MERGED_NOPROPHT_EXILE_TABLE_LABEL = '生推放逐票正确率（次数）';
+    const POISON_SKILL_RATE_DISPLAY = '毒狼率';
     const SEAT_NUMBER_COUNTS_COL = '座位号次数';
     const SEAT_NUMBER_DETAIL_COL = '座位号';
-    const RADAR_TABLE_DATA_COLUMN_ALIASES = {
-      [STAND_WOLF_BADGE_COL]: SHERIFF_VOTE_ERROR_RECORD_COL,
-      [SEAT_NUMBER_DETAIL_COL]: SEAT_NUMBER_COUNTS_COL,
-    };
     const RADAR_TABLE_HIDDEN_COLUMNS = new Set([SEAT_NUMBER_COUNTS_COL]);
     const PLAYER_STATS_COLUMN_RENAMES = {
       '无预通生推正确放逐票次数': VOTE_NO_PROPHET_EXILE_CORRECT_COUNT,
       '无预通生推放逐票次数': VOTE_NO_PROPHET_EXILE_COUNT,
       '无预通生推放逐票正确率': VOTE_NO_PROPHET_EXILE_RATE,
       '预通生推放逐票次数': VOTE_NO_PROPHET_EXILE_COUNT,
+      '警徽票错误记录': STAND_WOLF_BADGE_DATA_COL,
       [POISON_RATE_COL]: POISON_SKILL_RATE_COL,
     };
     const WIN_RATE_DATA_KEY = '胜率数据';
@@ -1040,6 +1045,14 @@
     const PROPHET_FIRST_CHECK_COL = '首验';
     const FIRST_CHECKED_BY_COL = '被首验';
     const FAKE_GOLD_GIVER_COL = '接狼人金水';
+    const RADAR_TABLE_DATA_COLUMN_ALIASES = {
+      [STAND_WOLF_BADGE_COL]: STAND_WOLF_BADGE_DATA_COL,
+      [FAKE_GOLD_COUNT_DISPLAY]: FAKE_GOLD_COL,
+      [FAKE_GOLD_GIVER_DISPLAY]: FAKE_GOLD_GIVER_COL,
+      [BLIND_POISON_WOLVES_DISPLAY]: BLIND_POISON_WOLVES_COL,
+      [HUNTER_SKILL_RECORD_DISPLAY]: HUNTER_SKILL_RECORD_COL,
+      [SEAT_NUMBER_DETAIL_COL]: SEAT_NUMBER_COUNTS_COL,
+    };
     const PARTICIPATION_COL = '参与场次';
     const WIN_SESSIONS_COL = '胜利场次';
     const BANXING_WIN_RATE_COL = '版型胜率';
@@ -1055,26 +1068,26 @@
       { label: '摄梦人', identities: ['摄梦人'] },
     ];
     const RADAR_TABLE_DETAIL_TEXT_COLUMNS = new Set([
-      PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_COL,
-      BLIND_POISON_WOLVES_COL, POISON_RECORD_COL, HUNTER_SKILL_RECORD_COL,
+      PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL, FAKE_GOLD_GIVER_DISPLAY,
+      STAND_WOLF_BADGE_COL,
+      BLIND_POISON_WOLVES_DISPLAY, POISON_RECORD_COL, HUNTER_SKILL_RECORD_DISPLAY,
       MIXED_BLOOD_RECORD_COL,
     ]);
     const RADAR_TABLE_TEXT_COLUMNS = new Set([
       ...RADAR_TABLE_DETAIL_TEXT_COLUMNS,
-      STAND_WOLF_BADGE_COL,
       SEAT_NUMBER_DETAIL_COL,
     ]);
     const RADAR_TABLE_RANK_NO_AVG_COLUMNS = new Set([APPEARANCE_COMBO_TOTAL]);
     const RADAR_TABLE_MERGED_METRICS = [
       { label: '预通率（次数）', rateCol: YUTONG_RATE_COL, countCol: APPEARANCE_COMBO_YUTONG },
-      { label: '盲毒狼人率（次数）', rateCol: BLIND_POISON_WOLF_RATE_COL, countCol: BLIND_POISON_USE_COL },
-      { label: '毒药技能正确率（次数）', rateCol: POISON_SKILL_RATE_COL, countCol: WITCH_POISON_USE_COL },
-      { label: '猎人技能正确率（次数）', rateCol: HUNTER_SKILL_RATE_COL, countCol: HUNTER_SKILL_USE_COL },
+      { label: MERGED_BLIND_POISON_RATE_LABEL, rateCol: BLIND_POISON_WOLF_RATE_COL, countCol: BLIND_POISON_USE_COL },
+      { label: MERGED_POISON_RATE_LABEL, rateCol: POISON_SKILL_RATE_COL, countCol: WITCH_POISON_USE_COL },
+      { label: MERGED_HUNTER_RATE_LABEL, rateCol: HUNTER_SKILL_RATE_COL, countCol: HUNTER_SKILL_USE_COL },
       { label: '警徽票正确率（次数）', rateCol: VOTE_BADGE_RATE, countCol: VOTE_BADGE_COUNT },
       { label: '平民警徽票正确率（次数）', rateCol: VOTE_CIVILIAN_BADGE_RATE, countCol: VOTE_CIVILIAN_BADGE_COUNT },
       { label: '放逐票正确率（次数）', rateCol: VOTE_EXILE_RATE, countCol: VOTE_EXILE_COUNT },
       { label: '平民放逐票正确率（次数）', rateCol: VOTE_CIVILIAN_EXILE_RATE, countCol: VOTE_CIVILIAN_EXILE_COUNT },
-      { label: '无预通放逐票正确率（次数）', rateCol: VOTE_NO_PROPHET_EXILE_RATE, countCol: VOTE_NO_PROPHET_EXILE_COUNT },
+      { label: MERGED_NOPROPHT_EXILE_TABLE_LABEL, rateCol: VOTE_NO_PROPHET_EXILE_RATE, countCol: VOTE_NO_PROPHET_EXILE_COUNT },
     ];
     const RADAR_TABLE_MERGED_BY_LABEL = new Map(
       RADAR_TABLE_MERGED_METRICS.map(m => [m.label, m])
@@ -1098,18 +1111,18 @@
         columns: [
           '预通率（次数）',
           PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL,
-          FAKE_GOLD_COL, FAKE_GOLD_GIVER_COL,
+          FAKE_GOLD_GIVER_DISPLAY,
           STAND_WOLF_BADGE_COL,
         ],
       },
       {
         title: '技能相关',
         columns: [
-          '盲毒狼人率（次数）', BLIND_POISON_WOLVES_COL,
-          '毒药技能正确率（次数）',
+          MERGED_BLIND_POISON_RATE_LABEL, BLIND_POISON_WOLVES_DISPLAY,
+          MERGED_POISON_RATE_LABEL,
           POISON_RECORD_COL,
-          '猎人技能正确率（次数）',
-          HUNTER_SKILL_RECORD_COL,
+          MERGED_HUNTER_RATE_LABEL,
+          HUNTER_SKILL_RECORD_DISPLAY,
         ],
       },
       {
@@ -1119,13 +1132,13 @@
           '平民警徽票正确率（次数）',
           '放逐票正确率（次数）',
           '平民放逐票正确率（次数）',
-          '无预通放逐票正确率（次数）',
+          MERGED_NOPROPHT_EXILE_TABLE_LABEL,
         ],
       },
     ];
     const RADAR_TABLE_OTHER_COLUMN_ORDER = [
-      '总胜率', '狼人率', '狼人胜率', '好人胜率',
       '出场次数',
+      '总胜率', '狼人率', '狼人胜率', '好人胜率',
       AVG_SURVIVAL_COL,
       GOOD_SHERIFF_BELOW_RATE_COL,
       SEAT_NUMBER_DETAIL_COL,
@@ -1233,7 +1246,25 @@
     ];
 
     function formatColumnLabel(column) {
-      return String(column).replace(/无预通生推/g, '无预通');
+      const text = String(column).replace(/无预通生推/g, '无预通');
+      const displayLabels = {
+        [FAKE_GOLD_COL]: FAKE_GOLD_GIVER_DISPLAY,
+        [FAKE_GOLD_GIVER_COL]: FAKE_GOLD_GIVER_DISPLAY,
+        [BLIND_POISON_WOLVES_COL]: BLIND_POISON_WOLVES_DISPLAY,
+        [BLIND_POISON_WOLF_RATE_COL]: '盲毒',
+        [HUNTER_SKILL_RECORD_COL]: HUNTER_SKILL_RECORD_DISPLAY,
+        [HUNTER_SKILL_WOLF_COL]: HUNTER_SKILL_WOLF_DISPLAY,
+        [HUNTER_SKILL_USE_COL]: HUNTER_SKILL_USE_DISPLAY,
+        [VOTE_NO_PROPHET_EXILE_RATE]: MERGED_NOPROPHT_EXILE_LABEL,
+        [POISON_SKILL_RATE_COL]: POISON_SKILL_RATE_DISPLAY,
+        [STAND_WOLF_BADGE_DATA_COL]: STAND_WOLF_BADGE_COL,
+        '警徽票错误记录': STAND_WOLF_BADGE_COL,
+      };
+      return displayLabels[text] ?? text;
+    }
+
+    function formatRadarMetricLabelHtml(label) {
+      return wrapRadarParenMeta(formatColumnLabel(label));
     }
 
     function normalizePlayerStatsColumns(rows) {
@@ -1241,6 +1272,7 @@
       return rows.map(row => {
         const next = { ...row };
         for (const [oldKey, newKey] of Object.entries(PLAYER_STATS_COLUMN_RENAMES)) {
+          if (oldKey === newKey) continue;
           if (oldKey in next && !(newKey in next)) {
             next[newKey] = next[oldKey];
           }
@@ -2130,19 +2162,15 @@
       if (!row) return;
       currentTongbianModalRow = row;
       const titleEl = document.getElementById('tongbianSessionsModalTitle');
-      const subtitleEl = document.getElementById('tongbianSessionsModalSubtitle');
-      titleEl.textContent = `${row[NAME_A_KEY]} · ${row[NAME_B_KEY]}`;
+      const names = `${row[NAME_A_KEY]} · ${row[NAME_B_KEY]}`;
 
       const sessions = sortTongbianSessions(parseTongbianSessions(row[TONGBIAN_SESSIONS_COL]));
       const winCount = sessions.filter(session => isTongbianSessionSameSideWin(session)).length;
-      if (subtitleEl) {
-        if (sessions.length) {
-          subtitleEl.textContent = `共 ${sessions.length} 场 · 同边胜 ${winCount} 场`;
-          subtitleEl.hidden = false;
-        } else {
-          subtitleEl.textContent = '';
-          subtitleEl.hidden = true;
-        }
+      if (sessions.length) {
+        titleEl.innerHTML =
+          `${escapeHtml(names)}<span class="tongbian-sessions-meta"> 共 ${sessions.length} 场 · 同边胜 ${winCount} 场</span>`;
+      } else {
+        titleEl.textContent = names;
       }
 
       const content = document.getElementById('tongbianSessionsContent');
@@ -2794,21 +2822,21 @@
         return {
           countCol: VOTE_CIVILIAN_BADGE_COUNT,
           rateCol: VOTE_CIVILIAN_BADGE_RATE,
-          label: '平民阵营警徽票'
+          label: '平民警徽票'
         };
       }
       if (mode === 'noprophet') {
         return {
           countCol: VOTE_NO_PROPHET_EXILE_COUNT,
           rateCol: VOTE_NO_PROPHET_EXILE_RATE,
-          label: '无预通放逐票'
+          label: '生推放逐票'
         };
       }
       if (mode === 'civilian-exile') {
         return {
           countCol: VOTE_CIVILIAN_EXILE_COUNT,
           rateCol: VOTE_CIVILIAN_EXILE_RATE,
-          label: '平民阵营放逐票'
+          label: '平民放逐票'
         };
       }
       return { countCol: VOTE_EXILE_COUNT, rateCol: VOTE_EXILE_RATE, label: '放逐票' };
@@ -3026,7 +3054,7 @@
         chart.setOption({
           backgroundColor: 'transparent',
           title: {
-            subtext: '当前赛季数据暂无无预通放逐票统计字段',
+            subtext: '当前赛季数据暂无生推放逐票统计字段',
             left: 'center',
             top: 'center',
             subtextStyle: { color: CHART_AXIS, fontSize: 12 }
@@ -3042,7 +3070,7 @@
         chart.setOption({
           backgroundColor: 'transparent',
           title: {
-            subtext: '当前赛季数据暂无平民阵营投票统计字段',
+            subtext: '当前赛季数据暂无平民警徽票/平民放逐票统计字段',
             left: 'center',
             top: 'center',
             subtextStyle: { color: CHART_AXIS, fontSize: 12 }
@@ -3456,7 +3484,7 @@
                 `${column}：${formatValue(p.value, column)}`,
               ].join('<br/>');
             }
-            return `${p.name}<br/>${column}：${formatValue(p.value, column)}`;
+            return `${p.name}<br/>${formatColumnLabel(column)}：${formatValue(p.value, column)}`;
           }
         },
         grid: getBarChartGrid(layout),
@@ -3791,7 +3819,7 @@
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const p = params[0];
-            return `${p.name}<br/>${column}：${formatValue(p.value, column)}`;
+            return `${p.name}<br/>${formatColumnLabel(column)}：${formatValue(p.value, column)}`;
           }
         },
         grid: getBarChartGrid(layout),
@@ -3844,7 +3872,7 @@
         chart.setOption({
           backgroundColor: 'transparent',
           title: {
-            subtext: '暂无出场次数>=9且女巫毒师次数>0的玩家',
+            subtext: '暂无出场次数>=9且有毒药技能数据的玩家',
             left: 'center',
             top: 'center',
             subtextStyle: { color: CHART_AXIS, fontSize: 12 }
@@ -3971,7 +3999,10 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: buildChartLegend([HUNTER_COUNT_COL, HUNTER_SKILL_USE_COL, HUNTER_SKILL_WOLF_COL], layout),
+        legend: buildChartLegend(
+          [HUNTER_COUNT_COL, HUNTER_SKILL_USE_COL, HUNTER_SKILL_WOLF_COL].map(formatColumnLabel),
+          layout
+        ),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -3986,8 +4017,8 @@
               name,
               `${HUNTER_SKILL_RATE_COL}：${formatPercent(row.rate)}`,
               `${HUNTER_COUNT_COL}：${row.hunter}`,
-              `${HUNTER_SKILL_USE_COL}：${row.use}`,
-              `${HUNTER_SKILL_WOLF_COL}：${row.wolf}`
+              `${formatColumnLabel(HUNTER_SKILL_USE_COL)}：${row.use}`,
+              `${formatColumnLabel(HUNTER_SKILL_WOLF_COL)}：${row.wolf}`
             ].join('<br/>');
           }
         },
@@ -4001,7 +4032,7 @@
         yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
         series: [
           {
-            name: HUNTER_SKILL_WOLF_COL,
+            name: formatColumnLabel(HUNTER_SKILL_WOLF_COL),
             type: 'bar',
             stack: 'hunterSkill',
             data: items.map(d => d.wolf),
@@ -4016,7 +4047,7 @@
             }
           },
           {
-            name: HUNTER_SKILL_USE_COL,
+            name: formatColumnLabel(HUNTER_SKILL_USE_COL),
             type: 'bar',
             stack: 'hunterSkill',
             data: items.map(d => d.useOther),
@@ -4087,7 +4118,7 @@
             const row = items[idx];
             return [
               row.name,
-              `${BLIND_POISON_WOLF_RATE_COL}：${formatPercent(row.rate)}`,
+              `${formatColumnLabel(BLIND_POISON_WOLF_RATE_COL)}：${formatPercent(row.rate)}`,
               `${BLIND_POISON_USE_COL}：${row.blindUse}`,
               `${BLIND_POISON_WOLF_COUNT_COL}：${row.blindWolf}`
             ].join('<br/>');
@@ -4980,10 +5011,21 @@
       return RADAR_TABLE_TEXT_COLUMNS.has(col);
     }
 
+    function normalizeStandWolfBadgeText(text) {
+      if (!text || !String(text).trim()) return '';
+      const counts = new Map();
+      String(text).split(/[,、]/).map(part => part.trim()).filter(Boolean).forEach(part => {
+        counts.set(part, (counts.get(part) || 0) + 1);
+      });
+      return [...counts.entries()]
+        .map(([part, count]) => `${part}（${count}）`)
+        .join('、');
+    }
+
     function getRadarTextDisplayValue(name, col) {
       const playerVal = getRadarTablePlayer(name, col);
       if (col === STAND_WOLF_BADGE_COL) {
-        return String(playerVal ?? '').replace(/,/g, '、');
+        return normalizeStandWolfBadgeText(playerVal);
       }
       if (col === SEAT_NUMBER_DETAIL_COL) {
         return formatSeatNumberDetailText(playerVal);
@@ -4994,7 +5036,7 @@
     function renderRadarTextOnlyRow(name, col) {
       const valueHtml = formatRadarDetailText(getRadarTextDisplayValue(name, col));
       return `<div class="radar-stats-row is-text">
-        <span class="col-metric">${formatColumnLabel(col)}</span>
+        <span class="col-metric">${formatRadarMetricLabelHtml(col)}</span>
         <span class="col-value col-span-detail">${valueHtml || '—'}</span>
       </div>`;
     }
@@ -5015,14 +5057,14 @@
       const rankHtml = rank != null
         ? `<span class="radar-rank-pill">${rank}</span>`
         : '<span class="radar-rank-empty">—</span>';
-      const metricLabel = isRadarTableMergedColumn(col) ? col : formatColumnLabel(col);
+      const metricLabel = formatRadarMetricLabelHtml(col);
       const displayValue = isRadarTableMergedColumn(col)
         ? (player ? formatRadarMergedDisplay(player, col) : '—')
         : formatValue(playerVal, rankCol);
       if (isRadarTableCountColumn(col) && !isRadarTableMergedColumn(col)) {
         return `<div class="radar-stats-row is-count">
           <span class="col-metric">${metricLabel}</span>
-          <span class="col-value">${displayValue || '—'}</span>
+          <span class="col-value">${formatRadarValueHtml(displayValue)}</span>
           <span class="col-rank"><span class="radar-rank-empty">—</span></span>
           <span class="col-avg"><span class="radar-rank-empty">—</span></span>
         </div>`;
@@ -5030,7 +5072,7 @@
       const hideAvg = RADAR_TABLE_RANK_NO_AVG_COLUMNS.has(col);
       return `<div class="radar-stats-row${rankClass ? ` ${rankClass}` : ''}">
         <span class="col-metric">${metricLabel}</span>
-        <span class="col-value">${displayValue}</span>
+        <span class="col-value">${formatRadarValueHtml(displayValue)}</span>
         <span class="col-rank">${rankHtml}</span>
         <span class="col-avg">${hideAvg
           ? '<span class="radar-rank-empty">—</span>'
@@ -5136,19 +5178,26 @@
       return '';
     }
 
+    function wrapRadarParenMeta(text) {
+      if (text == null || text === '') return '';
+      const escaped = escapeHtml(String(text));
+      return escaped
+        .replace(/（[^）]*）/g, (match) => `<span class="radar-text-count">${match}</span>`)
+        .replace(/\([^)]*\)/g, (match) => `<span class="radar-text-count">${match}</span>`);
+    }
+
+    function formatRadarValueHtml(value) {
+      if (value == null || value === '' || value === '—') return '—';
+      return wrapRadarParenMeta(value);
+    }
+
     function formatRadarDetailText(text) {
       if (!text || !String(text).trim()) return '';
       return String(text)
         .split('、')
         .map(part => part.trim())
         .filter(Boolean)
-        .map(part => {
-          const normalized = part.replace(/（1）/g, '');
-          const escaped = escapeHtml(normalized);
-          return escaped.replace(/（[^）]*）/g, match =>
-            `<span class="radar-text-count">${match}</span>`
-          );
-        })
+        .map(part => wrapRadarParenMeta(part.replace(/（1）/g, '')))
         .join('、');
     }
 
@@ -5188,7 +5237,7 @@
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const lines = params.value.map((v, i) =>
-              `${columns[i]}：${formatValue(v, columns[i])}`
+              `${formatColumnLabel(columns[i])}：${formatValue(v, columns[i])}`
             );
             return `${params.name}<br/>${lines.join('<br/>')}`;
           }
@@ -5238,7 +5287,10 @@
       const isBanxing = radarWinrateDim === 'banxing';
       const col = isBanxing ? BANXING_WIN_RATE_COL : IDENTITY_WIN_RATE_COL;
       const dimLabel = isBanxing ? '版型' : '身份';
-      const items = filterWinRateBreakdownItems(parseWinRateBreakdown(player?.[col]), col);
+      const parsed = parseWinRateBreakdown(player?.[col]);
+      const items = isBanxing
+        ? filterWinRateBreakdownItems(parsed, col)
+        : parsed;
       const overallRate = parseValue(player?.['总胜率'], '总胜率');
 
       renderWinrateBarChart(items, {
@@ -5483,7 +5535,7 @@
         `<span>全部</span></label>`;
       const itemsHtml = values.map(v => {
         const checked = selectedSet === null || selectedSet.has(v);
-        return `<label class="radar-filter-check"><input type="checkbox" class="radar-filter-item-cb" value="${escapeHtml(v)}"${checked ? ' checked' : ''}><span>${escapeHtml(formatColumnLabel(v))}</span></label>`;
+        return `<label class="radar-filter-check"><input type="checkbox" class="radar-filter-item-cb" value="${escapeHtml(v)}"${checked ? ' checked' : ''}><span>${formatRadarMetricLabelHtml(v)}</span></label>`;
       }).join('');
       container.innerHTML = allHtml + itemsHtml;
     }

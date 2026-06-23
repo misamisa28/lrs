@@ -25,6 +25,9 @@ SPECIAL_ORDER_EXILE_COL = '特殊放逐票'
 SPECIAL_ORDER_EXILE_COL_LEGACY = '特殊放逐票（定序）'
 YVLHB_CHILDREN = ['预女猎白好人混', '预女猎白狼人混']
 WOLF_ONLY_CAMP = {'狼人'}
+NON_FIRST_WOLF_DATASET_PREFIX = '京城大师赛'
+PLAIN_WOLF_IDENTITY = '狼'
+
 RATE_COLS = {
     '狼人率': ('狼次数', '出场次数'),
     '预通率': ('预通次数', '出场次数'),
@@ -44,6 +47,17 @@ RATE_COLS = {
     '首摄狼人率': ('首摄狼人次数', '摄梦人次数'),
     '盲毒狼人率': ('盲毒狼人次数', '盲毒次数'),
 }
+
+NON_FIRST_WOLF_RATE_COLS = {
+    '非首局狼人率': ('非首局狼次数', '非首局出场次数'),
+}
+
+
+def get_rate_cols(include_non_first_wolf_rate=False):
+    cols = dict(RATE_COLS)
+    if include_non_first_wolf_rate:
+        cols.update(NON_FIRST_WOLF_RATE_COLS)
+    return cols
 
 POISON_ROLES = ['女巫', '毒师']
 BLIND_POISON_SAVE_MARK = '救'
@@ -81,8 +95,12 @@ def build_statistics_rules():
     poison_roles_text = '/'.join(POISON_ROLES)
     good_id_text = '/'.join(sorted(GOOD_IDENTITIES))
     first_check_text = '、'.join(FIRST_CHECK_ROLES)
-    rate_rules = {k: f"{v[0]} ÷ {v[1]}" for k, v in RATE_COLS.items()}
+    rate_rules = {k: f"{v[0]} ÷ {v[1]}" for k, v in get_rate_cols(True).items()}
     rate_rules['说明'] = '分母为 0 记 0；百分比保留一位小数'
+    rate_rules['非首局狼人率说明'] = (
+        '仅京城大师赛产出；粤小不统计。'
+        '非首局 = 日期末两位非 01；分子仅计身份为狼'
+    )
     return {
         '说明': (
             '与 statistics.ipynb 代码一致。'
@@ -214,6 +232,14 @@ def build_statistics_rules():
             '拉杆成功': '有拉杆且验人目标身份 = 验人结果',
             '拉杆记录': '成功明细：日期-姓名-验人-结果，逗号连接',
         },
+        '非首局狼人率': {
+            '范围': f'仅 {NON_FIRST_WOLF_DATASET_PREFIX} 各赛季玩家统计',
+            '非首局': '日期编码末两位不为 01（01 为当天首局，整局排除）',
+            '分子': f'非首局中身份为「{PLAIN_WOLF_IDENTITY}」的出场次数',
+            '分母': '非首局出场次数',
+            '比率': '非首局狼次数 ÷ 非首局出场次数',
+            '粤小': '不产出非首局狼次数、非首局出场次数、非首局狼人率',
+        },
         '红狼与狼刀': {
             '技能狼标记': '狼人阵营且身份非狼',
             '非盗宝红狼标记': f'身份为{red_wolf_text}，版型非{DAOBAO_MASTER_BANXING}',
@@ -324,6 +350,18 @@ def assign_camp_from_identity(data):
 
 GOOD_WIN_CAMPS = {'平民', '神职'}
 WOLF_WIN_CAMPS = {'狼人', '狼人混'}
+
+def _is_first_session_game(date_val):
+    """日期编码末两位为 01 表示当天首局。"""
+    if pd.isna(date_val):
+        return False
+    text = str(date_val).strip()
+    if not text or text in ('<NA>', 'None', 'nan'):
+        return False
+    if text.endswith('.0'):
+        text = text[:-2]
+    return text.endswith('01')
+
 
 def _cell_has_value(value):
     if pd.isna(value):
@@ -2185,15 +2223,20 @@ def add_markers(data):
     data = assign_lagan_markers(data)
     data = assign_red_wolf_knife_markers(data)
     data = assign_first_knife_witch_markers(data)
+    data['非首局标记'] = (~data['日期'].map(_is_first_session_game)).astype(int)
+    data['非首局狼次数标记'] = (
+        data['非首局标记']
+        * (role.astype('string').str.strip() == PLAIN_WOLF_IDENTITY).astype(int)
+    )
     return data
 
-def build_player_stats(data):
+def build_player_stats(data, include_non_first_wolf_rate=False):
     """按姓名汇总并计算比率。"""
     tmp = data.assign(
         狼存活天数=data['存活天数'] * data['狼标记'],
         好人存活天数=data['存活天数'] * data['好人标记'],
     )
-    stat = tmp.groupby('姓名').agg(
+    agg_spec = dict(
         出场次数=('姓名', 'count'),
         胜场次数=('胜利标记', 'sum'),
         狼次数=('狼标记', 'sum'),
@@ -2251,7 +2294,11 @@ def build_player_stats(data):
         存活天数总和=('存活天数', 'sum'),
         狼存活天数总和=('狼存活天数', 'sum'),
         好人存活天数总和=('好人存活天数', 'sum'),
-    ).reset_index()
+    )
+    if include_non_first_wolf_rate:
+        agg_spec['非首局出场次数'] = ('非首局标记', 'sum')
+        agg_spec['非首局狼次数'] = ('非首局狼次数标记', 'sum')
+    stat = tmp.groupby('姓名').agg(**agg_spec).reset_index()
     stat = stat.rename(columns={'首摄狼王盗宝猎人次数': '首摄狼王/盗宝猎人次数'})
     stat = stat.merge(summarize_player_game_lists(data), on='姓名', how='left')
     stat['参与场次'] = stat['参与场次'].fillna('')
@@ -2286,10 +2333,11 @@ def build_player_stats(data):
         stat['好人存活天数总和'] / stat['好人次数'].replace(0, pd.NA)
     ).fillna(0).round(1)
     stat = stat.drop(columns=['存活天数总和', '狼存活天数总和', '好人存活天数总和'])
-    for name, (num, den) in RATE_COLS.items():
+    rate_cols = get_rate_cols(include_non_first_wolf_rate)
+    for name, (num, den) in rate_cols.items():
         stat[name] = (stat[num] / stat[den].replace(0, pd.NA)).fillna(0)
     stat = stat.sort_values('出场次数', ascending=False).reset_index(drop=True)
-    stat[list(RATE_COLS)] = stat[list(RATE_COLS)].map(lambda x: f'{x:.1%}')
+    stat[list(rate_cols)] = stat[list(rate_cols)].map(lambda x: f'{x:.1%}')
     return stat
 
 def build_banxing_stats(data):
@@ -2484,7 +2532,10 @@ def export_sheet(excel_file, prefix, sheet):
 
     df = merge_vote_camps(df)
     df = add_markers(df)
-    stat_df = build_player_stats(df)
+    stat_df = build_player_stats(
+        df,
+        include_non_first_wolf_rate=(prefix == NON_FIRST_WOLF_DATASET_PREFIX),
+    )
     banxing_df = build_banxing_stats(df)
     tongbian_df = build_tongbian_stats(df, stat_df)
 

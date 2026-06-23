@@ -838,7 +838,19 @@ h1 {
 
 .radar-text-count {
   color: var(--text-muted);
-  font-size: 0.85em; }
+  font-size: 0.78em;
+  font-weight: 400; }
+
+.radar-stats-row .col-value .radar-text-count {
+  color: var(--text-muted); }
+
+.radar-stats-row .col-metric .radar-text-count {
+  color: var(--text-muted);
+  font-weight: 400; }
+
+.radar-filter-check .radar-text-count {
+  color: var(--text-muted);
+  font-weight: 400; }
 
 /* legacy table styles kept for compatibility */
 .radar-stats-table .col-metric {
@@ -851,7 +863,8 @@ h1 {
 
 .radar-stats-table .radar-text-count {
   color: var(--text-muted);
-  font-size: 0.85em; }
+  font-size: 0.78em;
+  font-weight: 400; }
 
 .radar-stats-table td.rank-top {
   background: var(--rank-top-bg); }
@@ -1260,14 +1273,11 @@ body.tongbian-sessions-modal-open {
   background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-page) 100%); }
 
 .tongbian-sessions-modal .rules-modal-heading {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px; }
+  align-items: flex-start; }
 
 .tongbian-sessions-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
   min-width: 0; }
 
 .tongbian-sessions-title-row h2 {
@@ -1276,13 +1286,10 @@ body.tongbian-sessions-modal-open {
   text-overflow: ellipsis;
   white-space: nowrap; }
 
-.tongbian-sessions-subtitle {
-  margin: 0;
-  padding-left: 28px;
-  font-size: 0.8125rem;
-  font-weight: 400;
+.tongbian-sessions-title-row h2 .tongbian-sessions-meta {
   color: var(--text-muted);
-  line-height: 1.4; }
+  font-size: 0.8125rem;
+  font-weight: 400; }
 
 .tongbian-sessions-body {
   flex: 1 1 auto;
@@ -1642,8 +1649,7 @@ body.tongbian-sessions-modal-open {
   .tongbian-sessions-modal .rules-modal-header {
     padding: 12px 14px 10px; }
 
-  .tongbian-sessions-subtitle {
-    padding-left: 0;
+  .tongbian-sessions-title-row h2 .tongbian-sessions-meta {
     font-size: 0.75rem; }
 
   .tongbian-sessions-body {
