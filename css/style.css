@@ -183,7 +183,7 @@ body.rules-modal-open {
 .rules-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: #dcdedf; }
+  background: rgba(15, 23, 42, 0.42); }
 
 .rules-modal-panel {
   position: relative;
@@ -611,25 +611,31 @@ h1 {
   line-height: 1.2; }
 
 .sort-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 22px;
   height: 22px;
   padding: 0;
-  border: 1px solid var(--border);
+  border: none;
   border-radius: 4px;
-  background: var(--bg-surface);
+  background: transparent;
   color: var(--text-secondary);
   font-size: 0.85rem;
   line-height: 1;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s; }
+  transition: background 0.15s, color 0.15s; }
+
+.sort-btn-icon {
+  display: block;
+  flex-shrink: 0; }
 
 .sort-btn:hover {
-  border-color: var(--accent);
+  background: var(--bg-muted);
   color: var(--text); }
 
 .sort-btn.active {
   background: var(--accent-soft);
-  border-color: var(--accent);
   color: var(--accent-hover);
   font-weight: 600; }
 
@@ -908,10 +914,6 @@ h1 {
 .radar-games-legend-swatch.is-win {
   background: var(--win-chip); }
 
-.radar-games-legend-swatch.is-other {
-  background: var(--bg-muted);
-  border: 1px solid var(--border); }
-
 .radar-games-content {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -924,17 +926,30 @@ h1 {
   grid-column: 1 / -1; }
 
 .game-session-chip {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
   padding: 6px 8px;
   border-radius: var(--radius-sm);
   background: var(--bg-muted);
-  line-height: 1.5;
+  line-height: 1.5; }
+
+.game-session-chip-text {
+  flex: 1 1 auto;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis; }
+
+.game-session-video-icon {
+  flex: 0 0 auto;
+  color: var(--text-muted); }
+
+.game-session-chip.is-win .game-session-video-icon {
+  color: var(--accent-hover); }
 
 button.game-session-chip {
   border: none;
@@ -959,6 +974,18 @@ button.game-session-chip:active {
 
 .game-session-chip.is-win .game-session-detail {
   color: var(--text-secondary); }
+
+.session-date-with-video {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap; }
+
+.session-date-with-video .game-session-video-icon {
+  color: var(--text-muted); }
+
+.lagan-table tbody tr[data-raw-date] {
+  cursor: pointer; }
 
 .radar-metric-controls {
   width: 100%;
@@ -1098,21 +1125,21 @@ button.game-session-chip:active {
   pointer-events: none; }
 
 .radar-filter-select-all {
-  margin-right: 2px;
-  padding-right: 12px;
-  border-right: none;
+  padding-right: 10px;
   border-radius: var(--radius-sm);
-  position: relative; }
+  position: relative;
+  overflow: visible; }
 
 .radar-filter-select-all::after {
   content: "";
   position: absolute;
-  right: 0;
+  left: calc(100% + 5px);
   top: 50%;
   width: 1px;
   height: 14px;
   background: var(--border);
-  transform: translateY(-50%); }
+  transform: translateY(-50%);
+  pointer-events: none; }
 
 .radar-filter-select-all span {
   font-weight: 500; }
@@ -1207,6 +1234,276 @@ button.game-session-chip:active {
 .tongbian-table th.col-identity {
   z-index: 4; }
 
+.tongbian-table tbody tr.tongbian-row-clickable {
+  cursor: pointer; }
+
+body.tongbian-sessions-modal-open {
+  overflow: hidden; }
+
+.tongbian-sessions-modal .rules-modal-panel {
+  width: min(680px, 100%);
+  max-height: min(88vh, 720px);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.14);
+  animation: tongbian-modal-in 0.22s ease-out; }
+
+@keyframes tongbian-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98); }
+
+  to {
+    opacity: 1;
+    transform: none; } }
+
+.tongbian-sessions-modal .rules-modal-header {
+  padding: 16px 18px 14px;
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-page) 100%); }
+
+.tongbian-sessions-modal .rules-modal-heading {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px; }
+
+.tongbian-sessions-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0; }
+
+.tongbian-sessions-title-row h2 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; }
+
+.tongbian-sessions-subtitle {
+  margin: 0;
+  padding-left: 28px;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.4; }
+
+.tongbian-sessions-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: min(70vh, 640px);
+  padding: 12px 14px 10px;
+  background: var(--bg-page);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  --tongbian-meta-width: 9.25rem; }
+
+.tongbian-sessions-body::-webkit-scrollbar {
+  width: 6px; }
+
+.tongbian-sessions-body::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px; }
+
+.tongbian-sessions-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 24px 8px 32px;
+  padding: 28px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  text-align: center; }
+
+.tongbian-session-item {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  overflow-x: hidden;
+  overflow-y: hidden; }
+
+.tongbian-session-line {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+  overflow-y: hidden; }
+
+.tongbian-session-meta {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px 5px;
+  flex: 0 0 var(--tongbian-meta-width);
+  width: var(--tongbian-meta-width);
+  height: fit-content;
+  box-sizing: border-box;
+  align-self: center;
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-muted);
+  border: 1px solid var(--border-light);
+  white-space: nowrap; }
+
+.tongbian-session-date-day {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  line-height: 1.25; }
+
+.tongbian-session-date-round {
+  flex: 0 0 auto;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.25; }
+
+.tongbian-session-video {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none; }
+
+.tongbian-session-video .game-session-video-icon {
+  color: var(--text-muted); }
+
+.tongbian-session-video.has-link.is-win .game-session-video-icon {
+  color: var(--accent-hover); }
+
+.tongbian-session-main {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 0 0 8px; }
+
+.tongbian-session-players {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 5px;
+  font-size: 0.8125rem;
+  line-height: 1.3; }
+
+.tongbian-session-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0; }
+
+.tongbian-session-player-name {
+  font-weight: 500;
+  color: var(--text); }
+
+.tongbian-session-player-id {
+  flex: 0 0 auto;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.35; }
+
+.tongbian-session-player-sep {
+  color: var(--border);
+  font-weight: 600;
+  user-select: none; }
+
+.tongbian-session-win-tag {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  flex: 0 0 auto;
+  margin: 0 0 0 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light); }
+
+.tongbian-session-win-tag.is-wolf {
+  background: var(--rank-bottom-bg);
+  border-color: var(--rank-bottom-pill);
+  color: var(--rank-bottom-text); }
+
+.tongbian-session-win-tag.is-good {
+  background: var(--rank-top-bg);
+  border-color: var(--rank-top-pill);
+  color: var(--rank-top-text); }
+
+.tongbian-session-item.is-same-side-win {
+  background: var(--win-chip);
+  border-color: var(--state-bg-hover); }
+
+.tongbian-session-item.is-same-side-win .tongbian-session-meta {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: var(--state-bg-hover); }
+
+.tongbian-session-item.is-same-side-win .tongbian-session-player-id {
+  background: rgba(255, 255, 255, 0.72); }
+
+.tongbian-session-item.is-same-side-win .tongbian-session-win-tag {
+  background: var(--state-bg);
+  border-color: var(--accent);
+  color: var(--accent-hover); }
+
+.tongbian-session-item.is-same-side-win .tongbian-session-win-tag.is-wolf {
+  background: var(--rank-bottom-bg);
+  border-color: var(--rank-bottom-pill);
+  color: var(--rank-bottom-text); }
+
+.tongbian-session-item.is-same-side-win .tongbian-session-win-tag.is-good {
+  background: var(--rank-top-bg);
+  border-color: var(--rank-top-pill);
+  color: var(--rank-top-text); }
+
+.tongbian-session-item:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(68, 159, 216, 0.1); }
+
+.tongbian-session-item.has-video:hover .tongbian-session-video.has-link.is-win .game-session-video-icon {
+  color: var(--accent); }
+
+.tongbian-session-item.is-same-side-win:hover {
+  background: var(--state-bg-hover);
+  border-color: var(--accent); }
+
+.tongbian-session-item:active {
+  transform: scale(0.995); }
+
 .raw-table tbody tr:hover td {
   background: var(--bg-muted); }
 
@@ -1263,6 +1560,28 @@ button.game-session-chip:active {
   border-radius: 4px;
   color: var(--text-secondary); }
 
+.link-missing-toast {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 1200;
+  padding: 14px 22px;
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease; }
+
+.link-missing-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1); }
+
 @media (max-width: 768px) {
   body {
     padding: 10px;
@@ -1304,6 +1623,54 @@ button.game-session-chip:active {
 
   .rules-modal-panel {
     max-height: 92vh; }
+
+  .tongbian-session-win-tag {
+    display: none; }
+
+  .tongbian-sessions-modal .rules-modal-header {
+    padding: 12px 14px 10px; }
+
+  .tongbian-sessions-subtitle {
+    padding-left: 0;
+    font-size: 0.75rem; }
+
+  .tongbian-sessions-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    padding: 10px 10px 8px;
+    gap: 6px;
+    --tongbian-meta-width: 9.25rem; }
+
+  .tongbian-session-item {
+    padding: 7px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    overscroll-behavior-y: none; }
+
+  .tongbian-session-line {
+    flex-wrap: nowrap;
+    align-items: center;
+    word-break: normal;
+    white-space: nowrap;
+    width: max-content;
+    min-width: 100%;
+    overflow-y: hidden; }
+
+  .tongbian-session-meta {
+    padding: 4px 7px; }
+
+  .tongbian-session-main {
+    flex: 0 0 auto;
+    padding: 0 0 0 8px;
+    white-space: nowrap; }
+
+  .tongbian-session-players {
+    flex-wrap: nowrap;
+    white-space: nowrap; }
 
   .rules-sections {
     padding: 10px 12px 12px;
@@ -1454,6 +1821,26 @@ button.game-session-chip:active {
   #banxingControls {
     grid-column: 1 / -1; }
 
+  #barControls.bar-controls-wrap {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px; }
+
+  #barControls > label[for="columnSelect"] {
+    flex: 0 0 auto; }
+
+  #barControls > #columnSelect {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    max-width: none; }
+
+  #barControls .wolf-sub-controls,
+  #barControls #winRateFiltersRow,
+  #barControls #otherSeatFiltersRow {
+    flex: 1 1 100%;
+    width: 100%; }
+
   .bar-controls-wrap .wolf-sub-controls,
   #radarControls .wolf-sub-controls {
     padding-top: 0;
@@ -1537,16 +1924,26 @@ button.game-session-chip:active {
     width: 100%; }
 
   .radar-filter-checkboxes {
-    gap: 4px; }
+    gap: 3px; }
 
-  .segment-toggle-btn {
-    padding: 6px 8px;
+  .radar-filter-label {
     font-size: 0.6875rem; }
 
-  .radar-winrate-controls,
-  .radar-metric-controls {
-    padding: 6px 8px;
-    border-radius: var(--radius) var(--radius) 0 0; }
+  .radar-filter-check {
+    font-size: 0.6875rem;
+    min-height: 22px;
+    padding: 2px 6px; }
+
+  .radar-filter-select-all {
+    padding-right: 8px; }
+
+  .radar-filter-select-all::after {
+    left: calc(100% + 4px);
+    height: 10px; }
+
+  .radar-game-filters {
+    gap: 6px;
+    margin-top: 6px; }
 
   .visual-panel.radar-layout {
     flex-direction: column;
@@ -1566,8 +1963,14 @@ button.game-session-chip:active {
     width: 100%;
     max-height: none; }
 
-  .radar-games-content {
-    grid-template-columns: 1fr; }
+  .segment-toggle-btn {
+    padding: 6px 8px;
+    font-size: 0.6875rem; }
+
+  .radar-winrate-controls,
+  .radar-metric-controls {
+    padding: 6px 8px;
+    border-radius: var(--radius) var(--radius) 0 0; }
 
   .game-session-chip {
     width: 100%; }
@@ -1612,10 +2015,8 @@ button.game-session-chip:active {
     white-space: normal;
     word-break: break-all; }
 
-  .radar-filter-check {
-    font-size: 0.75rem;
-    min-height: 30px;
-    padding: 5px 10px; }
+  .radar-games-content {
+    grid-template-columns: 1fr; }
 
   #chart {
     min-height: 260px;
@@ -1635,6 +2036,11 @@ button.game-session-chip:active {
 @media (max-width: 380px) {
   .view-btn {
     padding: 5px 8px;
-    font-size: 0.625rem; } }
+    font-size: 0.625rem; }
+
+  .radar-filter-check {
+    font-size: 0.625rem;
+    min-height: 20px;
+    padding: 2px 5px; } }
 
 /*# sourceMappingURL=style.css.map */

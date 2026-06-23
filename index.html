@@ -227,10 +227,6 @@
           <span class="radar-games-legend-swatch is-win" aria-hidden="true"></span>
           淡色底为胜利场次
         </span>
-        <span class="radar-games-legend-item">
-          <span class="radar-games-legend-swatch is-other" aria-hidden="true"></span>
-          淡灰紫底为其他场次
-        </span>
       </p>
     </div>
     <div id="dataTable" class="data-table-wrap" style="display: none;">
@@ -259,6 +255,7 @@
       </div>
     </div>
     <div id="error" class="error" style="display: none;"></div>
+    <div id="linkMissingToast" class="link-missing-toast" role="alert" aria-live="polite" hidden>无对应链接</div>
     <footer id="pageMetaBar" class="page-meta-bar">
       <p id="chartDataNotice" class="page-meta-note" style="display: none;">仅统计出场 ≥9 的玩家</p>
       <span class="page-meta-text">misamisa28.github.io/lrs</span>
@@ -280,6 +277,25 @@
       <div id="rulesContent" class="rules-modal-body">
         <p class="rules-loading">加载中…</p>
       </div>
+    </div>
+  </div>
+
+  <div id="tongbianSessionsModal" class="rules-modal tongbian-sessions-modal" aria-hidden="true">
+    <div class="rules-modal-backdrop" data-tongbian-sessions-close></div>
+    <div class="rules-modal-panel" role="dialog" aria-modal="true" aria-labelledby="tongbianSessionsModalTitle">
+      <div class="rules-modal-header">
+        <div class="rules-modal-heading">
+          <div class="tongbian-sessions-title-row">
+            <svg class="rules-modal-icon" viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M5.5 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm5 1a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5zM1.5 13.5c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5v.5H1.5v-.5zm7 0c0-1.5 1.2-2.5 2.5-2.5 1.1 0 2 .7 2.3 1.7l-1.1.3c-.2-.5-.6-.8-1.2-.8-.9 0-1.5.6-1.5 1.5v.5H8.5v-.5z"/>
+            </svg>
+            <h2 id="tongbianSessionsModalTitle">同边场次</h2>
+          </div>
+          <p id="tongbianSessionsModalSubtitle" class="tongbian-sessions-subtitle" hidden></p>
+        </div>
+        <button type="button" class="rules-close-btn" data-tongbian-sessions-close aria-label="关闭">×</button>
+      </div>
+      <div id="tongbianSessionsContent" class="tongbian-sessions-body"></div>
     </div>
   </div>
 
@@ -307,6 +323,7 @@
 
     const DATA_DIR = 'data';
     const RULES_FILE = '规则.json';
+    const VIDEO_LINKS_FILE = `${DATA_DIR}/链接.json`;
 
     function getSeasonFiles(season) {
       const tag = getSeasonTag(season);
@@ -880,6 +897,7 @@
       '同场次数', '同边次数', '同边狼人次数',
       '同边率', '同边狼人胜率', '同边好人胜率',
     ];
+    const TONGBIAN_SESSIONS_COL = '同边场次';
     const TONGBIAN_TABLE_COLUMNS = [NAME_A_KEY, NAME_B_KEY, ...TONGBIAN_METRIC_COLUMNS];
     const TONGBIAN_NON_SORTABLE = new Set(['同场次数']);
     const BANXING_COLUMNS = ['版型', '总场次', '狼赢次数', '好人赢次数', '平均持续天数', '狼人胜率'];
@@ -1037,7 +1055,7 @@
     const TEAMMATE_SELF_KNIFE_COL = '狼队友自刀次数';
     const FIRST_KNIFE_WITCH_COL = '首刀女巫次数';
     const LAGAN_RECORD_COL = '拉杆记录';
-    const LAGAN_TABLE_COLUMNS = ['日期场次', '姓名', '被拉杆玩家', '被拉杆身份'];
+    const LAGAN_TABLE_COLUMNS = ['日期场次', '胜利', '姓名', '被拉杆玩家', '被拉杆身份'];
     const JIXIE_WOLF_TOTAL_COL = '机械狼次数';
     const JIXIE_CIVILIAN_COL = '机械平民次数';
     const JIXIE_DUAL_COL = '机械双刀次数';
@@ -1185,6 +1203,10 @@
     let banxingData = [];
     let totalBanxingData = [];
     let tongbianData = [];
+    let tongbianRenderedRows = [];
+    let currentTongbianModalRow = null;
+    let videoLinksPayload = null;
+    const videoLinkIndex = { '京城大师赛': {}, '粤小': {} };
     let banxingSubMode = 'all';
     let banxingSort = { column: '总场次', direction: 'desc' };
     let tongbianSort = { column: '同场次数', direction: 'desc' };
@@ -1796,6 +1818,24 @@
       });
     }
 
+    function renderSortButtonIcon(isActive, isAsc) {
+      if (!isActive) {
+        return '<svg class="sort-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">' +
+          '<path fill="currentColor" d="M8 4.25 5.5 7h5L8 4.25zM8 11.75 10.5 9h-5L8 11.75z"/>' +
+          '</svg>';
+      }
+      if (isAsc) {
+        return '<svg class="sort-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">' +
+          '<path fill="currentColor" d="M8 3.5 5.5 6.5h5L8 3.5z"/>' +
+          '<path fill="currentColor" opacity="0.3" d="M8 12.5 10.5 9.5h-5L8 12.5z"/>' +
+          '</svg>';
+      }
+      return '<svg class="sort-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">' +
+        '<path fill="currentColor" opacity="0.3" d="M8 3.5 5.5 6.5h5L8 3.5z"/>' +
+        '<path fill="currentColor" d="M8 12.5 10.5 9.5h-5L8 12.5z"/>' +
+        '</svg>';
+    }
+
     function renderTongbianHeaderCell(col) {
       const thClass = getTongbianCellClass(col);
       if (col === NAME_A_KEY || col === NAME_B_KEY || TONGBIAN_NON_SORTABLE.has(col)) {
@@ -1803,12 +1843,11 @@
       }
       const isActive = tongbianSort.column === col;
       const isAsc = isActive && tongbianSort.direction === 'asc';
-      const arrow = isActive ? (isAsc ? '↑' : '↓') : '↕';
       const title = isActive ? (isAsc ? '升序，点击切换为降序' : '降序，点击切换为升序') : '点击排序';
       return `<th class="${thClass} th-sortable">
         <div class="th-sort-wrap">
           <span class="th-label">${col}</span>
-          <button type="button" class="sort-btn${isActive ? ' active' : ''}" data-col="${col}" title="${title}" aria-label="${title}">${arrow}</button>
+          <button type="button" class="sort-btn${isActive ? ' active' : ''}" data-col="${col}" title="${title}" aria-label="${title}">${renderSortButtonIcon(isActive, isAsc)}</button>
         </div>
       </th>`;
     }
@@ -1851,6 +1890,232 @@
       notice.style.display = 'block';
     }
 
+    function parseTongbianSessions(text) {
+      if (text == null || !String(text).trim()) return [];
+      return String(text).split(',').map(part => part.trim()).filter(Boolean).map(entry => {
+        const match = entry.match(/^(\d+)（([\s\S]+)）$/);
+        if (!match) {
+          return { rawDate: '', detail: '', full: entry };
+        }
+        return {
+          rawDate: match[1],
+          detail: match[2],
+          full: entry,
+        };
+      });
+    }
+
+    const TONGBIAN_CIVILIAN_IDENTITIES = new Set(['平民', '好人混']);
+    const TONGBIAN_WOLF_MIX_IDENTITIES = new Set(['狼人混']);
+    const TONGBIAN_WOLF_IDENTITIES = new Set([
+      '假面', '典狱长', '捣蛋鬼', '梦魇', '狼', '狼术师', '狼王', '狼美人', '石像鬼', '诡术师', '黑狼王',
+    ]);
+
+    function campFromIdentity(identity) {
+      const id = String(identity ?? '').trim();
+      if (!id) return '神职';
+      if (TONGBIAN_CIVILIAN_IDENTITIES.has(id)) return '平民';
+      if (TONGBIAN_WOLF_MIX_IDENTITIES.has(id)) return '狼人混';
+      if (
+        TONGBIAN_WOLF_IDENTITIES.has(id)
+        || id.includes('盗宝')
+        || id.includes('机械')
+        || id.includes('傀儡')
+      ) {
+        return '狼人';
+      }
+      return '神职';
+    }
+
+    function isWolfCamp(camp) {
+      return camp === '狼人' || camp === '狼人混';
+    }
+
+    function parseTongbianSessionDetail(detail) {
+      const players = [];
+      let winSide = '';
+      String(detail).split('、').map(part => part.trim()).filter(Boolean).forEach(part => {
+        const match = part.match(/^(.+)：(.+)$/);
+        if (!match) return;
+        const key = match[1].trim();
+        const value = match[2].trim();
+        if (key === '胜利方') {
+          winSide = value;
+        } else {
+          players.push({ name: key, identity: value });
+        }
+      });
+      return { players, winSide };
+    }
+
+    function isTongbianSessionSameSideWin(session) {
+      if (!session?.detail) return false;
+      const { players, winSide } = parseTongbianSessionDetail(session.detail);
+      if (players.length < 2 || !winSide) return false;
+
+      const camps = players.map(player => campFromIdentity(player.identity));
+      const bothWolf = camps.every(camp => isWolfCamp(camp));
+      const bothGood = camps.every(camp => !isWolfCamp(camp));
+      if (!bothWolf && !bothGood) return false;
+
+      if (winSide === '狼') return bothWolf;
+      if (winSide === '好人') return bothGood;
+      return false;
+    }
+
+    function formatTongbianSessionDateHtml(rawDate) {
+      const dateStr = String(rawDate ?? '').trim();
+      if (!dateStr) return '';
+      const { day, roundLabel } = parseGameDateDisplay(dateStr);
+      if (!day && !roundLabel) {
+        return `<span class="tongbian-session-date-day">${escapeHtml(dateStr)}</span>`;
+      }
+      return `<span class="tongbian-session-date-day">${escapeHtml(day || dateStr)}</span>` +
+        (roundLabel ? `<span class="tongbian-session-date-round">${escapeHtml(roundLabel)}</span>` : '');
+    }
+
+    function formatTongbianSessionPlayersHtml(players) {
+      if (!players.length) return '';
+      return players.map((player, index) => {
+        const sep = index > 0
+          ? '<span class="tongbian-session-player-sep" aria-hidden="true">·</span>'
+          : '';
+        return sep +
+          `<span class="tongbian-session-player">` +
+          `<span class="tongbian-session-player-name">${escapeHtml(player.name)}</span>` +
+          `<span class="tongbian-session-player-id">${escapeHtml(player.identity)}</span>` +
+          `</span>`;
+      }).join('');
+    }
+
+    function formatTongbianSessionWinLabel(winSide) {
+      if (winSide === '狼') return '狼胜利';
+      if (winSide === '好人') return '好人胜利';
+      return winSide ? `${winSide}胜利` : '未知胜负';
+    }
+
+    function formatTongbianSessionPlayersText(players) {
+      if (!players.length) return '';
+      return `（${players.map(player => `${player.name} - ${player.identity}`).join('、')}）`;
+    }
+
+    function formatTongbianSessionHtml(session) {
+      const rawDate = String(session.rawDate ?? '').trim();
+      const { players, winSide } = parseTongbianSessionDetail(session.detail || '');
+      if (!rawDate && !session.detail) {
+        return escapeHtml(session.full);
+      }
+
+      const hasVideo = rawDate && findVideoLink(rawDate);
+      const isSameSideWin = isTongbianSessionSameSideWin(session);
+      const winLabel = formatTongbianSessionWinLabel(winSide);
+
+      return `<span class="tongbian-session-line">` +
+        `<span class="tongbian-session-meta">` +
+        formatTongbianSessionDateHtml(rawDate) +
+        (hasVideo
+          ? `<span class="tongbian-session-video has-link${isSameSideWin ? ' is-win' : ''}">${GAME_SESSION_VIDEO_ICON}</span>`
+          : '') +
+        `</span>` +
+        `<span class="tongbian-session-main">` +
+        (players.length
+          ? `<span class="tongbian-session-players">${formatTongbianSessionPlayersHtml(players)}</span>`
+          : '') +
+        `</span>` +
+        `<span class="tongbian-session-win-tag${getTongbianSessionWinTagClass(winSide)}">${escapeHtml(winLabel)}</span>` +
+        `</span>`;
+    }
+
+    function getTongbianSessionWinTagClass(winSide) {
+      if (winSide === '狼') return ' is-wolf';
+      if (winSide === '好人') return ' is-good';
+      return '';
+    }
+
+    function getTongbianSessionTitle(session) {
+      const rawDate = String(session.rawDate ?? '').trim();
+      const { players, winSide } = parseTongbianSessionDetail(session.detail || '');
+      if (!rawDate && session.full) return session.full;
+      const winLabel = formatTongbianSessionWinLabel(winSide);
+      const playersText = formatTongbianSessionPlayersText(players);
+      return `${rawDate}${winLabel}${playersText}`;
+    }
+
+    function sortTongbianSessions(sessions) {
+      return sessions.slice().sort((a, b) => {
+        const da = Number(a.rawDate) || 0;
+        const db = Number(b.rawDate) || 0;
+        return db - da;
+      });
+    }
+
+    function setTongbianSessionsModalOpen(open) {
+      const modal = document.getElementById('tongbianSessionsModal');
+      if (!modal) return;
+      modal.classList.toggle('is-open', open);
+      modal.setAttribute('aria-hidden', open ? 'false' : 'true');
+      document.body.classList.toggle('tongbian-sessions-modal-open', open);
+      if (!open) currentTongbianModalRow = null;
+    }
+
+    function renderTongbianSessionsModalContent(row) {
+      if (!row) return;
+      currentTongbianModalRow = row;
+      const titleEl = document.getElementById('tongbianSessionsModalTitle');
+      const subtitleEl = document.getElementById('tongbianSessionsModalSubtitle');
+      titleEl.textContent = `${row[NAME_A_KEY]} · ${row[NAME_B_KEY]}`;
+
+      const sessions = sortTongbianSessions(parseTongbianSessions(row[TONGBIAN_SESSIONS_COL]));
+      const winCount = sessions.filter(session => isTongbianSessionSameSideWin(session)).length;
+      if (subtitleEl) {
+        if (sessions.length) {
+          subtitleEl.textContent = `共 ${sessions.length} 场 · 同边胜 ${winCount} 场`;
+          subtitleEl.hidden = false;
+        } else {
+          subtitleEl.textContent = '';
+          subtitleEl.hidden = true;
+        }
+      }
+
+      const content = document.getElementById('tongbianSessionsContent');
+      if (!sessions.length) {
+        content.innerHTML = '<p class="tongbian-sessions-empty">暂无同边场次记录</p>';
+        return;
+      }
+
+      const itemsHtml = sessions.map(session => {
+        const rawDate = String(session.rawDate ?? '').trim();
+        const winClass = isTongbianSessionSameSideWin(session) ? ' is-same-side-win' : '';
+        const videoClass = rawDate && findVideoLink(rawDate) ? ' has-video' : '';
+        return `<button type="button" class="tongbian-session-item${winClass}${videoClass}"${rawDate ? ` data-raw-date="${escapeHtml(rawDate)}"` : ''} title="${escapeHtml(getTongbianSessionTitle(session))}">` +
+          formatTongbianSessionHtml(session) +
+          '</button>';
+      }).join('');
+
+      content.innerHTML = itemsHtml;
+    }
+
+    function openTongbianSessionsModal(row) {
+      renderTongbianSessionsModalContent(row);
+      setTongbianSessionsModalOpen(true);
+    }
+
+    function bindTongbianSessionsModal() {
+      document.querySelectorAll('[data-tongbian-sessions-close]').forEach(el => {
+        el.addEventListener('click', () => setTongbianSessionsModalOpen(false));
+      });
+      document.getElementById('tongbianSessionsContent').addEventListener('click', (e) => {
+        const item = e.target.closest('.tongbian-session-item[data-raw-date]');
+        if (!item) return;
+        openVideoLinkForSession(item.dataset.rawDate);
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.getElementById('tongbianSessionsModal').classList.contains('is-open')) {
+          setTongbianSessionsModalOpen(false);
+        }
+      });
+    }
+
     function renderTongbianTable(selectedName) {
       const columns = getTongbianTableColumns();
       const { column, direction } = tongbianSort;
@@ -1866,14 +2131,17 @@
 
       thead.innerHTML = `<tr>${columns.map(col => renderTongbianHeaderCell(col)).join('')}</tr>`;
       if (isEmpty && !seasonEmpty) {
+        tongbianRenderedRows = [];
         tbody.innerHTML = `<tr><td colspan="${columns.length}" class="table-empty-cell">${getTongbianEmptyMessage(selectedName)}</td></tr>`;
       } else if (!isEmpty) {
-        tbody.innerHTML = sorted.map(row =>
-          `<tr>${columns.map(col =>
-            `<td class="${getTongbianCellClass(col)}">${row[col] ?? ''}</td>`
+        tongbianRenderedRows = sorted;
+        tbody.innerHTML = sorted.map((row, index) =>
+          `<tr class="tongbian-row-clickable" data-tongbian-row="${index}">${columns.map(col =>
+            `<td class="${getTongbianCellClass(col)}">${escapeHtml(String(row[col] ?? ''))}</td>`
           ).join('')}</tr>`
         ).join('');
       } else {
+        tongbianRenderedRows = [];
         tbody.innerHTML = '';
       }
       updateTongbianEmptyNotice(selectedName, seasonEmpty);
@@ -2269,17 +2537,47 @@
       };
     }
 
+    function buildSessionWinLookup() {
+      const lookup = new Map();
+      rawTableData.forEach(row => {
+        const date = String(row['日期'] ?? '').trim();
+        if (!date || lookup.has(date)) return;
+        const win = row[WIN_KEY];
+        if (win != null && String(win).trim() !== '') {
+          lookup.set(date, String(win).trim());
+        }
+      });
+      return lookup;
+    }
+
     function getLaganTableRows() {
+      const winLookup = buildSessionWinLookup();
       const rows = [];
       rawData.forEach(item => {
         const raw = item[LAGAN_RECORD_COL];
         if (raw == null || String(raw).trim() === '') return;
         String(raw).split(',').forEach(entry => {
           const parsed = parseLaganRecordEntry(entry);
-          if (parsed) rows.push(parsed);
+          if (parsed) {
+            const sessionDate = String(parsed['日期场次']).trim();
+            parsed['胜利'] = winLookup.get(sessionDate) || '—';
+            rows.push(parsed);
+          }
         });
       });
       return rows.sort((a, b) => String(b['日期场次']).localeCompare(String(a['日期场次']), 'zh-CN'));
+    }
+
+    function renderLaganTableCell(col, row) {
+      if (col === '日期场次') {
+        return formatDateWithVideoIcon(row[col]);
+      }
+      if (col === '胜利') {
+        const win = String(row[col] ?? '—');
+        const winClass = getRawTableWinClass(win);
+        return `<span class="raw-game-info-win${winClass ? ` ${winClass}` : ''}">${escapeHtml(win)}</span>`;
+      }
+      return escapeHtml(String(row[col] ?? ''));
     }
 
     function renderLaganTable() {
@@ -2303,11 +2601,12 @@
       }
 
       emptyNotice.style.display = 'none';
-      tbody.innerHTML = rows.map(row =>
-        `<tr>${LAGAN_TABLE_COLUMNS.map(col =>
-          `<td>${escapeHtml(String(row[col] ?? ''))}</td>`
-        ).join('')}</tr>`
-      ).join('');
+      tbody.innerHTML = rows.map(row => {
+        const rawDate = String(row['日期场次'] ?? '').trim();
+        return `<tr data-raw-date="${escapeHtml(rawDate)}">${LAGAN_TABLE_COLUMNS.map(col =>
+          `<td>${renderLaganTableCell(col, row)}</td>`
+        ).join('')}</tr>`;
+      }).join('');
     }
 
     function getJixieWolfComboItems() {
@@ -4790,6 +5089,121 @@
       return rawData.length > 0 && PARTICIPATION_COL in rawData[0];
     }
 
+    function getVideoLinkCategory() {
+      return getSeriesKeyForSeason(currentSeason) === 'yuexiao' ? '粤小' : '京城大师赛';
+    }
+
+    const CN_NUMERAL_MAP = {
+      '零': 0, '一': 1, '二': 2, '两': 2, '三': 3, '四': 4,
+      '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10,
+    };
+
+    function chineseNumeralToInt(text) {
+      const s = String(text).trim();
+      if (/^\d+$/.test(s)) return parseInt(s, 10) || 0;
+      if (s.length === 1) return CN_NUMERAL_MAP[s] ?? 0;
+      if (s === '十') return 10;
+      if (s.startsWith('十')) return 10 + (CN_NUMERAL_MAP[s.slice(1)] ?? 0);
+      if (s.endsWith('十')) return (CN_NUMERAL_MAP[s[0]] ?? 0) * 10;
+      if (s.includes('十')) {
+        const [head, tail] = s.split('十');
+        return (CN_NUMERAL_MAP[head] ?? 0) * 10 + (CN_NUMERAL_MAP[tail] ?? 0);
+      }
+      return 0;
+    }
+
+    function parseVideoTitleDatePrefix(title) {
+      const trimmed = String(title).trim();
+      let match = trimmed.match(/^(\d{4})(\d{2})(\d{2})\b/);
+      if (match) {
+        return `${match[1]}${match[2]}${match[3]}`;
+      }
+      match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        return `${match[1]}${match[2]}${match[3]}`;
+      }
+      return '';
+    }
+
+    function extractVideoTitleRounds(title) {
+      const rounds = [];
+      const re = /第([0-9一二三四五六七八九十两]+)局/g;
+      let match;
+      while ((match = re.exec(title)) !== null) {
+        const round = chineseNumeralToInt(match[1]);
+        if (round > 0 && !rounds.includes(round)) {
+          rounds.push(round);
+        }
+      }
+      return rounds;
+    }
+
+    function buildVideoLinkIndex() {
+      videoLinkIndex['京城大师赛'] = {};
+      videoLinkIndex['粤小'] = {};
+      if (!videoLinksPayload) return;
+
+      for (const category of ['京城大师赛', '粤小']) {
+        const collections = videoLinksPayload[category] || [];
+        for (const collection of collections) {
+          for (const video of collection['视频'] || []) {
+            const title = video['标题'];
+            const link = video['链接'];
+            if (!title || !link) continue;
+
+            const day = parseVideoTitleDatePrefix(title);
+            if (!day) continue;
+
+            const rounds = extractVideoTitleRounds(title);
+            for (const round of rounds) {
+              const key = `${day}_${round}`;
+              if (!videoLinkIndex[category][key]) {
+                videoLinkIndex[category][key] = link;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    async function loadVideoLinks() {
+      try {
+        const res = await fetch(VIDEO_LINKS_FILE);
+        if (!res.ok) return;
+        videoLinksPayload = await res.json();
+        buildVideoLinkIndex();
+      } catch (_) {
+        videoLinksPayload = null;
+      }
+    }
+
+    function parseSessionRawDateParts(rawDate) {
+      const dateStr = String(rawDate).trim();
+      if (/^\d{10,}$/.test(dateStr)) {
+        const round = parseInt(dateStr.slice(-2), 10);
+        const day = dateStr.slice(0, -2);
+        if (day && Number.isFinite(round) && round > 0) {
+          return { day, round };
+        }
+      }
+      const { day, roundNum } = parseGameDateDisplay(dateStr);
+      if (day && roundNum > 0) {
+        return { day: String(day), round: roundNum };
+      }
+      return { day: '', round: 0 };
+    }
+
+    function findVideoLink(rawDate) {
+      if (!videoLinksPayload) return '';
+      const category = getVideoLinkCategory();
+      const index = videoLinkIndex[category];
+      if (!index) return '';
+
+      const { day, round } = parseSessionRawDateParts(rawDate);
+      if (!day || !round) return '';
+      return index[`${day}_${round}`] || '';
+    }
+
     function parseGameSessions(text) {
       if (text == null || String(text).trim() === '') return [];
       return String(text)
@@ -4837,6 +5251,18 @@
         return escapeHtml(day || session.date);
       }
       return `${escapeHtml(day)} <span class="game-session-detail">${escapeHtml(detail)}</span>`;
+    }
+
+    const GAME_SESSION_VIDEO_ICON =
+      '<svg class="game-session-video-icon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" focusable="false">' +
+      '<path fill="currentColor" d="M2 4.5A1.5 1.5 0 0 1 3.5 3h9A1.5 1.5 0 0 1 14 4.5v7a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 11.5v-7zm3.2 1.4v4.2l3.8-2.1-3.8-2.1z"/>' +
+      '</svg>';
+
+    function formatDateWithVideoIcon(rawDate) {
+      const dateStr = escapeHtml(String(rawDate ?? '').trim());
+      if (!dateStr) return '';
+      if (!findVideoLink(String(rawDate).trim())) return dateStr;
+      return `<span class="session-date-with-video">${dateStr}${GAME_SESSION_VIDEO_ICON}</span>`;
     }
 
     function getRadarPlayerRecord(name) {
@@ -4951,12 +5377,12 @@
       content.innerHTML = filtered.map(session => {
         const isWin = wins.has(session.key);
         const rawDate = getRawDateFromSession(session);
-        const canOpen = getUniqueDates().includes(rawDate);
-        const tag = canOpen ? 'button' : 'span';
-        const attrs = canOpen
-          ? ` type="button" data-raw-date="${escapeHtml(rawDate)}" title="查看原始数据 ${escapeHtml(rawDate)}"`
-          : '';
-        return `<${tag} class="game-session-chip${isWin ? ' is-win' : ''}"${attrs}>${formatGameSessionHtml(session)}</${tag}>`;
+        const videoLink = findVideoLink(rawDate);
+        const title = videoLink
+          ? `打开视频 ${rawDate}`
+          : `场次 ${rawDate}`;
+        const iconHtml = videoLink ? GAME_SESSION_VIDEO_ICON : '';
+        return `<button type="button" class="game-session-chip${isWin ? ' is-win' : ''}" data-raw-date="${escapeHtml(rawDate)}" title="${escapeHtml(title)}"><span class="game-session-chip-text">${formatGameSessionHtml(session)}</span>${iconHtml}</button>`;
       }).join('');
     }
 
@@ -4970,12 +5396,27 @@
       return dateStr;
     }
 
-    async function openRawDataForSession(session) {
-      const rawDate = getRawDateFromSession(session);
-      if (!getUniqueDates().includes(rawDate)) return;
-      await setView('table');
-      document.getElementById('dateSelect').value = rawDate;
-      renderTable();
+    let linkMissingToastTimer = null;
+
+    function showLinkMissingToast() {
+      const toast = document.getElementById('linkMissingToast');
+      if (!toast) return;
+      toast.hidden = false;
+      toast.classList.add('is-visible');
+      clearTimeout(linkMissingToastTimer);
+      linkMissingToastTimer = setTimeout(() => {
+        toast.classList.remove('is-visible');
+        toast.hidden = true;
+      }, 2000);
+    }
+
+    function openVideoLinkForSession(rawDate) {
+      const link = findVideoLink(rawDate);
+      if (link) {
+        window.open(link, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      showLinkMissingToast();
     }
 
     function getSortedByAppearance() {
@@ -5085,12 +5526,11 @@
       }
       const isActive = banxingSort.column === col;
       const isAsc = isActive && banxingSort.direction === 'asc';
-      const arrow = isActive ? (isAsc ? '↑' : '↓') : '↕';
       const title = isActive ? (isAsc ? '升序，点击切换为降序' : '降序，点击切换为升序') : '点击排序';
       return `<th class="${thClass} th-sortable">
         <div class="th-sort-wrap">
           <span class="th-label">${col}</span>
-          <button type="button" class="sort-btn${isActive ? ' active' : ''}" data-col="${col}" title="${title}" aria-label="${title}">${arrow}</button>
+          <button type="button" class="sort-btn${isActive ? ' active' : ''}" data-col="${col}" title="${title}" aria-label="${title}">${renderSortButtonIcon(isActive, isAsc)}</button>
         </div>
       </th>`;
     }
@@ -5422,6 +5862,7 @@
       if (uiBound) return;
       uiBound = true;
       bindRulesModal();
+      bindTongbianSessionsModal();
       bindScreenshotButton();
       $('columnSelect').addEventListener('change', () => {
         updateChartFootnotes();
@@ -5469,7 +5910,19 @@
       $('radarGamesContent').addEventListener('click', (e) => {
         const chip = e.target.closest('button.game-session-chip[data-raw-date]');
         if (!chip) return;
-        openRawDataForSession({ date: chip.dataset.rawDate });
+        openVideoLinkForSession(chip.dataset.rawDate);
+      });
+      $('laganBody').addEventListener('click', (e) => {
+        const row = e.target.closest('tr[data-raw-date]');
+        if (!row) return;
+        openVideoLinkForSession(row.dataset.rawDate);
+      });
+      $('tongbianBody').addEventListener('click', (e) => {
+        const row = e.target.closest('tr[data-tongbian-row]');
+        if (!row) return;
+        const index = Number(row.dataset.tongbianRow);
+        if (!Number.isFinite(index) || !tongbianRenderedRows[index]) return;
+        openTongbianSessionsModal(tongbianRenderedRows[index]);
       });
       $('tongbianNameSelect').addEventListener('change', updateChart);
       $('seriesSelect').addEventListener('change', async () => {
@@ -5657,6 +6110,17 @@
         updateSeasonSelect();
         refreshControls();
         updateChart();
+        loadVideoLinks().then(() => {
+          if (currentView === 'radar' && radarSubMode === 'games') {
+            renderRadarGamesSection($('nameSelect').value, { skipFilterRefresh: true });
+          }
+          if (currentView === 'bar' && $('columnSelect').value === WOLF_DATA_KEY && wolfSubMode === 'lagan') {
+            renderLaganTable();
+          }
+          if (currentTongbianModalRow) {
+            renderTongbianSessionsModalContent(currentTongbianModalRow);
+          }
+        });
 
         const otherSeasons = SEASONS.filter(season => season !== DEFAULT_SEASON);
         prefetchSeasonStats(otherSeasons);
