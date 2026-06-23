@@ -929,7 +929,6 @@
     const WITCH_POISON_GREEN = CHART_GREEN;
     const WITCH_POISON_GRAY = CHART_GRAY;
     const WITCH_POISON_GRAY_BORDER = CHART_GRAY_BORDER;
-    const DREAM_DARK_GREEN = CHART_GREEN;
     const APPEARANCE_DATA_KEY = '身份数据';
     const APPEARANCE_COMBO_TOTAL = '出场次数';
     const APPEARANCE_COMBO_WOLF = '狼次数';
@@ -4038,7 +4037,7 @@
             stack: 'dreamFirst',
             data: items.map(d => d.special),
             ...getBarSeriesLayout(layout),
-            itemStyle: { color: DREAM_DARK_GREEN, borderRadius: [4, 0, 0, 4] },
+            itemStyle: { color: SELF_KNIFE_GREEN, borderRadius: [4, 0, 0, 4] },
             label: {
               show: layout.showBarLabel,
               position: 'inside',
