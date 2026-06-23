@@ -78,9 +78,10 @@ header {
 .page-meta-bar.page-meta-bar-link-only {
   justify-content: flex-end; }
 
-.page-meta-note {
+.page-meta-note,
+.page-meta-text {
   margin: 0;
-  flex: 0 1 auto;
+  flex-shrink: 0;
   font-size: 0.6875rem;
   font-weight: 400;
   color: #c8c8c8;
@@ -90,22 +91,11 @@ header {
   text-size-adjust: 100%;
   user-select: none; }
 
-.page-source-link {
-  flex-shrink: 0;
-  margin-left: auto;
-  color: var(--text-muted);
-  font-size: 0.6875rem;
-  line-height: 1.4;
-  text-decoration: none;
-  opacity: 0.75;
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-  transition: opacity 0.15s, color 0.15s; }
+.page-meta-note {
+  flex: 0 1 auto; }
 
-.page-source-link:hover {
-  color: var(--text-secondary);
-  opacity: 1;
-  text-decoration: underline; }
+.page-meta-text {
+  margin-left: auto; }
 
 .header-actions {
   flex-shrink: 0;
@@ -802,6 +792,9 @@ h1 {
   color: var(--text-secondary);
   font-variant-numeric: normal; }
 
+.radar-stats-row.is-text .col-value.col-span-detail {
+  grid-column: 2 / -1; }
+
 .radar-stats-row.is-text {
   align-items: start; }
 
@@ -1296,12 +1289,10 @@ button.game-session-chip:active {
     padding: 3px 0 0;
     gap: 8px; }
 
-  .page-meta-note {
+  .page-meta-note,
+  .page-meta-text {
     font-size: 0.625rem;
     color: #d0d0d0; }
-
-  .page-source-link {
-    font-size: 0.625rem; }
 
   .icon-btn,
   .rules-btn {

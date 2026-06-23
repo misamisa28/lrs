@@ -115,6 +115,7 @@
           <button type="button" class="wolf-mode-btn" data-other-mode="fake">接狼金水</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="rate">好人警下率</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="avg">平均存活</button>
+          <button type="button" class="wolf-mode-btn" data-other-mode="seat">座位号</button>
         </div>
         <div id="skillSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-skill-mode="witch">女巫毒药</button>
@@ -130,6 +131,9 @@
         <div id="winRateFiltersRow" class="winrate-filters-row" style="display: none;">
           <div id="winRateIdentityControls" class="wolf-sub-controls winrate-sub-filters" style="display: none;"></div>
           <div id="winRateBanxingControls" class="wolf-sub-controls winrate-sub-filters" style="display: none;"></div>
+        </div>
+        <div id="otherSeatFiltersRow" class="winrate-filters-row" style="display: none;">
+          <div id="otherSeatControls" class="wolf-sub-controls winrate-sub-filters" style="display: none;"></div>
         </div>
       </div>
       <div id="tongbianControls" class="control-group" style="display: none;">
@@ -257,7 +261,7 @@
     <div id="error" class="error" style="display: none;"></div>
     <footer id="pageMetaBar" class="page-meta-bar">
       <p id="chartDataNotice" class="page-meta-note" style="display: none;">仅统计出场 ≥9 的玩家</p>
-      <a class="page-source-link" href="https://misamisa28.github.io/lrs/" target="_blank" rel="noopener noreferrer">misamisa28.github.io/lrs</a>
+      <span class="page-meta-text">misamisa28.github.io/lrs</span>
     </footer>
   </div>
 
@@ -483,7 +487,7 @@
     }
 
     function getScreenshotWatermarkMetrics(canvasScale) {
-      const linkEl = document.querySelector('.page-source-link');
+      const linkEl = document.querySelector('.page-meta-text');
       const linkStyle = linkEl ? window.getComputedStyle(linkEl) : null;
       const basePx = linkStyle ? parseFloat(linkStyle.fontSize) : 11;
       const fontFamily = linkStyle?.fontFamily || '"Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
@@ -533,8 +537,8 @@
       cloneMeta.style.textSizeAdjust = '100%';
 
       syncElementTypography(
-        liveMeta.querySelector('.page-source-link'),
-        cloneMeta.querySelector('.page-source-link')
+        liveMeta.querySelector('.page-meta-text'),
+        cloneMeta.querySelector('.page-meta-text')
       );
 
       const liveNote = liveMeta.querySelector('.page-meta-note');
@@ -568,6 +572,11 @@
       ctx.restore();
 
       return output;
+    }
+
+    function getScreenshotScale() {
+      const dpr = window.devicePixelRatio || 1;
+      return Math.min(Math.max(dpr, 1), 3);
     }
 
     function isChartVisibleForScreenshot() {
@@ -605,7 +614,7 @@
       });
     }
 
-    async function prepareChartOverlayForScreenshot() {
+    async function prepareChartOverlayForScreenshot(screenshotScale) {
       if (!isChartVisibleForScreenshot()) return () => {};
 
       const chartEl = chart.getDom();
@@ -615,7 +624,7 @@
 
       const dataUrl = chart.getDataURL({
         type: 'png',
-        pixelRatio: 1,
+        pixelRatio: screenshotScale,
         backgroundColor: '#ffffff',
       });
       const imageUrl = await dataUrlToBlobUrl(dataUrl);
@@ -635,6 +644,9 @@
         restores.push(() => { chartEl.style.position = prevPosition; });
       }
 
+      const logicalW = chart.getWidth();
+      const logicalH = chart.getHeight();
+
       const overlay = document.createElement('img');
       overlay.className = 'chart-screenshot-overlay';
       overlay.src = imageUrl;
@@ -644,8 +656,8 @@
         'position:absolute',
         'left:0',
         'top:0',
-        'width:100%',
-        'height:100%',
+        `width:${logicalW}px`,
+        `height:${logicalH}px`,
         'display:block',
         'object-fit:fill',
         'z-index:1',
@@ -692,6 +704,9 @@
       cloneChart.style.display = computed.display;
       cloneChart.style.flex = computed.flex;
 
+      const logicalW = liveChart.clientWidth;
+      const logicalH = liveChart.clientHeight;
+
       const img = clonedDoc.createElement('img');
       img.src = pendingChartImageUrl;
       img.alt = '';
@@ -700,8 +715,8 @@
         'position:absolute',
         'left:0',
         'top:0',
-        'width:100%',
-        'height:100%',
+        `width:${logicalW}px`,
+        `height:${logicalH}px`,
         'display:block',
         'object-fit:fill',
         'border:none',
@@ -781,8 +796,8 @@
         window.scrollTo(0, 0);
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-        const scale = Math.min(window.devicePixelRatio || 1, 2);
-        restoreChartOverlay = await prepareChartOverlayForScreenshot();
+        const scale = getScreenshotScale();
+        restoreChartOverlay = await prepareChartOverlayForScreenshot(scale);
         restoreLiveDom = await prepareLiveDomForScreenshot();
 
         const canvas = await html2canvas(document.body, {
@@ -875,6 +890,9 @@
       daobao: ['盗宝大师', '盗宝通灵师', '盗宝猎人', '盗宝毒师', '盗宝蒙面人', '盗宝摄梦人'],
       yvlhb: ['预女猎白混', '预女猎白好人混', '预女猎白狼人混'],
     };
+    const WIN_RATE_BANXING_EXCLUDED_LABELS = new Set(
+      Object.values(BANXING_SUB_MODES).flatMap(labels => (labels ? labels.slice(1) : []))
+    );
     const NAME_KEY = '姓名';
     const IDENTITY_KEY = '身份';
     const RAW_TABLE_HIDDEN_COLUMNS = new Set([
@@ -966,9 +984,13 @@
     const VOTE_NO_PROPHET_EXILE_RATE = '无预通放逐票正确率';
     const SHERIFF_VOTE_ERROR_RECORD_COL = '警徽票错误记录';
     const STAND_WOLF_BADGE_COL = '站狼边（警徽票阶段）';
+    const SEAT_NUMBER_COUNTS_COL = '座位号次数';
+    const SEAT_NUMBER_DETAIL_COL = '座位号';
     const RADAR_TABLE_DATA_COLUMN_ALIASES = {
       [STAND_WOLF_BADGE_COL]: SHERIFF_VOTE_ERROR_RECORD_COL,
+      [SEAT_NUMBER_DETAIL_COL]: SEAT_NUMBER_COUNTS_COL,
     };
+    const RADAR_TABLE_HIDDEN_COLUMNS = new Set([SEAT_NUMBER_COUNTS_COL]);
     const PLAYER_STATS_COLUMN_RENAMES = {
       '无预通生推正确放逐票次数': VOTE_NO_PROPHET_EXILE_CORRECT_COUNT,
       '无预通生推放逐票次数': VOTE_NO_PROPHET_EXILE_COUNT,
@@ -1000,6 +1022,8 @@
     const OTHER_ZERO_EXCLUDE_COLS = new Set([
       BLIND_POISON_COL, FIRST_CHECK_COL, MIXED_BLOOD_MODEL_COL, FAKE_GOLD_COL
     ]);
+    const OTHER_SEAT_CHART_TOP = 10;
+    const OTHER_SEAT_LABELS = Array.from({ length: 12 }, (_, i) => `${i + 1}号位`);
     const GOOD_SHERIFF_BELOW_RATE_COL = '好人警下率';
     const CHART_MIN_APPEARANCES = 9;
     const WOLF_COMBO_TOTAL = '狼次数';
@@ -1047,13 +1071,14 @@
     const WIN_SESSIONS_COL = '胜利场次';
     const BANXING_WIN_RATE_COL = '版型胜率';
     const IDENTITY_WIN_RATE_COL = '身份胜率';
+    const WIN_RATE_BANXING_MIN_COUNT = 3;
+    const WIN_RATE_EXCLUDED_IDENTITIES = new Set(['白神']);
     const WIN_RATE_IDENTITY_GROUPS = [
       { label: '平民', identities: ['平民'] },
       { label: '女巫毒师', identities: ['女巫', '毒师'] },
       { label: '预通', identities: ['预言家', '通灵师'] },
       { label: '猎人', identities: ['猎人'] },
       { label: '守卫', identities: ['守卫'] },
-      { label: '白神', identities: ['白神'] },
       { label: '摄梦人', identities: ['摄梦人'] },
     ];
     const RADAR_TABLE_DETAIL_TEXT_COLUMNS = new Set([
@@ -1064,6 +1089,7 @@
     const RADAR_TABLE_TEXT_COLUMNS = new Set([
       ...RADAR_TABLE_DETAIL_TEXT_COLUMNS,
       STAND_WOLF_BADGE_COL,
+      SEAT_NUMBER_DETAIL_COL,
     ]);
     const RADAR_TABLE_RANK_NO_AVG_COLUMNS = new Set([APPEARANCE_COMBO_TOTAL]);
     const RADAR_TABLE_MERGED_METRICS = [
@@ -1129,6 +1155,7 @@
       '出场次数',
       AVG_SURVIVAL_COL,
       GOOD_SHERIFF_BELOW_RATE_COL,
+      SEAT_NUMBER_DETAIL_COL,
     ];
     const RADAR_TABLE_TRAILING_COLUMNS = [MIXED_BLOOD_RECORD_COL];
     const RADAR_TABLE_COLUMNS = [
@@ -1166,6 +1193,7 @@
     let wolfSubMode = 'rate';
     let voteSubMode = 'badge';
     let otherSubMode = 'blind';
+    let otherSeatFilter = 1;
     let skillSubMode = 'witch';
     let winRateSubMode = 'camp';
     let winRateIdentityFilter = '平民';
@@ -1870,6 +1898,43 @@
         .sort((a, b) => a.blind - b.blind);
     }
 
+    function parseSeatNumberCounts(text) {
+      if (text == null || !String(text).trim()) return new Map();
+      const counts = new Map();
+      String(text).split('、').forEach((part) => {
+        const trimmed = part.trim();
+        if (!trimmed) return;
+        const match = trimmed.match(/^(\d+)号（(\d+)）$/);
+        if (!match) return;
+        counts.set(Number(match[1]), Number(match[2]));
+      });
+      return counts;
+    }
+
+    function getSeatCountForPlayer(player, seatNumber) {
+      return parseSeatNumberCounts(player[SEAT_NUMBER_COUNTS_COL]).get(seatNumber) || 0;
+    }
+
+    function formatSeatNumberDetailText(text) {
+      const counts = parseSeatNumberCounts(text);
+      if (!counts.size) return '';
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+        .map(([seat, cnt]) => `${seat}号位（${cnt}）`)
+        .join('、');
+    }
+
+    function getSeatNumberChartItems(seatNumber) {
+      return getMinAppearanceRows()
+        .map(item => ({
+          name: item[NAME_KEY],
+          value: getSeatCountForPlayer(item, seatNumber),
+        }))
+        .filter(item => item.value > 0)
+        .sort((a, b) => a.value - b.value)
+        .slice(-OTHER_SEAT_CHART_TOP);
+    }
+
     function getChartData(column, options = {}) {
       const { excludeZero = false, requirePositiveCol = null } = options;
       return getMinAppearanceRows()
@@ -2324,7 +2389,12 @@
         || FIRST_CHECK_COL in row
         || MIXED_BLOOD_MODEL_COL in row
         || FAKE_GOLD_COL in row
-        || GOOD_SHERIFF_BELOW_RATE_COL in row;
+        || GOOD_SHERIFF_BELOW_RATE_COL in row
+        || SEAT_NUMBER_COUNTS_COL in row;
+    }
+
+    function hasSeatNumberData() {
+      return rawData.length > 0 && SEAT_NUMBER_COUNTS_COL in rawData[0];
     }
 
     function getOtherDataColumn() {
@@ -2375,6 +2445,9 @@
       $show('winRateIdentityControls', showWinRateIdentity);
       $show('winRateBanxingControls', showWinRateBanxing);
       $show('winRateFiltersRow', showWinRateIdentity || showWinRateBanxing);
+      const showOtherSeat = isBar && col === OTHER_DATA_KEY && otherSubMode === 'seat' && hasSeatNumberData();
+      $show('otherSeatFiltersRow', showOtherSeat);
+      $show('otherSeatControls', showOtherSeat);
       updateRadarPanelsVisibility();
     }
 
@@ -2425,7 +2498,7 @@
       m => { voteSubMode = m; }, '[data-vote-mode]', 'voteMode', VOTE_DATA_KEY
     );
     const setOtherSubMode = makeBarSubModeSetter(
-      m => { otherSubMode = m; }, '[data-other-mode]', 'otherMode', OTHER_DATA_KEY
+      m => { otherSubMode = m; }, '[data-other-mode]', 'otherMode', OTHER_DATA_KEY, updateChartFootnotes
     );
     const setSkillSubMode = makeBarSubModeSetter(
       m => { skillSubMode = m; }, '[data-skill-mode]', 'skillMode', SKILL_DATA_KEY
@@ -2444,6 +2517,13 @@
       winRateBanxingFilter = label;
       syncModeButtons('[data-winrate-banxing]', 'winrateBanxing', label);
       refreshBarChartIf(WIN_RATE_DATA_KEY);
+    }
+
+    function setOtherSeatFilter(label) {
+      const match = String(label).match(/^(\d+)号位$/);
+      otherSeatFilter = match ? Number(match[1]) : 1;
+      syncModeButtons('[data-other-seat]', 'otherSeat', label);
+      refreshBarChartIf(OTHER_DATA_KEY);
     }
 
     function setRadarWinrateDim(dim) {
@@ -2749,6 +2829,30 @@
         .map(([label]) => label);
     }
 
+    function getWinRateBanxingLabels() {
+      if (!Array.isArray(banxingData) || !banxingData.length) return [];
+      return [...banxingData]
+        .filter(row => {
+          const label = row['版型'];
+          return label
+            && !WIN_RATE_BANXING_EXCLUDED_LABELS.has(label)
+            && parseValue(row['总场次'], '总场次') >= WIN_RATE_BANXING_MIN_COUNT;
+        })
+        .sort((a, b) => parseValue(b['总场次'], '总场次') - parseValue(a['总场次'], '总场次'))
+        .map(row => row['版型']);
+    }
+
+    function filterWinRateBreakdownItems(items, dimensionCol) {
+      if (dimensionCol === IDENTITY_WIN_RATE_COL) {
+        return items.filter(item => !WIN_RATE_EXCLUDED_IDENTITIES.has(item.label));
+      }
+      if (dimensionCol === BANXING_WIN_RATE_COL) {
+        const allowed = new Set(getWinRateBanxingLabels());
+        return items.filter(item => allowed.has(item.label));
+      }
+      return items;
+    }
+
     function getWinRateDimensionRanking(dimensionCol, label) {
       return getMinAppearanceRows()
         .map(player => {
@@ -3004,10 +3108,83 @@
         renderBlindPoisonedComboChart();
         return;
       }
+      if (otherSubMode === 'seat') {
+        if (hasSeatNumberData()) {
+          renderSeatNumberChart();
+        } else {
+          renderWolfDataEmptyChart('当前赛季数据暂无座位号统计字段');
+        }
+        return;
+      }
       const column = getOtherDataColumn();
       renderMetricBarChart(column, {
         excludeZero: OTHER_ZERO_EXCLUDE_COLS.has(column)
       });
+    }
+
+    function renderSeatNumberChart() {
+      const seatNumber = otherSeatFilter;
+      const columnLabel = `${seatNumber}号位次数`;
+      const items = getSeatNumberChartItems(seatNumber);
+      const layout = getChartLayout();
+
+      setChartHeight(Math.max(items.length, 1));
+
+      if (!items.length) {
+        renderWolfDataEmptyChart(`暂无出场次数>=9且${columnLabel}>0的玩家`);
+        return;
+      }
+
+      const average = items.reduce((sum, item) => sum + item.value, 0) / items.length;
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: CHART_TOOLTIP_BG,
+          borderColor: CHART_TOOLTIP_BORDER,
+          textStyle: { color: CHART_TEXT },
+          formatter(params) {
+            const p = params[0];
+            return `${p.name}<br/>${columnLabel}：${p.value}`;
+          }
+        },
+        grid: {
+          left: layout.gridLeft,
+          right: layout.gridRight,
+          top: layout.gridTop,
+          bottom: layout.gridBottom,
+          containLabel: true
+        },
+        xAxis: {
+          type: 'value',
+          minInterval: 1,
+          axisLabel: { color: CHART_AXIS, fontSize: layout.axisFontSize },
+          splitLine: { lineStyle: { color: CHART_LINE } }
+        },
+        yAxis: buildBarCategoryYAxis(items.map(d => d.name), layout),
+        series: [{
+          type: 'bar',
+          data: items.map(d => ({
+            value: d.value,
+            itemStyle: {
+              borderRadius: [0, 4, 4, 0],
+              color: getBarColor(d.value, average, false)
+            }
+          })),
+          ...getBarSeriesLayout(layout),
+          label: {
+            show: layout.showBarLabel,
+            position: 'right',
+            color: CHART_TEXT,
+            formatter: ({ value }) => String(value)
+          }
+        }],
+        animationDuration: 600
+      };
+
+      chart.setOption(option, true);
+      chart.resize();
     }
 
     function renderBlindPoisonedComboChart() {
@@ -4359,6 +4536,7 @@
     function getRadarTableColumns() {
       const row = rawData[0] || {};
       return RADAR_TABLE_COLUMNS.filter(col => {
+        if (RADAR_TABLE_HIDDEN_COLUMNS.has(col)) return false;
         if (isRadarTableMergedColumn(col)) {
           return RADAR_TABLE_MERGED_BY_LABEL.get(col).rateCol in row;
         }
@@ -4382,7 +4560,8 @@
         ...RADAR_TABLE_OTHER_COLUMN_ORDER.filter(col => available.has(col) && !assigned.has(col)),
         ...getRadarTableColumns().filter(col => !assigned.has(col)
           && !RADAR_TABLE_OTHER_COLUMN_ORDER.includes(col)
-          && !RADAR_TABLE_MERGED_SUB_COLUMNS.has(col)),
+          && !RADAR_TABLE_MERGED_SUB_COLUMNS.has(col)
+          && !RADAR_TABLE_HIDDEN_COLUMNS.has(col)),
       ];
       otherCols.forEach(col => assigned.add(col));
       if (otherCols.length) groups.push({ title: '其他', columns: otherCols });
@@ -4405,33 +4584,28 @@
       return RADAR_TABLE_TEXT_COLUMNS.has(col);
     }
 
-    function renderRadarDetailTextRow(name, col) {
+    function getRadarTextDisplayValue(name, col) {
       const playerVal = getRadarTablePlayer(name, col);
-      const valueHtml = formatRadarDetailText(playerVal);
+      if (col === STAND_WOLF_BADGE_COL) {
+        return String(playerVal ?? '').replace(/,/g, '、');
+      }
+      if (col === SEAT_NUMBER_DETAIL_COL) {
+        return formatSeatNumberDetailText(playerVal);
+      }
+      return playerVal;
+    }
+
+    function renderRadarTextOnlyRow(name, col) {
+      const valueHtml = formatRadarDetailText(getRadarTextDisplayValue(name, col));
       return `<div class="radar-stats-row is-text">
-          <span class="col-metric">${formatColumnLabel(col)}</span>
-          <span class="col-value">${valueHtml || '—'}</span>
-          <span class="col-rank"><span class="radar-rank-empty">—</span></span>
-          <span class="col-avg"><span class="radar-rank-empty">—</span></span>
-        </div>`;
+        <span class="col-metric">${formatColumnLabel(col)}</span>
+        <span class="col-value col-span-detail">${valueHtml || '—'}</span>
+      </div>`;
     }
 
     function renderRadarTableRow(name, col) {
-      if (RADAR_TABLE_DETAIL_TEXT_COLUMNS.has(col)) {
-        return renderRadarDetailTextRow(name, col);
-      }
       if (isRadarTableTextColumn(col)) {
-        const playerVal = getRadarTablePlayer(name, col);
-        const displayText = col === STAND_WOLF_BADGE_COL
-          ? String(playerVal ?? '').replace(/,/g, '、')
-          : playerVal;
-        const valueHtml = formatRadarDetailText(displayText);
-        return `<div class="radar-stats-row is-text">
-          <span class="col-metric">${formatColumnLabel(col)}</span>
-          <span class="col-value">${valueHtml || '—'}</span>
-          <span class="col-rank"><span class="radar-rank-empty">—</span></span>
-          <span class="col-avg"><span class="radar-rank-empty">—</span></span>
-        </div>`;
+        return renderRadarTextOnlyRow(name, col);
       }
       const rankCol = getRadarTableRankColumn(col);
       const player = getMinAppearanceRows().find(item => item[NAME_KEY] === name);
@@ -4668,7 +4842,7 @@
       const isBanxing = radarWinrateDim === 'banxing';
       const col = isBanxing ? BANXING_WIN_RATE_COL : IDENTITY_WIN_RATE_COL;
       const dimLabel = isBanxing ? '版型' : '身份';
-      const items = parseWinRateBreakdown(player?.[col]);
+      const items = filterWinRateBreakdownItems(parseWinRateBreakdown(player?.[col]), col);
       const overallRate = parseValue(player?.['总胜率'], '总胜率');
 
       renderWinrateBarChart(items, {
@@ -5224,6 +5398,7 @@
       refreshCompareControls();
       refreshRadarMetricFilters();
       refreshWinRateSubControls();
+      refreshOtherSeatControls();
       updateRadarGamesVisibility();
       updateChartFootnotes();
     }
@@ -5267,7 +5442,7 @@
       }
 
       if (hasWinRateBanxingData()) {
-        const banxings = collectWinrateDimensionLabels(BANXING_WIN_RATE_COL);
+        const banxings = getWinRateBanxingLabels();
         if (!banxings.includes(winRateBanxingFilter)) {
           winRateBanxingFilter = banxings[0] || '';
         }
@@ -5277,6 +5452,20 @@
       } else {
         $('winRateBanxingControls').innerHTML = '';
       }
+    }
+
+    function refreshOtherSeatControls() {
+      if (!hasSeatNumberData()) {
+        $('otherSeatControls').innerHTML = '';
+        return;
+      }
+      const activeLabel = `${otherSeatFilter}号位`;
+      if (!OTHER_SEAT_LABELS.includes(activeLabel)) {
+        otherSeatFilter = 1;
+      }
+      renderWinRateDimensionButtons(
+        'otherSeatControls', 'other-seat', OTHER_SEAT_LABELS, `${otherSeatFilter}号位`
+      );
     }
 
     function refreshCompareControls() {
@@ -5326,6 +5515,11 @@
         const banxingBtn = e.target.closest('.wolf-mode-btn[data-winrate-banxing]');
         if (banxingBtn) {
           setWinRateBanxingFilter(banxingBtn.dataset.winrateBanxing);
+          return;
+        }
+        const seatBtn = e.target.closest('.wolf-mode-btn[data-other-seat]');
+        if (seatBtn) {
+          setOtherSeatFilter(seatBtn.dataset.otherSeat);
         }
       });
       $('radarWinrateControls').addEventListener('click', (e) => {
