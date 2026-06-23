@@ -1303,10 +1303,10 @@
       return {
         titleFontSize: mobile ? 15 : 18,
         axisFontSize: mobile ? 11 : 13,
-        gridLeft: mobile ? 56 : 100,
-        gridRight: mobile ? 12 : 48,
-        gridTop: mobile ? 12 : 20,
-        gridBottom: mobile ? 12 : 32,
+        gridLeft: mobile ? 4 : 8,
+        gridRight: mobile ? 20 : 32,
+        gridTop: mobile ? 12 : 16,
+        gridBottom: mobile ? 12 : 24,
         showBarLabel: !mobile,
         barMaxWidth: mobile ? 12 : 28,
         barCategoryGap: mobile ? '6%' : '20%',
@@ -1321,12 +1321,22 @@
         legendItemHeight: mobile ? 7 : 14,
         legendItemGap: mobile ? 6 : 10,
         legendReserve: mobile ? 22 : 28,
-        scatterGridLeft: mobile ? 56 : 88,
-        scatterGridRight: mobile ? 16 : 48,
-        scatterGridTop: mobile ? 48 : 64,
-        scatterGridBottom: mobile ? 56 : 72,
-        scatterYNameGap: mobile ? 42 : 58,
-        scatterXNameGap: mobile ? 28 : 36
+        scatterGridLeft: mobile ? 8 : 12,
+        scatterGridRight: mobile ? 12 : 20,
+        scatterGridTop: mobile ? 40 : 52,
+        scatterGridBottom: mobile ? 48 : 60,
+        scatterYNameGap: mobile ? 28 : 38,
+        scatterXNameGap: mobile ? 24 : 30
+      };
+    }
+
+    function getBarChartGrid(layout, extra = {}) {
+      return {
+        left: layout.gridLeft,
+        right: layout.gridRight,
+        top: extra.top ?? layout.gridTop,
+        bottom: (extra.bottom ?? layout.gridBottom) + (extra.legendBottom ?? 0),
+        containLabel: true
       };
     }
 
@@ -1358,10 +1368,10 @@
 
     function getCompareChartGrid(layout) {
       const mobile = isMobile();
-      const pad = mobile ? 40 : 48;
+      const pad = mobile ? 28 : 36;
       return {
-        left: mobile ? 44 : 56,
-        right: mobile ? 12 : 28,
+        left: mobile ? 8 : 12,
+        right: mobile ? 12 : 20,
         top: pad,
         bottom: pad + layout.legendReserve,
         containLabel: true,
@@ -2922,13 +2932,7 @@
             return `${params.name}<br/>胜率：${formatPercent(params.value)}<br/>场次：${count}次`;
           },
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: gridTop,
-          bottom: layout.gridBottom,
-          containLabel: true,
-        },
+        grid: getBarChartGrid(layout, { top: gridTop }),
         xAxis: {
           type: 'value',
           min: 0,
@@ -3054,13 +3058,7 @@
             return `${p.name}<br/>${column}：${formatValue(p.value, column)}`;
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout),
         xAxis: {
           type: 'value',
           axisLabel: {
@@ -3149,13 +3147,7 @@
             return `${p.name}<br/>${columnLabel}：${p.value}`;
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -3218,13 +3210,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -3391,13 +3377,7 @@
             return `${p.name}<br/>${column}：${formatValue(p.value, column)}`;
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout),
         xAxis: {
           type: 'value',
           axisLabel: {
@@ -3475,13 +3455,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -3590,13 +3564,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -3693,13 +3661,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -3806,13 +3768,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -3915,13 +3871,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -4072,13 +4022,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -4170,13 +4114,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -4268,13 +4206,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
@@ -4374,13 +4306,7 @@
             ].join('<br/>');
           }
         },
-        grid: {
-          left: layout.gridLeft,
-          right: layout.gridRight,
-          top: layout.gridTop,
-          bottom: layout.gridBottom + layout.legendReserve,
-          containLabel: true
-        },
+        grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
         xAxis: {
           type: 'value',
           minInterval: 1,
