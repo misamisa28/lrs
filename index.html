@@ -1175,6 +1175,7 @@
     let currentTongbianModalRow = null;
     let videoLinksPayload = null;
     const videoLinkIndex = { '京城大师赛': {}, '粤小': {} };
+    const videoLinkDayIndex = { '粤小': {} };
     let banxingSubMode = 'all';
     let banxingSort = { column: '总场次', direction: 'desc' };
     let tongbianSort = { column: '同场次数', direction: 'desc' };
@@ -5364,6 +5365,7 @@
     function buildVideoLinkIndex() {
       videoLinkIndex['京城大师赛'] = {};
       videoLinkIndex['粤小'] = {};
+      videoLinkDayIndex['粤小'] = {};
       if (!videoLinksPayload) return;
 
       for (const category of ['京城大师赛', '粤小']) {
@@ -5378,10 +5380,16 @@
             if (!day) continue;
 
             const rounds = extractVideoTitleRounds(title);
-            for (const round of rounds) {
-              const key = `${day}_${round}`;
-              if (!videoLinkIndex[category][key]) {
-                videoLinkIndex[category][key] = link;
+            if (rounds.length > 0) {
+              for (const round of rounds) {
+                const key = `${day}_${round}`;
+                if (!videoLinkIndex[category][key]) {
+                  videoLinkIndex[category][key] = link;
+                }
+              }
+            } else if (category === '粤小') {
+              if (!videoLinkDayIndex[category][day]) {
+                videoLinkDayIndex[category][day] = link;
               }
             }
           }
@@ -5424,7 +5432,14 @@
 
       const { day, round } = parseSessionRawDateParts(rawDate);
       if (!day || !round) return '';
-      return index[`${day}_${round}`] || '';
+
+      const exactKey = `${day}_${round}`;
+      if (index[exactKey]) return index[exactKey];
+
+      if (category === '粤小') {
+        return videoLinkDayIndex[category][day] || '';
+      }
+      return '';
     }
 
     function parseGameSessions(text) {
@@ -6072,7 +6087,7 @@
       if (names.includes(prevName)) compareNameSelect.value = prevName;
 
       compareMetricSelect.innerHTML = metrics.map(col =>
-        `<option value="${col}">${col}</option>`
+        `<option value="${col}">${formatColumnLabel(col)}</option>`
       ).join('');
       if (metrics.includes(prevMetric)) {
         compareMetricSelect.value = prevMetric;
