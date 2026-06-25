@@ -1,0 +1,20 @@
+def run_data_checks(data, tag=''):
+    """依次运行全部数据校验规则（互不覆盖，各自独立输出）。"""
+    check_victory_camp_consistency(data, tag=tag)
+    check_sheriff_vote_consistency(data, tag=tag)
+    check_civilian_night_columns(data, tag=tag)
+    check_state_after_columns_empty(data, tag=tag)
+    check_wolf_knife_camp(data, tag=tag)
+    check_wolf_camp_count_per_game(data, tag=tag)
+    check_self_explode_wolf_only(data, tag=tag)
+    check_mixed_blood_night_target1(data, tag=tag)
+    check_mixed_blood_model_camp(data, tag=tag)
+    check_d_column_values(data, tag=tag)
+
+def normalize_special_exile_column(data):
+    """Excel 旧列名「特殊放逐票（定序）」统一为「特殊放逐票」。"""
+    if SPECIAL_ORDER_EXILE_COL_LEGACY not in data.columns:
+        return data
+    data = data.copy()
+    if SPECIAL_ORDER_EXILE_COL in data.columns:
+        data = 

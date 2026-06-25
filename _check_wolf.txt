@@ -1,0 +1,68 @@
+def check_wolf_camp_count_per_game(data, tag=''):
+    """所有版型都须4个狼人阵营（不含狼人混）。"""
+    required = {'日期', '版型', '姓名', '身份', '阵营'}
+    if not required.issubset(data.columns):
+        return []
+
+    bad_games = []
+    for (date, banxing), group in data.groupby(['日期', '版型'], sort=True):
+        wolf_players = group[group['阵营'].isin(WOLF_ONLY_CAMP)]
+        wolf_count = len(wolf_players)
+        expected = 4
+        if wolf_count != expected:
+            bad_games.append((date, banxing, wolf_count, expected, wolf_players))
+
+    if not bad_games:
+        return []
+
+    prefix = f'[{tag}] ' if tag else ''
+    for date, banxing, wolf_count, expected, wolf_players in bad_games:
+        if wolf_players.empty:
+            wolf_detail = '无'
+        else:
+            wolf_detail = '、'.join(
+                f"{row['姓名']}（{row['身份']}）"
+                for _, row in wolf_players.iterrows()
+            )
+        print(
+            f"{prefix}狼人阵营人数不符：日期 {date}（版型={banxing}）"
+            f" — 应有 {expected} 人，实际 {wolf_count} 人：{wolf_detail}"
+        )
+
+    return pd.DataFrame(
+        [
+            {
+                '日期': date,
+                '版型': banxing,
+                '应有狼人数': expected,
+                '实际狼人数': wolf_count,
+            }
+            for date, banxing, wolf_count, expected, _ in bad_games
+        ]
+    )
+
+def check_self_explode_wolf_only(data, tag=''):
+    """仅阵营为狼人的玩家可在状态列出现自爆。"""
+    required = {'日期', '姓名', '身份', '阵营'}
+    if not required.issubset(data.columns):
+        return []
+
+    state_cols = [col for col in data.columns if '状态' in col]
+    if not state_cols:
+        return []
+
+    bad_rows = []
+    for _, row in data.iterrows():
+        if str(row['阵营']).strip() == '狼人':
+            continue
+        bad_cols = [
+            col for col in state_cols
+            if _cell_has_value(row[col]) and str(row[col]).strip() == '自爆'
+        ]
+        if bad_cols:
+            bad_rows.append((row, bad_cols))
+
+    if not bad_rows:
+        return []
+
+    prefix = f'[{tag}

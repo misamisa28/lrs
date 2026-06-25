@@ -101,6 +101,9 @@
           <button type="button" class="wolf-mode-btn" data-wolf-mode="jixie">机械狼</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="lagan">拉杆</button>
         </div>
+        <div id="wolfRateFiltersRow" class="winrate-filters-row" style="display: none;">
+          <div id="wolfRateBanxingControls" class="wolf-sub-controls winrate-sub-filters"></div>
+        </div>
         <div id="voteSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-vote-mode="badge">警徽票</button>
           <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-badge">平民警徽票</button>
@@ -885,7 +888,7 @@
     const WIN_KEY = '胜利';
 
     const PERCENT_COLUMNS = new Set([
-      '狼人率', '身份率', '预通率', '总胜率', '好人警下率',
+      '狼人率', '非首局狼人率', '身份率', '预通率', '总胜率', '好人警下率',
       '放逐票正确率', '无预通放逐票正确率', '警徽票正确率', '平民放逐票正确率', '平民警徽票正确率', '毒药技能正确率', '猎人技能正确率', '狼人胜率', '好人胜率', '悍跳率',
       '盲毒狼人率'
     ]);
@@ -1009,6 +1012,9 @@
     const WOLF_COMBO_SELF = '自爆次数';
     const WOLF_COMBO_SELF_GREEN = CHART_GREEN;
     const WOLF_RATE_COL = '狼人率';
+    const NON_FIRST_WOLF_RATE_COL = '非首局狼人率';
+    const NON_FIRST_WOLF_COUNT_COL = '非首局狼次数';
+    const NON_FIRST_APPEARANCE_COL = '非首局出场次数';
     const RED_WOLF_COL = '非盗宝红狼次数';
     const SELF_KNIFE_COL = '自刀次数';
     const SELF_KNIFE_GREEN = CHART_GREEN_DARK;
@@ -1056,6 +1062,10 @@
     const PARTICIPATION_COL = '参与场次';
     const WIN_SESSIONS_COL = '胜利场次';
     const BANXING_WIN_RATE_COL = '版型胜率';
+    const BANXING_WOLF_RATE_COL = '版型狼人率';
+    const WOLF_RATE_BANXING_ALL = '全部';
+    const WOLF_RATE_NON_FIRST = '非首局';
+    const WOLF_RATE_PRIORITY_BANXING = '预女猎白混';
     const IDENTITY_WIN_RATE_COL = '身份胜率';
     const WIN_RATE_BANXING_MIN_COUNT = 3;
     const WIN_RATE_EXCLUDED_IDENTITIES = new Set(['白神']);
@@ -1189,6 +1199,7 @@
     let winRateSubMode = 'camp';
     let winRateIdentityFilter = '平民';
     let winRateBanxingFilter = '';
+    let wolfRateBanxingFilter = WOLF_RATE_BANXING_ALL;
     let radarSubMode = 'table';
     let radarWinrateDim = 'banxing';
     let lastRadarGamesPlayer = '';
@@ -2321,9 +2332,14 @@
           name: item[NAME_KEY],
           value: parseValue(item[column], column),
           appearances: parseValue(item['出场次数'], '出场次数'),
-          wolfCount: '狼次数' in item
-            ? parseValue(item['狼次数'], '狼次数')
+          nonFirstAppearances: NON_FIRST_APPEARANCE_COL in item
+            ? parseValue(item[NON_FIRST_APPEARANCE_COL], NON_FIRST_APPEARANCE_COL)
             : null,
+          wolfCount: column === NON_FIRST_WOLF_RATE_COL && NON_FIRST_WOLF_COUNT_COL in item
+            ? parseValue(item[NON_FIRST_WOLF_COUNT_COL], NON_FIRST_WOLF_COUNT_COL)
+            : '狼次数' in item
+              ? parseValue(item['狼次数'], '狼次数')
+              : null,
         }))
         .filter(d => !excludeZero || d.value !== 0)
         .sort((a, b) => a.value - b.value);
@@ -2544,6 +2560,14 @@
 
     function hasWolfRateData() {
       return rawData.length > 0 && WOLF_RATE_COL in rawData[0];
+    }
+
+    function hasWolfRateBanxingData() {
+      return rawData.length > 0 && BANXING_WOLF_RATE_COL in rawData[0];
+    }
+
+    function hasNonFirstWolfRateData() {
+      return rawData.length > 0 && NON_FIRST_WOLF_RATE_COL in rawData[0];
     }
 
     function hasSelfKnifeComboData() {
@@ -2855,6 +2879,10 @@
       $show('winRateIdentityControls', showWinRateIdentity);
       $show('winRateBanxingControls', showWinRateBanxing);
       $show('winRateFiltersRow', showWinRateIdentity || showWinRateBanxing);
+      const showWolfRateBar = isBar && col === WOLF_DATA_KEY && wolfSubMode === 'rate' && hasWolfRateData();
+      const showWolfRateBanxing = showWolfRateBar && getWolfRateBanxingLabels().length > 1;
+      $show('wolfRateFiltersRow', showWolfRateBanxing);
+      $show('wolfRateBanxingControls', showWolfRateBanxing);
       const showOtherSeat = isBar && col === OTHER_DATA_KEY && otherSubMode === 'seat' && hasSeatNumberData();
       $show('otherSeatFiltersRow', showOtherSeat);
       $show('otherSeatControls', showOtherSeat);
@@ -2927,6 +2955,12 @@
       winRateBanxingFilter = label;
       syncModeButtons('[data-winrate-banxing]', 'winrateBanxing', label);
       refreshBarChartIf(WIN_RATE_DATA_KEY);
+    }
+
+    function setWolfRateBanxingFilter(label) {
+      wolfRateBanxingFilter = label;
+      syncModeButtons('[data-wolf-rate-banxing]', 'wolfRateBanxing', label);
+      refreshBarChartIf(WOLF_DATA_KEY);
     }
 
     function setOtherSeatFilter(label) {
@@ -3252,11 +3286,32 @@
         .map(row => row['版型']);
     }
 
+    function getWolfRateBanxingLabels() {
+      const labels = [WOLF_RATE_BANXING_ALL];
+      if (hasNonFirstWolfRateData()) {
+        labels.push(WOLF_RATE_NON_FIRST);
+      }
+      const banxings = getWinRateBanxingLabels();
+      const rest = banxings.filter(label => label !== WOLF_RATE_PRIORITY_BANXING);
+      const hasPriority = banxings.includes(WOLF_RATE_PRIORITY_BANXING);
+      if (hasPriority) {
+        const priorityIndex = 2;
+        while (labels.length < priorityIndex && rest.length) {
+          labels.push(rest.shift());
+        }
+        labels.push(WOLF_RATE_PRIORITY_BANXING);
+        labels.push(...rest);
+      } else {
+        labels.push(...banxings);
+      }
+      return labels;
+    }
+
     function filterWinRateBreakdownItems(items, dimensionCol) {
       if (dimensionCol === IDENTITY_WIN_RATE_COL) {
         return items.filter(item => !WIN_RATE_EXCLUDED_IDENTITIES.has(item.label));
       }
-      if (dimensionCol === BANXING_WIN_RATE_COL) {
+      if (dimensionCol === BANXING_WIN_RATE_COL || dimensionCol === BANXING_WOLF_RATE_COL) {
         const allowed = new Set(getWinRateBanxingLabels());
         return items.filter(item => allowed.has(item.label));
       }
@@ -3288,7 +3343,7 @@
       chart.resize();
     }
 
-    function renderWinrateBarChart(rawItems, { title, average, emptySubtext } = {}) {
+    function renderWinrateBarChart(rawItems, { title, average, emptySubtext, rateLabel = '胜率' } = {}) {
       const layout = getChartLayout();
       const display = sortWinrateForChart(
         rawItems.map(d => ({
@@ -3329,7 +3384,7 @@
           textStyle: { color: CHART_TEXT },
           formatter(params) {
             const count = params.data?.count ?? 0;
-            return `${params.name}<br/>胜率：${formatPercent(params.value)}<br/>场次：${count}次`;
+            return `${params.name}<br/>${rateLabel}：${formatPercent(params.value)}<br/>场次：${count}次`;
           },
         },
         grid: getBarChartGrid(layout, { top: gridTop }),
@@ -3434,6 +3489,8 @@
       const { excludeZero = false, requirePositiveCol = null } = options;
       const items = getChartData(column, { excludeZero, requirePositiveCol });
       const isWolfRateChart = column === WOLF_RATE_COL;
+      const isNonFirstWolfRateChart = column === NON_FIRST_WOLF_RATE_COL;
+      const isWolfRateLikeChart = isWolfRateChart || isNonFirstWolfRateChart;
       const isPercent = PERCENT_COLUMNS.has(column);
       const isRateColumn = column.includes('率');
       const average = getColumnAverage(column);
@@ -3448,11 +3505,11 @@
           : '{value}';
 
       const barLabel = {
-        show: isWolfRateChart ? true : layout.showBarLabel,
+        show: isWolfRateLikeChart ? true : layout.showBarLabel,
         position: 'right',
         color: CHART_TEXT,
       };
-      if (isWolfRateChart) {
+      if (isWolfRateLikeChart) {
         barLabel.rich = {
           rate: { color: CHART_TEXT, fontSize: isMobile() ? 10 : 11, fontWeight: 'normal' },
           meta: { color: CHART_AXIS, fontSize: isMobile() ? 8 : 9, fontWeight: 'normal' },
@@ -3477,7 +3534,15 @@
           formatter(params) {
             const p = params[0];
             const item = items[p.dataIndex];
-            if (isWolfRateChart && item) {
+            if (isWolfRateLikeChart && item) {
+              if (isNonFirstWolfRateChart) {
+                return [
+                  item.name,
+                  `非首局出场次数：${item.nonFirstAppearances ?? 0}`,
+                  `非首局狼次数：${item.wolfCount ?? 0}`,
+                  `${column}：${formatValue(p.value, column)}`,
+                ].join('<br/>');
+              }
               return [
                 item.name,
                 `出场次数：${item.appearances}`,
@@ -3517,11 +3582,11 @@
 
       finalizeBarChartOption(option, items, layout, {
         isPercent,
-        showRightLabel: isWolfRateChart || layout.showBarLabel,
-        labelPeak: isWolfRateChart && items.length
+        showRightLabel: isWolfRateLikeChart || layout.showBarLabel,
+        labelPeak: isWolfRateLikeChart && items.length
           ? Math.max(...items.map(d => d.value))
           : null,
-        labelMaxCount: isWolfRateChart && items.length
+        labelMaxCount: isWolfRateLikeChart && items.length
           ? Math.max(...items.map(d => d.wolfCount ?? 0))
           : null,
       });
@@ -3772,7 +3837,30 @@
       if (isWolfComboColumn(column) && hasWolfComboData()) {
         if (wolfSubMode === 'rate') {
           if (hasWolfRateData()) {
-            renderMetricBarChart(WOLF_RATE_COL);
+            if (wolfRateBanxingFilter === WOLF_RATE_NON_FIRST) {
+              if (hasNonFirstWolfRateData()) {
+                renderMetricBarChart(NON_FIRST_WOLF_RATE_COL, {
+                  requirePositiveCol: NON_FIRST_APPEARANCE_COL,
+                });
+              } else {
+                renderWolfDataEmptyChart('当前赛季数据暂无非首局狼人率字段');
+              }
+            } else if (
+              wolfRateBanxingFilter === WOLF_RATE_BANXING_ALL
+              || !hasWolfRateBanxingData()
+              || !getWinRateBanxingLabels().includes(wolfRateBanxingFilter)
+            ) {
+              renderMetricBarChart(WOLF_RATE_COL);
+            } else {
+              renderWinrateBarChart(
+                getWinRateDimensionRanking(BANXING_WOLF_RATE_COL, wolfRateBanxingFilter),
+                {
+                  title: `${wolfRateBanxingFilter} · 版型狼人率`,
+                  emptySubtext: `暂无「${wolfRateBanxingFilter}」版型狼人率数据`,
+                  rateLabel: '狼人率',
+                }
+              );
+            }
           } else {
             renderWolfDataEmptyChart('当前赛季数据暂无狼人率字段');
           }
@@ -6002,6 +6090,7 @@
       refreshCompareControls();
       refreshRadarMetricFilters();
       refreshWinRateSubControls();
+      refreshWolfRateBanxingControls();
       refreshOtherSeatControls();
       updateRadarGamesVisibility();
       updateChartFootnotes();
@@ -6056,6 +6145,26 @@
       } else {
         $('winRateBanxingControls').innerHTML = '';
       }
+    }
+
+    function refreshWolfRateBanxingControls() {
+      if (!hasWolfRateData()) {
+        $('wolfRateBanxingControls').innerHTML = '';
+        wolfRateBanxingFilter = WOLF_RATE_BANXING_ALL;
+        return;
+      }
+      const banxings = getWolfRateBanxingLabels();
+      if (banxings.length <= 1) {
+        $('wolfRateBanxingControls').innerHTML = '';
+        wolfRateBanxingFilter = WOLF_RATE_BANXING_ALL;
+        return;
+      }
+      if (!banxings.includes(wolfRateBanxingFilter)) {
+        wolfRateBanxingFilter = WOLF_RATE_BANXING_ALL;
+      }
+      renderWinRateDimensionButtons(
+        'wolfRateBanxingControls', 'wolf-rate-banxing', banxings, wolfRateBanxingFilter
+      );
     }
 
     function refreshOtherSeatControls() {
@@ -6120,6 +6229,11 @@
         const banxingBtn = e.target.closest('.wolf-mode-btn[data-winrate-banxing]');
         if (banxingBtn) {
           setWinRateBanxingFilter(banxingBtn.dataset.winrateBanxing);
+          return;
+        }
+        const wolfRateBanxingBtn = e.target.closest('.wolf-mode-btn[data-wolf-rate-banxing]');
+        if (wolfRateBanxingBtn) {
+          setWolfRateBanxingFilter(wolfRateBanxingBtn.dataset.wolfRateBanxing);
           return;
         }
         const seatBtn = e.target.closest('.wolf-mode-btn[data-other-seat]');
