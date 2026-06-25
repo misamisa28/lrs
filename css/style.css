@@ -1718,6 +1718,18 @@ body.tongbian-sessions-modal-open {
     width: 34px;
     height: 34px; }
 
+  .screenshot-btn {
+    width: auto;
+    min-width: 34px;
+    padding: 0 8px;
+    gap: 4px;
+    overflow: visible; }
+
+  .screenshot-btn .icon-btn-svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px; }
+
   .rules-modal {
     padding: 10px; }
 
@@ -2167,6 +2179,13 @@ body.tongbian-sessions-modal-open {
   .view-btn {
     padding: 5px 8px;
     font-size: 0.625rem; }
+
+  .screenshot-btn .icon-btn-label {
+    display: none; }
+
+  .screenshot-btn {
+    width: 34px;
+    padding: 0; }
 
   .radar-filter-check {
     font-size: 0.625rem;
