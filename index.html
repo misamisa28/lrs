@@ -3226,6 +3226,23 @@
       };
     }
 
+    function getBanxingWolfRateChartItems(banxingLabel) {
+      return getMinAppearanceRows()
+        .map(player => {
+          const match = parseWinRateBreakdown(player[BANXING_WOLF_RATE_COL])
+            .find(item => item.label === banxingLabel);
+          if (!match) return null;
+          return {
+            name: player[NAME_KEY],
+            value: match.rate,
+            appearances: match.count,
+            wolfCount: Math.round(match.count * match.rate / 100),
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.value - b.value);
+    }
+
     function getWinRateIdentityGroupLabels() {
       return WIN_RATE_IDENTITY_GROUPS.map(group => group.label);
     }
@@ -3487,14 +3504,16 @@
     }
 
     function renderMetricBarChart(column, options = {}) {
-      const { excludeZero = false, requirePositiveCol = null } = options;
-      const items = getChartData(column, { excludeZero, requirePositiveCol });
+      const { excludeZero = false, requirePositiveCol = null, items: overrideItems = null } = options;
+      const items = overrideItems ?? getChartData(column, { excludeZero, requirePositiveCol });
       const isWolfRateChart = column === WOLF_RATE_COL;
       const isNonFirstWolfRateChart = column === NON_FIRST_WOLF_RATE_COL;
       const isWolfRateLikeChart = isWolfRateChart || isNonFirstWolfRateChart;
       const isPercent = PERCENT_COLUMNS.has(column);
       const isRateColumn = column.includes('率');
-      const average = getColumnAverage(column);
+      const average = overrideItems
+        ? (items.length ? items.reduce((sum, d) => sum + d.value, 0) / items.length : 0)
+        : getColumnAverage(column);
       const layout = getChartLayout();
 
       setChartHeight(items.length);
@@ -3853,14 +3872,12 @@
             ) {
               renderMetricBarChart(WOLF_RATE_COL);
             } else {
-              renderWinrateBarChart(
-                getWinRateDimensionRanking(BANXING_WOLF_RATE_COL, wolfRateBanxingFilter),
-                {
-                  title: `${wolfRateBanxingFilter} · 版型狼人率`,
-                  emptySubtext: `暂无「${wolfRateBanxingFilter}」版型狼人率数据`,
-                  rateLabel: '狼人率',
-                }
-              );
+              const banxingItems = getBanxingWolfRateChartItems(wolfRateBanxingFilter);
+              if (!banxingItems.length) {
+                renderWolfDataEmptyChart(`暂无「${wolfRateBanxingFilter}」版型狼人率数据`);
+              } else {
+                renderMetricBarChart(WOLF_RATE_COL, { items: banxingItems });
+              }
             }
           } else {
             renderWolfDataEmptyChart('当前赛季数据暂无狼人率字段');
