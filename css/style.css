@@ -134,6 +134,16 @@ header {
   cursor: wait;
   opacity: 0.65; }
 
+.screenshot-btn {
+  width: auto;
+  padding: 0 10px 0 8px;
+  gap: 5px; }
+
+.icon-btn-label {
+  font-size: 0.8125rem;
+  line-height: 1;
+  white-space: nowrap; }
+
 .screenshot-select-fake {
   position: relative;
   appearance: none;

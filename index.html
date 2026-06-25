@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20260601f" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20260601g" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -24,6 +24,7 @@
             <svg class="icon-btn-svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
               <path fill="currentColor" d="M9 4a2 2 0 0 0-2 2H5a3 3 0 0 0-3 3v8a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-8a3 3 0 0 0-3-3h-2a2 2 0 0 0-2-2h-1.5a1.5 1.5 0 0 0-1.5-1.5h-3A1.5 1.5 0 0 0 9 4Zm0 2h3v1H9V6Zm-4 3h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Zm7 2.25a4.75 4.75 0 1 0 0 9.5 4.75 4.75 0 0 0 0-9.5Zm0 2a2.75 2.75 0 1 1 0 5.5 2.75 2.75 0 0 1 0-5.5Z"/>
             </svg>
+            <span class="icon-btn-label">截图</span>
           </button>
           <button type="button" id="rulesBtn" class="icon-btn rules-btn" style="display: none;" aria-hidden="true" hidden title="统计规则">
             <svg class="icon-btn-svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
@@ -816,8 +817,7 @@
       }
 
       const request = (async () => {
-        const bustUrl = `${url}${url.includes('?') ? '&' : '?'}_=${Date.now()}`;
-        const res = await fetch(bustUrl, { cache: 'no-store' });
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
         return res.json();
       })();
@@ -1177,6 +1177,7 @@
     ];
     let seasonStats = { S20: [],S21: [], S22: [], S1: [], S2: [] };
     let seasonPayloadCache = {};
+    const seasonExtraPromises = {};
     const jsonFetchCache = new Map();
     let rawData = [];
     let rawTableData = [];
@@ -1228,8 +1229,7 @@
       return mode => {
         assign(mode);
         syncModeButtons(selector, dataKey, mode);
-        before?.();
-        refreshBarChartIf(colKey);
+        Promise.resolve(before?.()).then(() => refreshBarChartIf(colKey));
       };
     }
 
@@ -2933,7 +2933,14 @@
     }
 
     const setWolfSubMode = makeBarSubModeSetter(
-      m => { wolfSubMode = m; }, '[data-wolf-mode]', 'wolfMode', WOLF_DATA_KEY, updateChartFootnotes
+      m => { wolfSubMode = m; },
+      '[data-wolf-mode]',
+      'wolfMode',
+      WOLF_DATA_KEY,
+      async () => {
+        updateChartFootnotes();
+        if (wolfSubMode === 'lagan') await ensureSeasonRaw();
+      }
     );
     const setVoteSubMode = makeBarSubModeSetter(
       m => { voteSubMode = m; }, '[data-vote-mode]', 'voteMode', VOTE_DATA_KEY
@@ -5780,9 +5787,15 @@
     function refreshTableControls() {
       const dateSelect = document.getElementById('dateSelect');
       const dates = getUniqueDates();
+      const prevDate = dateSelect.value;
       dateSelect.innerHTML = dates.map(date =>
         `<option value="${date}">${date}</option>`
       ).join('');
+      if (dates.includes(prevDate)) {
+        dateSelect.value = prevDate;
+      } else if (dates.length) {
+        dateSelect.value = dates[0];
+      }
     }
 
     function formatRawTableVideoLinkHtml(rawDate) {
@@ -5793,6 +5806,7 @@
     }
 
     function getTableColumns() {
+      if (!rawTableData.length) return [];
       const columns = Object.keys(rawTableData[0])
         .filter(col => col !== '日期'
           && !RAW_TABLE_HIDDEN_COLUMNS.has(col)
@@ -5961,6 +5975,9 @@
     }
 
     function renderTable() {
+      if (rawTableData.length && !document.getElementById('dateSelect').options.length) {
+        refreshTableControls();
+      }
       const dateSelect = document.getElementById('dateSelect');
       const selectedDate = dateSelect.value;
       updateRawTableGameInfo(selectedDate);
@@ -6051,8 +6068,19 @@
       const seriesKey = getCurrentSeriesKey();
       if (!getCompareSeasonList(seriesKey).includes(currentSeason)) {
         await setSeason(getSeriesSeason(seriesKey, null));
-        return;
+      } else {
+        try {
+          if (view === 'table') {
+            await ensureSeasonRaw();
+          } else if (view === 'tongbian') {
+            await ensureSeasonTongbian();
+          }
+        } catch (err) {
+          showTransientError(`无法加载数据：${err.message}`);
+          return;
+        }
       }
+      if (view === 'table') refreshTableControls();
       updateChartFootnotes();
       updateChart();
     }
@@ -6239,9 +6267,19 @@
       bindRulesModal();
       bindTongbianSessionsModal();
       bindScreenshotButton();
-      $('columnSelect').addEventListener('change', () => {
+      $('columnSelect').addEventListener('change', async () => {
         updateChartFootnotes();
-        updateChart();
+        try {
+          if (currentView === 'bar'
+            && $('columnSelect').value === WOLF_DATA_KEY
+            && wolfSubMode === 'lagan') {
+            await ensureSeasonRaw();
+          }
+          if (currentView === 'table') refreshTableControls();
+          updateChart();
+        } catch (err) {
+          showTransientError(`无法加载原始数据：${err.message}`);
+        }
       });
       MODE_BUTTON_BINDINGS.forEach(([attr, dataKey]) => {
         document.querySelectorAll(`.wolf-mode-btn[data-${attr}]`).forEach(btn => {
@@ -6353,40 +6391,110 @@
       }, 6000);
     }
 
-    function validateSeasonPayload(season, stats, rawTable, banxing, tongbian, files) {
+    function validateSeasonStats(stats, files) {
       const normalizedStats = normalizePlayerStatsColumns(stats);
-      const normalizedRaw = normalizeRawTableColumns(rawTable);
-
       if (!Array.isArray(normalizedStats) || normalizedStats.length === 0) {
         throw new Error(`${files.stats} 数据为空或格式不正确`);
       }
-      if (!Array.isArray(normalizedRaw) || normalizedRaw.length === 0) {
-        throw new Error(`${files.raw} 数据为空或格式不正确`);
-      }
+      return normalizedStats;
+    }
+
+    function validateSeasonBanxing(banxing, files) {
       if (!Array.isArray(banxing) || banxing.length === 0) {
         throw new Error(`${files.banxing} 数据为空或格式不正确`);
       }
-      if (!Array.isArray(tongbian)) {
-        throw new Error(`${files.tongbian} 格式不正确（应为 JSON 数组）`);
-      }
+    }
 
+    function needsSeasonExtraLoad(season, options = getSeasonLoadOptions()) {
+      const cached = seasonPayloadCache[season];
+      if (options.raw && !cached?.rawTable?.length) return true;
+      if (options.tongbian && !cached?.tongbian?.length) return true;
+      return false;
+    }
+
+    function getSeasonLoadOptions() {
       return {
-        season,
-        stats: normalizedStats,
-        rawTable: normalizedRaw,
-        banxing,
-        tongbian,
+        raw: currentView === 'table'
+          || (currentView === 'bar' && $('columnSelect')?.value === WOLF_DATA_KEY && wolfSubMode === 'lagan'),
+        tongbian: currentView === 'tongbian',
       };
     }
 
     function applySeasonPayload(payload) {
       seasonStats[payload.season] = payload.stats;
       rawData = payload.stats;
-      rawTableData = payload.rawTable;
-      banxingData = payload.banxing;
-      tongbianData = payload.tongbian;
+      rawTableData = payload.rawTable || [];
+      banxingData = payload.banxing || [];
+      tongbianData = payload.tongbian || [];
       currentSeason = payload.season;
       seasonPayloadCache[payload.season] = payload;
+    }
+
+    async function loadSeasonExtraFile(season, kind) {
+      const key = `${season}:${kind}`;
+      if (seasonExtraPromises[key]) return seasonExtraPromises[key];
+
+      seasonExtraPromises[key] = (async () => {
+        const files = getSeasonFiles(season);
+        if (kind === 'raw') {
+          const rawTable = normalizeRawTableColumns(await fetchJsonWithRetry(files.raw));
+          if (!Array.isArray(rawTable) || rawTable.length === 0) {
+            throw new Error(`${files.raw} 数据为空或格式不正确`);
+          }
+          const cached = seasonPayloadCache[season] || {
+            season,
+            stats: seasonStats[season] || [],
+            banxing: [],
+            rawTable: [],
+            tongbian: [],
+          };
+          cached.rawTable = rawTable;
+          seasonPayloadCache[season] = cached;
+          if (season === currentSeason) rawTableData = rawTable;
+          return rawTable;
+        }
+
+        const tongbian = await fetchJsonWithRetry(files.tongbian);
+        if (!Array.isArray(tongbian)) {
+          throw new Error(`${files.tongbian} 格式不正确（应为 JSON 数组）`);
+        }
+        const cached = seasonPayloadCache[season] || {
+          season,
+          stats: seasonStats[season] || [],
+          banxing: [],
+          rawTable: [],
+          tongbian: [],
+        };
+        cached.tongbian = tongbian;
+        seasonPayloadCache[season] = cached;
+        if (season === currentSeason) tongbianData = tongbian;
+        return tongbian;
+      })();
+
+      try {
+        return await seasonExtraPromises[key];
+      } catch (err) {
+        delete seasonExtraPromises[key];
+        throw err;
+      }
+    }
+
+    async function ensureSeasonRaw(season = currentSeason) {
+      const cached = seasonPayloadCache[season];
+      if (cached?.rawTable?.length) {
+        if (season === currentSeason) rawTableData = cached.rawTable;
+        return cached.rawTable;
+      }
+      return loadSeasonExtraFile(season, 'raw');
+    }
+
+    async function ensureSeasonTongbian(season = currentSeason) {
+      const cached = seasonPayloadCache[season];
+      if (cached?.tongbian?.length) {
+        if (season === currentSeason) tongbianData = cached.tongbian;
+        return cached.tongbian;
+      }
+      return loadSeasonExtraFile(season, 'tongbian');
     }
 
     async function loadSeasonStatsOnly(season) {
@@ -6404,35 +6512,40 @@
       await Promise.allSettled(seasons.map(season => loadSeasonStatsOnly(season)));
     }
 
-    async function prefetchSeasonPayloads(seasons) {
-      await Promise.allSettled(seasons.map(async (season) => {
-        if (seasonPayloadCache[season] || season === currentSeason) return;
-        try {
-          seasonPayloadCache[season] = await loadSeasonData(season);
-        } catch (_) { /* 后台预加载失败可忽略 */ }
-      }));
-    }
+    async function loadSeasonData(season, options = {}) {
+      const { raw = false, tongbian = false } = options;
+      const files = getSeasonFiles(season);
 
-    async function loadSeasonData(season) {
-      if (seasonPayloadCache[season]) {
-        return seasonPayloadCache[season];
+      if (!seasonPayloadCache[season]?.stats?.length) {
+        const statsPromise = seasonStats[season]?.length
+          ? Promise.resolve(seasonStats[season])
+          : fetchJsonWithRetry(files.stats).then(rows => normalizePlayerStatsColumns(rows));
+
+        const [stats, banxing] = await Promise.all([
+          statsPromise,
+          fetchJsonWithRetry(files.banxing),
+        ]);
+
+        const normalizedStats = validateSeasonStats(stats, files);
+        validateSeasonBanxing(banxing, files);
+        seasonStats[season] = normalizedStats;
+
+        const prev = seasonPayloadCache[season];
+        seasonPayloadCache[season] = {
+          season,
+          stats: normalizedStats,
+          banxing,
+          rawTable: prev?.rawTable || [],
+          tongbian: prev?.tongbian || [],
+        };
       }
 
-      const files = getSeasonFiles(season);
-      const statsPromise = seasonStats[season]?.length
-        ? Promise.resolve(seasonStats[season])
-        : fetchJsonWithRetry(files.stats).then(rows => normalizePlayerStatsColumns(rows));
+      const extraTasks = [];
+      if (raw) extraTasks.push(ensureSeasonRaw(season));
+      if (tongbian) extraTasks.push(ensureSeasonTongbian(season));
+      if (extraTasks.length) await Promise.all(extraTasks);
 
-      const [stats, rawTable, banxing, tongbian] = await Promise.all([
-        statsPromise,
-        fetchJsonWithRetry(files.raw),
-        fetchJsonWithRetry(files.banxing),
-        fetchJsonWithRetry(files.tongbian),
-      ]);
-
-      const payload = validateSeasonPayload(season, stats, rawTable, banxing, tongbian, files);
-      seasonPayloadCache[season] = payload;
-      return payload;
+      return seasonPayloadCache[season];
     }
 
     async function loadTotalBanxingData(seriesKey) {
@@ -6447,8 +6560,10 @@
       if (!SEASONS.includes(season)) return;
 
       const seq = ++seasonLoadSeq;
-      if (season === currentSeason && rawData.length > 0) {
+      if (season === currentSeason && rawData.length > 0 && !needsSeasonExtraLoad(season)) {
         $('seasonSelect').value = currentSeason;
+        refreshControls();
+        updateChart();
         return;
       }
 
@@ -6456,7 +6571,7 @@
       seasonEl.disabled = true;
 
       try {
-        const payload = await loadSeasonData(season);
+        const payload = await loadSeasonData(season, getSeasonLoadOptions());
         if (seq !== seasonLoadSeq) return;
 
         applySeasonPayload(payload);
@@ -6470,7 +6585,7 @@
         const files = getSeasonFiles(season);
         showTransientError(
           `无法加载 ${season} 数据：${err.message}<br>` +
-          `请确认 <strong>${files.stats}</strong>、<strong>${files.raw}</strong>、<strong>${files.banxing}</strong> 与 <strong>${files.tongbian}</strong> 存在。`
+          `请确认 <strong>${files.stats}</strong>、<strong>${files.banxing}</strong> 等数据文件存在。`
         );
         updateChart();
       } finally {
@@ -6507,7 +6622,6 @@
 
         const otherSeasons = SEASONS.filter(season => season !== DEFAULT_SEASON);
         prefetchSeasonStats(otherSeasons);
-        prefetchSeasonPayloads(getCompareSeasonList(DEFAULT_SERIES_KEY).filter(s => s !== DEFAULT_SEASON));
 
         window.addEventListener('resize', () => {
           clearTimeout(resizeTimer);
@@ -6521,7 +6635,7 @@
         const files = getSeasonFiles(DEFAULT_SEASON);
         showError(
           `无法加载数据：${err.message}<br><br>` +
-          `请确认 <strong>${files.stats}</strong>、<strong>${files.raw}</strong>、<strong>${files.banxing}</strong> 与 <strong>${files.tongbian}</strong> 存在，并在本目录启动本地服务器后访问，例如：<br>` +
+          `请确认 <strong>${files.stats}</strong>、<strong>${files.banxing}</strong> 存在，并在本目录启动本地服务器后访问，例如：<br>` +
           `<code>python -m http.server 8080</code><br>` +
           `然后打开 <code>http://localhost:8080/index.html</code>`
         );
