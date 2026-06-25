@@ -513,21 +513,69 @@ h1 {
 .bar-controls-wrap {
   flex-wrap: wrap; }
 
+.bar-controls-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0; }
+
+.bar-controls-primary > #columnSelect {
+  flex: 0 1 auto;
+  min-width: 160px;
+  width: auto;
+  max-width: none; }
+
+.bar-controls-wrap > .wolf-sub-controls:not(.winrate-sub-filters) {
+  flex: 0 1 auto; }
+
 .winrate-filters-row {
   flex: 1 1 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px; }
+  gap: 4px;
+  margin-top: 0;
+  padding: 0; }
 
 .winrate-sub-filters {
-  padding-top: 2px; }
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px; }
 
 .wolf-sub-controls {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 5px; }
+
+.filter-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.35;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s; }
+
+.filter-mode-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--bg-surface); }
+
+.filter-mode-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500; }
 
 .toolbar label {
   font-size: 0.8125rem;
@@ -596,6 +644,21 @@ h1 {
   width: 1px;
   height: 14px;
   background: var(--border-light); }
+
+.raw-game-info-inner .raw-table-video-link {
+  flex: 0 0 auto;
+  margin-left: 2px; }
+
+.raw-table-video-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-hover);
+  text-decoration: none;
+  line-height: 1; }
+
+.raw-table-video-link:hover {
+  color: var(--accent); }
 
 .th-sortable {
   vertical-align: middle; }
@@ -1819,8 +1882,29 @@ body.tongbian-sessions-modal-open {
     row-gap: 4px;
     align-items: center; }
 
+  .bar-controls-primary {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 6px;
+    align-items: center;
+    width: 100%;
+    min-width: 0; }
+
+  .bar-controls-primary > label {
+    width: auto;
+    margin: 0;
+    white-space: nowrap;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0; }
+
+  .bar-controls-primary > #columnSelect {
+    grid-column: 2;
+    width: 100%;
+    min-width: 0; }
+
   .control-group > label,
-  .bar-controls-wrap > label,
   .radar-controls > label,
   #compareControls > label,
   #tongbianControls > label,
@@ -1832,7 +1916,6 @@ body.tongbian-sessions-modal-open {
     font-weight: 500;
     letter-spacing: 0; }
 
-  .bar-controls-wrap > select,
   .radar-controls > select,
   #compareControls > select,
   #tongbianControls > select,
@@ -1843,6 +1926,8 @@ body.tongbian-sessions-modal-open {
 
   .bar-controls-wrap .wolf-sub-controls,
   .bar-controls-wrap #winRateFiltersRow,
+  .bar-controls-wrap #wolfRateFiltersRow,
+  .bar-controls-wrap #otherSeatFiltersRow,
   .radar-controls #radarSubControls,
   #banxingControls {
     grid-column: 1 / -1; }
@@ -1852,17 +1937,9 @@ body.tongbian-sessions-modal-open {
     align-items: center;
     gap: 4px 6px; }
 
-  #barControls > label[for="columnSelect"] {
-    flex: 0 0 auto; }
-
-  #barControls > #columnSelect {
-    flex: 1 1 0;
-    min-width: 0;
-    width: auto;
-    max-width: none; }
-
   #barControls .wolf-sub-controls,
   #barControls #winRateFiltersRow,
+  #barControls #wolfRateFiltersRow,
   #barControls #otherSeatFiltersRow {
     flex: 1 1 100%;
     width: 100%; }
@@ -1914,10 +1991,27 @@ body.tongbian-sessions-modal-open {
   .toolbar .wolf-sub-controls[style*="display: flex"] {
     display: flex !important; }
 
-  #winRateFiltersRow .winrate-sub-filters {
+  #winRateFiltersRow .winrate-sub-filters,
+  #wolfRateFiltersRow .winrate-sub-filters,
+  #otherSeatFiltersRow .winrate-sub-filters {
     border-top: none;
     padding-top: 0;
     margin-top: 0; }
+
+  #winRateFiltersRow,
+  #wolfRateFiltersRow,
+  #otherSeatFiltersRow {
+    padding: 0;
+    margin-top: 0; }
+
+  .toolbar .filter-mode-btn {
+    flex: 0 0 auto;
+    min-height: 24px;
+    padding: 3px 8px;
+    font-size: 0.625rem; }
+
+  .toolbar .filter-mode-btn.active {
+    box-shadow: none; }
 
   .toolbar .wolf-mode-btn {
     flex: 0 0 auto;

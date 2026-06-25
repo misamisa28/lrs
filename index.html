@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20260601" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20260601f" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -90,8 +90,10 @@
       </div>
 
       <div id="barControls" class="control-group bar-controls-wrap">
-        <label for="columnSelect">数据类型</label>
-        <select id="columnSelect"></select>
+        <div class="bar-controls-primary">
+          <label for="columnSelect">数据类型</label>
+          <select id="columnSelect"></select>
+        </div>
         <div id="wolfSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-wolf-mode="rate">狼人率</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="hjt">悍跳</button>
@@ -5783,6 +5785,13 @@
       ).join('');
     }
 
+    function formatRawTableVideoLinkHtml(rawDate) {
+      const date = String(rawDate ?? '').trim();
+      const link = findVideoLink(date);
+      if (!link) return '';
+      return `<a class="raw-table-video-link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer" title="打开视频" aria-label="打开视频 ${escapeHtml(date)}">${GAME_SESSION_VIDEO_ICON}</a>`;
+    }
+
     function getTableColumns() {
       const columns = Object.keys(rawTableData[0])
         .filter(col => col !== '日期'
@@ -5946,6 +5955,7 @@
             <span class="raw-game-info-label">胜利</span>
             <span class="raw-game-info-value raw-game-info-win ${winClass}">${escapeHtml(win)}</span>
           </div>
+          ${formatRawTableVideoLinkHtml(selectedDate)}
         </div>`;
       infoEl.hidden = false;
     }
@@ -5965,7 +5975,7 @@
       tbody.innerHTML = filteredData.map(row => {
         const rowClass = row[CAMP_KEY] === '狼人' ? ' class="row-wolf"' : '';
         return `<tr${rowClass}>${columns.map(col =>
-          `<td class="${getCellClass(col)}">${row[col] ?? ''}</td>`
+          `<td class="${getCellClass(col)}">${escapeHtml(String(row[col] ?? ''))}</td>`
         ).join('')}</tr>`;
       }).join('');
 
@@ -6122,7 +6132,7 @@
       }
       el.innerHTML = labels.map(label => {
         const active = label === activeLabel ? ' active' : '';
-        return `<button type="button" class="wolf-mode-btn${active}" data-${attrName}="${escapeHtml(label)}">${escapeHtml(label)}</button>`;
+        return `<button type="button" class="filter-mode-btn${active}" data-${attrName}="${escapeHtml(label)}">${escapeHtml(label)}</button>`;
       }).join('');
     }
 
@@ -6239,22 +6249,22 @@
         });
       });
       $('barControls').addEventListener('click', (e) => {
-        const identityBtn = e.target.closest('.wolf-mode-btn[data-winrate-identity]');
+        const identityBtn = e.target.closest('[data-winrate-identity]');
         if (identityBtn) {
           setWinRateIdentityFilter(identityBtn.dataset.winrateIdentity);
           return;
         }
-        const banxingBtn = e.target.closest('.wolf-mode-btn[data-winrate-banxing]');
+        const banxingBtn = e.target.closest('[data-winrate-banxing]');
         if (banxingBtn) {
           setWinRateBanxingFilter(banxingBtn.dataset.winrateBanxing);
           return;
         }
-        const wolfRateBanxingBtn = e.target.closest('.wolf-mode-btn[data-wolf-rate-banxing]');
+        const wolfRateBanxingBtn = e.target.closest('[data-wolf-rate-banxing]');
         if (wolfRateBanxingBtn) {
           setWolfRateBanxingFilter(wolfRateBanxingBtn.dataset.wolfRateBanxing);
           return;
         }
-        const seatBtn = e.target.closest('.wolf-mode-btn[data-other-seat]');
+        const seatBtn = e.target.closest('[data-other-seat]');
         if (seatBtn) {
           setOtherSeatFilter(seatBtn.dataset.otherSeat);
         }
@@ -6481,6 +6491,9 @@
         refreshControls();
         updateChart();
         loadVideoLinks().then(() => {
+          if (currentView === 'table') {
+            renderTable();
+          }
           if (currentView === 'radar' && radarSubMode === 'games') {
             renderRadarGamesSection($('nameSelect').value, { skipFilterRefresh: true });
           }
