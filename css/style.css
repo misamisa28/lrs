@@ -1250,6 +1250,14 @@ button.game-session-chip:active {
 .tongbian-table tbody tr.tongbian-row-clickable {
   cursor: pointer; }
 
+#tongbianTable.tongbian-player-filtered {
+  overflow: visible; }
+
+#tongbianTable.tongbian-player-filtered .table-scroll {
+  max-height: none;
+  overflow-x: auto;
+  overflow-y: visible; }
+
 body.tongbian-sessions-modal-open {
   overflow: hidden; }
 

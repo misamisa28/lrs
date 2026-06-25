@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20250627" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20260601" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -2254,6 +2254,7 @@
       }
       updateTongbianEmptyNotice(selectedName, seasonEmpty);
       applyTongbianStickyOffsets();
+      document.getElementById('tongbianTable').classList.toggle('tongbian-player-filtered', !!selectedName);
     }
 
     function getBarColor(value, average, belowAvgGreen) {
