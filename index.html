@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20260601h" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20260601m" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -176,6 +176,7 @@
         <div id="rawTableGameInfo" class="raw-table-game-info" hidden></div>
       </div>
     </div>
+    <p id="dataRangeBar" class="data-range-bar" hidden>数据：<span id="dataRangeText"></span></p>
     <div id="visualPanel" class="visual-panel">
       <div id="radarMetricControls" class="radar-metric-controls" style="display: none;">
         <div class="radar-game-filters">
@@ -1066,7 +1067,6 @@
     const BANXING_WIN_RATE_COL = '版型胜率';
     const BANXING_WOLF_RATE_COL = '版型狼人率';
     const WOLF_RATE_BANXING_ALL = '全部';
-    const WOLF_RATE_NON_FIRST = '非首局';
     const WOLF_RATE_PRIORITY_BANXING = '预女猎白混';
     const IDENTITY_WIN_RATE_COL = '身份胜率';
     const WIN_RATE_BANXING_MIN_COUNT = 3;
@@ -2569,10 +2569,6 @@
       return rawData.length > 0 && BANXING_WOLF_RATE_COL in rawData[0];
     }
 
-    function hasNonFirstWolfRateData() {
-      return rawData.length > 0 && NON_FIRST_WOLF_RATE_COL in rawData[0];
-    }
-
     function hasSelfKnifeComboData() {
       const row = rawData[0] || {};
       return RED_WOLF_COL in row
@@ -3315,14 +3311,11 @@
 
     function getWolfRateBanxingLabels() {
       const labels = [WOLF_RATE_BANXING_ALL];
-      if (hasNonFirstWolfRateData()) {
-        labels.push(WOLF_RATE_NON_FIRST);
-      }
       const banxings = getWinRateBanxingLabels();
       const rest = banxings.filter(label => label !== WOLF_RATE_PRIORITY_BANXING);
       const hasPriority = banxings.includes(WOLF_RATE_PRIORITY_BANXING);
       if (hasPriority) {
-        const priorityIndex = 2;
+        const priorityIndex = 1;
         while (labels.length < priorityIndex && rest.length) {
           labels.push(rest.shift());
         }
@@ -3866,15 +3859,7 @@
       if (isWolfComboColumn(column) && hasWolfComboData()) {
         if (wolfSubMode === 'rate') {
           if (hasWolfRateData()) {
-            if (wolfRateBanxingFilter === WOLF_RATE_NON_FIRST) {
-              if (hasNonFirstWolfRateData()) {
-                renderMetricBarChart(NON_FIRST_WOLF_RATE_COL, {
-                  requirePositiveCol: NON_FIRST_APPEARANCE_COL,
-                });
-              } else {
-                renderWolfDataEmptyChart('当前赛季数据暂无非首局狼人率字段');
-              }
-            } else if (
+            if (
               wolfRateBanxingFilter === WOLF_RATE_BANXING_ALL
               || !hasWolfRateBanxingData()
               || !getWinRateBanxingLabels().includes(wolfRateBanxingFilter)
@@ -5157,6 +5142,12 @@
       </div>`;
     }
 
+    function getRadarTableMergedCount(player, column) {
+      if (!player || !isRadarTableMergedColumn(column)) return null;
+      const { countCol } = RADAR_TABLE_MERGED_BY_LABEL.get(column);
+      return parseValue(player[countCol], countCol);
+    }
+
     function renderRadarTableRow(name, col) {
       if (isRadarTableTextColumn(col)) {
         return renderRadarTextOnlyRow(name, col);
@@ -5169,7 +5160,8 @@
       const bottomRanks = getBottomRankSet(rankMap);
       const rankEligible = getMetricRankEligibleRows().some(item => item[NAME_KEY] === name);
       const rank = rankEligible ? rankMap.get(name) : null;
-      const rankClass = getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, rankCol);
+      const mergedCount = getRadarTableMergedCount(player, col);
+      const rankClass = getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, rankCol, mergedCount);
       const rankHtml = rank != null
         ? `<span class="radar-rank-pill">${rank}</span>`
         : '<span class="radar-rank-empty">—</span>';
@@ -5282,10 +5274,11 @@
       return new Set(ranks.slice(-3));
     }
 
-    function getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, column) {
+    function getRankHighlightClass(rank, bottomRanks, playerVal, avgVal, column, mergedCount = null) {
       if (!rank) return '';
       if (rank <= 3) return 'rank-top';
       if (bottomRanks.has(rank)) {
+        if (mergedCount === 0) return '';
         const p = getMetricRankCompareValue(playerVal, column);
         const a = getMetricRankCompareValue(avgVal, column);
         if (p > a) return '';
@@ -5778,6 +5771,65 @@
       );
     }
 
+    function isValidSessionDayKey(day) {
+      return /^\d{8}$/.test(String(day ?? '').trim());
+    }
+
+    function parseSessionDayKey(sessionDate) {
+      const dateStr = String(sessionDate ?? '').trim();
+      if (!dateStr) return '';
+      if (isValidSessionDayKey(dateStr)) return dateStr;
+      const { day } = parseGameDateDisplay(dateStr);
+      return isValidSessionDayKey(day) ? day : '';
+    }
+
+    function collectSeasonSessionDayKeys() {
+      const days = new Set();
+      const addDay = (sessionDate) => {
+        const day = parseSessionDayKey(sessionDate);
+        if (isValidSessionDayKey(day)) days.add(day);
+      };
+
+      if (rawTableData.length) {
+        rawTableData.forEach(row => addDay(row['日期']));
+      } else if (hasParticipationData()) {
+        rawData.forEach(player => {
+          parseGameSessions(player[PARTICIPATION_COL]).forEach(session => addDay(session.date));
+        });
+      }
+
+      return [...days].sort((a, b) => Number(a) - Number(b));
+    }
+
+    function getSeasonDataDayRange() {
+      const days = collectSeasonSessionDayKeys();
+      if (!days.length) return null;
+      const start = days[0];
+      const end = days[days.length - 1];
+      if (!isValidSessionDayKey(start) || !isValidSessionDayKey(end)) return null;
+      return { start, end };
+    }
+
+    function updateDataRangeBar() {
+      const bar = document.getElementById('dataRangeBar');
+      const textEl = document.getElementById('dataRangeText');
+      if (!bar || !textEl) return;
+
+      if (currentView !== 'bar' && currentView !== 'radar') {
+        bar.hidden = true;
+        return;
+      }
+
+      const range = getSeasonDataDayRange();
+      if (!range) {
+        bar.hidden = true;
+        return;
+      }
+
+      textEl.textContent = `${range.start}-${range.end}`;
+      bar.hidden = false;
+    }
+
     function getUniqueDates() {
       return [...new Set(rawTableData.map(row => String(row['日期'] ?? '')))]
         .filter(Boolean)
@@ -6058,10 +6110,12 @@
       if (view === 'compare') {
         refreshCompareControls();
         prefetchSeasonStats(getCompareSeasonList(getCurrentSeriesKey()));
+        updateDataRangeBar();
         updateChart();
         return;
       }
       if (view === 'banxing') {
+        updateDataRangeBar();
         await loadBanxingView(getCurrentSeriesKey());
         return;
       }
@@ -6077,11 +6131,13 @@
           }
         } catch (err) {
           showTransientError(`无法加载数据：${err.message}`);
+          updateDataRangeBar();
           return;
         }
       }
       if (view === 'table') refreshTableControls();
       else if (view === 'tongbian') refreshControls();
+      updateDataRangeBar();
       updateChartFootnotes();
       updateChart();
     }
@@ -6429,6 +6485,7 @@
       tongbianData = payload.tongbian || [];
       currentSeason = payload.season;
       seasonPayloadCache[payload.season] = payload;
+      updateDataRangeBar();
     }
 
     async function loadSeasonExtraFile(season, kind) {
@@ -6452,6 +6509,7 @@
           cached.rawTable = rawTable;
           seasonPayloadCache[season] = cached;
           if (season === currentSeason) rawTableData = rawTable;
+          updateDataRangeBar();
           return rawTable;
         }
 

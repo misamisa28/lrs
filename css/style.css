@@ -385,12 +385,27 @@ h1 {
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   padding: 12px 14px;
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
   border-radius: var(--radius);
   box-shadow: none; }
+
+.data-range-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 20px;
+  margin: 0 2px 10px;
+  padding: 0;
+  font-size: 0.6875rem;
+  color: #d0d0d0;
+  line-height: 1;
+  letter-spacing: 0.01em; }
+
+.data-range-bar[hidden] {
+  display: none !important; }
 
 .toolbar-main {
   display: flex;
@@ -1800,7 +1815,7 @@ body.tongbian-sessions-modal-open {
   .toolbar {
     gap: 4px;
     padding: 4px 6px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     max-width: 100%;
     min-width: 0;
     overflow-x: hidden; }
