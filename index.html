@@ -1221,6 +1221,16 @@
       });
     }
 
+    function syncFilterButtons(attrName, activeLabel) {
+      document.querySelectorAll(`[data-${attrName}]`).forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute(`data-${attrName}`) === activeLabel);
+      });
+    }
+
+    function readFilterButtonLabel(btn, attrName) {
+      return btn?.getAttribute(`data-${attrName}`) ?? '';
+    }
+
     function refreshBarChartIf(colKey) {
       if (currentView === 'bar' && $('columnSelect').value === colKey) updateChart();
     }
@@ -2880,6 +2890,7 @@
       $show('winRateFiltersRow', showWinRateIdentity || showWinRateBanxing);
       const showWolfRateBar = isBar && col === WOLF_DATA_KEY && wolfSubMode === 'rate' && hasWolfRateData();
       const showWolfRateBanxing = showWolfRateBar && getWolfRateBanxingLabels().length > 1;
+      if (showWolfRateBanxing) refreshWolfRateBanxingControls();
       $show('wolfRateFiltersRow', showWolfRateBanxing);
       $show('wolfRateBanxingControls', showWolfRateBanxing);
       const showOtherSeat = isBar && col === OTHER_DATA_KEY && otherSubMode === 'seat' && hasSeatNumberData();
@@ -2965,8 +2976,10 @@
 
     function setWolfRateBanxingFilter(label) {
       wolfRateBanxingFilter = label;
-      syncModeButtons('[data-wolf-rate-banxing]', 'wolfRateBanxing', label);
-      refreshBarChartIf(WOLF_DATA_KEY);
+      syncFilterButtons('wolf-rate-banxing', label);
+      if (currentView === 'bar' && $('columnSelect').value === WOLF_DATA_KEY && wolfSubMode === 'rate') {
+        updateChart();
+      }
     }
 
     function setOtherSeatFilter(label) {
@@ -3862,7 +3875,7 @@
             if (
               wolfRateBanxingFilter === WOLF_RATE_BANXING_ALL
               || !hasWolfRateBanxingData()
-              || !getWinRateBanxingLabels().includes(wolfRateBanxingFilter)
+              || !getWolfRateBanxingLabels().includes(wolfRateBanxingFilter)
             ) {
               renderMetricBarChart(WOLF_RATE_COL);
             } else {
@@ -6343,6 +6356,11 @@
           btn.addEventListener('click', () => MODE_SETTERS[attr](btn.dataset[dataKey]));
         });
       });
+      $('wolfRateBanxingControls').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-wolf-rate-banxing]');
+        if (!btn) return;
+        setWolfRateBanxingFilter(readFilterButtonLabel(btn, 'wolf-rate-banxing'));
+      });
       $('barControls').addEventListener('click', (e) => {
         const identityBtn = e.target.closest('[data-winrate-identity]');
         if (identityBtn) {
@@ -6352,11 +6370,6 @@
         const banxingBtn = e.target.closest('[data-winrate-banxing]');
         if (banxingBtn) {
           setWinRateBanxingFilter(banxingBtn.dataset.winrateBanxing);
-          return;
-        }
-        const wolfRateBanxingBtn = e.target.closest('[data-wolf-rate-banxing]');
-        if (wolfRateBanxingBtn) {
-          setWolfRateBanxingFilter(wolfRateBanxingBtn.dataset.wolfRateBanxing);
           return;
         }
         const seatBtn = e.target.closest('[data-other-seat]');
