@@ -1088,6 +1088,17 @@ button.game-session-chip:active {
 .lagan-table tbody tr[data-raw-date] {
   cursor: pointer; }
 
+#laganTable.data-table-wrap {
+  overflow: visible; }
+
+.lagan-table-scroll {
+  overflow: visible;
+  max-height: none; }
+
+.visual-panel.lagan-view {
+  overflow: visible;
+  max-height: none; }
+
 .radar-metric-controls {
   width: 100%;
   padding: 10px 14px;
@@ -1259,6 +1270,12 @@ button.game-session-chip:active {
 .table-scroll {
   overflow: auto;
   max-height: calc(100vh - 180px); }
+
+#laganTable .lagan-table-scroll {
+  overflow: visible;
+  max-height: none;
+  overscroll-behavior: auto;
+  -webkit-overflow-scrolling: auto; }
 
 .banxing-table-wrap {
   overflow: hidden; }
@@ -2182,6 +2199,12 @@ body.tongbian-sessions-modal-open {
 
   .table-scroll {
     max-height: none; }
+
+  #laganTable .lagan-table-scroll {
+    overflow: visible;
+    max-height: none;
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: auto; }
 
   .raw-table {
     font-size: 0.75rem; }

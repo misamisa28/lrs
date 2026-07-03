@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20260601m" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20260601o" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -197,7 +197,7 @@
       </div>
       <div id="laganTable" class="data-table-wrap" style="display: none;">
         <p id="laganEmptyNotice" class="empty-notice" style="display: none;"></p>
-        <div class="table-scroll">
+        <div class="lagan-table-scroll">
           <table class="raw-table lagan-table">
             <thead id="laganHead"></thead>
             <tbody id="laganBody"></tbody>
@@ -207,7 +207,6 @@
       <div id="radarTableWrap" class="data-table-wrap radar-table-wrap" style="display: none;">
         <div class="radar-stats-toolbar">
           <h2 id="radarTablePlayerName" class="radar-stats-player-name"></h2>
-          <p class="radar-stats-legend-text">出场≥9玩家排名；前三与末三（低于均值）高亮</p>
         </div>
         <div class="radar-table-scroll">
           <div id="radarTableBody" class="radar-stats-cards"></div>
@@ -2925,6 +2924,7 @@
 
       $show('chartWrap', showVisual && !showWolfLagan && (view !== 'radar' || showRadarChartView || showRadarWinrateView), 'block');
       $show('laganTable', showWolfLagan, 'block');
+      visualPanel.classList.toggle('lagan-view', showWolfLagan);
       updatePageMetaBar(view, showRadarChartView, showRadarWinrateView, showRadarTableView);
     }
 
