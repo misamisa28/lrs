@@ -2560,11 +2560,13 @@
         const total = parseValue(item[WOLF_COMBO_TOTAL], WOLF_COMBO_TOTAL);
         const hjt = parseValue(item[WOLF_COMBO_HJT], WOLF_COMBO_HJT);
         const self = parseValue(item[WOLF_COMBO_SELF], WOLF_COMBO_SELF);
+        const selfRate = total > 0 ? (self / total) * 100 : 0;
         return {
           name: item[NAME_KEY],
           total,
           hjt,
           self,
+          selfRate,
           hjtOther: Math.max(0, total - hjt),
           selfOther: Math.max(0, total - self)
         };
@@ -2574,7 +2576,7 @@
         return totalA - totalB;
       };
       if (mode === 'self') {
-        return items.sort((a, b) => sortDesc(a.self, b.self, a.total, b.total));
+        return items.sort((a, b) => sortDesc(a.selfRate, b.selfRate, a.total, b.total));
       }
       return items.sort((a, b) => sortDesc(a.hjt, b.hjt, a.total, b.total));
     }
@@ -4824,12 +4826,17 @@
             const name = params[0]?.name ?? '';
             const idx = params[0]?.dataIndex ?? 0;
             const row = items[idx];
-            return [
+            const lines = [
               name,
               `${WOLF_COMBO_TOTAL}：${row.total}`,
-              `${WOLF_COMBO_HJT}：${row.hjt}`,
-              `${WOLF_COMBO_SELF}：${row.self}`
-            ].join('<br/>');
+              `${WOLF_COMBO_SELF}：${row.self}`,
+            ];
+            if (isHjtMode) {
+              lines.splice(2, 0, `${WOLF_COMBO_HJT}：${row.hjt}`);
+            } else {
+              lines.push(`自爆率：${formatPercent(row.selfRate)}`);
+            }
+            return lines.join('<br/>');
           }
         },
         grid: getBarChartGrid(layout, { legendBottom: layout.legendReserve }),
@@ -4873,7 +4880,12 @@
               show: layout.showBarLabel,
               position: 'right',
               color: CHART_TEXT,
-              formatter: (p) => String(items[p.dataIndex].total)
+              fontSize: isMobile() ? 10 : 11,
+              formatter: (p) => {
+                if (isHjtMode) return String(items[p.dataIndex].total);
+                const row = items[p.dataIndex];
+                return formatPercent(row.selfRate);
+              }
             }
           }
         ],
@@ -4883,6 +4895,16 @@
       finalizeBarChartOption(option, items, layout, {
         showRightLabel: layout.showBarLabel,
         getPeak: (rows) => Math.max(...rows.map(r => r.total)),
+        labelPeak: !isHjtMode && items.length
+          ? Math.max(...items.map(r => r.selfRate))
+          : null,
+        labelIsPercent: !isHjtMode,
+        labelExtraWidth: !isHjtMode && items.length
+          ? Math.ceil(
+            formatPercent(Math.max(...items.map(r => r.selfRate))).length
+            * (isMobile() ? 5.2 : 6.2) + 2
+          )
+          : 0,
       });
 
       chart.setOption(option, true);
