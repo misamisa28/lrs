@@ -1286,6 +1286,18 @@ button.game-session-chip:active {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain; }
 
+.banxing-table tbody tr.row-banxing-parent td {
+  background: var(--wolf-row-bg); }
+
+.banxing-table tbody tr.row-banxing-parent:hover td {
+  background: var(--wolf-row-bg-hover); }
+
+.banxing-table tbody tr.row-banxing-parent td.col-name {
+  background: var(--wolf-row-sticky); }
+
+.banxing-table tbody tr.row-banxing-parent:hover td.col-name {
+  background: var(--wolf-row-bg); }
+
 .raw-table {
   width: 100%;
   border-collapse: separate;

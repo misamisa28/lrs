@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20260601o" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20260601p" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -817,7 +817,7 @@
       }
 
       const request = (async () => {
-        const res = await fetch(url);
+        const res = await fetch(url, { cache: 'no-cache' });
         if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
         return res.json();
       })();
@@ -864,6 +864,11 @@
       jixie: ['机械狼', '机械双刀', '机械女巫', '机械猎人', '机械守卫', '机械平民', '机械通灵师'],
       daobao: ['盗宝大师', '盗宝通灵师', '盗宝猎人', '盗宝毒师', '盗宝蒙面人', '盗宝摄梦人'],
       yvlhb: ['预女猎白混', '预女猎白好人混', '预女猎白狼人混'],
+    };
+    const BANXING_PARENT_LABELS = {
+      jixie: '机械狼',
+      daobao: '盗宝大师',
+      yvlhb: '预女猎白混',
     };
     const WIN_RATE_BANXING_EXCLUDED_LABELS = new Set(
       Object.values(BANXING_SUB_MODES).flatMap(labels => (labels ? labels.slice(1) : []))
@@ -1008,6 +1013,7 @@
     const OTHER_SEAT_CHART_TOP = 10;
     const OTHER_SEAT_LABELS = Array.from({ length: 12 }, (_, i) => `${i + 1}号位`);
     const GOOD_SHERIFF_BELOW_RATE_COL = '好人警下率';
+    const GOOD_COUNT_COL = '好人次数';
     const CHART_MIN_APPEARANCES = 9;
     const WOLF_COMBO_TOTAL = '狼次数';
     const WOLF_COMBO_HJT = '悍跳次数';
@@ -2352,6 +2358,9 @@
             : '狼次数' in item
               ? parseValue(item['狼次数'], '狼次数')
               : null,
+          goodCount: column === GOOD_SHERIFF_BELOW_RATE_COL && GOOD_COUNT_COL in item
+            ? parseValue(item[GOOD_COUNT_COL], GOOD_COUNT_COL)
+            : null,
         }))
         .filter(d => !excludeZero || d.value !== 0)
         .sort((a, b) => a.value - b.value);
@@ -3524,6 +3533,8 @@
       const isWolfRateChart = column === WOLF_RATE_COL;
       const isNonFirstWolfRateChart = column === NON_FIRST_WOLF_RATE_COL;
       const isWolfRateLikeChart = isWolfRateChart || isNonFirstWolfRateChart;
+      const isGoodSheriffBelowChart = column === GOOD_SHERIFF_BELOW_RATE_COL;
+      const isRateWithMetaLabel = isWolfRateLikeChart || isGoodSheriffBelowChart;
       const isPercent = PERCENT_COLUMNS.has(column);
       const isRateColumn = column.includes('率');
       const average = overrideItems
@@ -3540,19 +3551,21 @@
           : '{value}';
 
       const barLabel = {
-        show: isWolfRateLikeChart ? true : layout.showBarLabel,
+        show: isRateWithMetaLabel ? true : layout.showBarLabel,
         position: 'right',
         color: CHART_TEXT,
       };
-      if (isWolfRateLikeChart) {
+      if (isRateWithMetaLabel) {
         barLabel.rich = {
           rate: { color: CHART_TEXT, fontSize: isMobile() ? 10 : 11, fontWeight: 'normal' },
           meta: { color: CHART_AXIS, fontSize: isMobile() ? 8 : 9, fontWeight: 'normal' },
         };
         barLabel.formatter = (params) => {
           const rateText = formatValue(params.value, column);
-          const wolf = params.data?.wolfCount;
-          return wolf != null ? `{rate|${rateText}}{meta|（${wolf}）}` : rateText;
+          const metaCount = isGoodSheriffBelowChart
+            ? params.data?.goodCount
+            : params.data?.wolfCount;
+          return metaCount != null ? `{rate|${rateText}}{meta|（${metaCount}）}` : rateText;
         };
       } else {
         barLabel.formatter = ({ value }) => formatValue(value, column);
@@ -3585,6 +3598,13 @@
                 `${column}：${formatValue(p.value, column)}`,
               ].join('<br/>');
             }
+            if (isGoodSheriffBelowChart && item) {
+              return [
+                item.name,
+                `${GOOD_COUNT_COL}：${item.goodCount ?? 0}`,
+                `${column}：${formatValue(p.value, column)}`,
+              ].join('<br/>');
+            }
             return `${p.name}<br/>${formatColumnLabel(column)}：${formatValue(p.value, column)}`;
           }
         },
@@ -3604,6 +3624,7 @@
           data: items.map(d => ({
             value: d.value,
             wolfCount: d.wolfCount,
+            goodCount: d.goodCount,
             itemStyle: {
               borderRadius: [0, 4, 4, 0],
               color: getBarColor(d.value, average, isRateColumn)
@@ -3617,12 +3638,12 @@
 
       finalizeBarChartOption(option, items, layout, {
         isPercent,
-        showRightLabel: isWolfRateLikeChart || layout.showBarLabel,
-        labelPeak: isWolfRateLikeChart && items.length
+        showRightLabel: isRateWithMetaLabel || layout.showBarLabel,
+        labelPeak: isRateWithMetaLabel && items.length
           ? Math.max(...items.map(d => d.value))
           : null,
-        labelMaxCount: isWolfRateLikeChart && items.length
-          ? Math.max(...items.map(d => d.wolfCount ?? 0))
+        labelMaxCount: isRateWithMetaLabel && items.length
+          ? Math.max(...items.map(d => (isGoodSheriffBelowChart ? d.goodCount : d.wolfCount) ?? 0))
           : null,
       });
 
@@ -5117,7 +5138,6 @@
     }
 
     function isRadarTableCountColumn(col) {
-      if (col === APPEARANCE_COMBO_TOTAL) return false;
       return col.includes('次数');
     }
 
@@ -5383,16 +5403,14 @@
               symbolSize: 6,
               lineStyle: { color: COMPARE_PLAYER_COLOR, width: 2 },
               itemStyle: { color: COMPARE_PLAYER_COLOR },
-              areaStyle: { color: CHART_RADAR_PLAYER_AREA }
+              areaStyle: { color: CHART_RADAR_PLAYER_AREA, opacity: 0.35 }
             },
             {
               value: avgValues,
               name: avgLabel,
-              symbol: 'circle',
-              symbolSize: 6,
+              symbol: 'none',
               lineStyle: { color: COMPARE_AVG_COLOR, width: 2 },
               itemStyle: { color: COMPARE_AVG_COLOR },
-              areaStyle: { color: CHART_RADAR_AVG_AREA }
             }
           ]
         }],
@@ -5988,13 +6006,16 @@
       const sorted = getBanxingDisplayRows();
       const thead = document.getElementById('banxingHead');
       const tbody = document.getElementById('banxingBody');
+      const parentLabel = BANXING_PARENT_LABELS[banxingSubMode] || null;
 
       thead.innerHTML = `<tr>${BANXING_COLUMNS.map(col => renderBanxingHeaderCell(col)).join('')}</tr>`;
-      tbody.innerHTML = sorted.map(row =>
-        `<tr>${BANXING_COLUMNS.map(col =>
+      tbody.innerHTML = sorted.map(row => {
+        const label = row['版型'];
+        const rowClass = parentLabel && label === parentLabel ? ' class="row-banxing-parent"' : '';
+        return `<tr${rowClass}>${BANXING_COLUMNS.map(col =>
           `<td class="${col === '版型' ? 'col-name' : ''}">${row[col] ?? ''}</td>`
-        ).join('')}</tr>`
-      ).join('');
+        ).join('')}</tr>`;
+      }).join('');
     }
 
     function getFirstFieldValue(rows, key) {
@@ -6501,6 +6522,46 @@
       updateDataRangeBar();
     }
 
+    function getParticipationSessionIds(season = currentSeason) {
+      const sessions = new Set();
+      const rows = seasonStats[season]?.length
+        ? seasonStats[season]
+        : (season === currentSeason ? rawData : []);
+      if (!rows.length || !(PARTICIPATION_COL in rows[0])) return sessions;
+      rows.forEach(player => {
+        parseGameSessions(player[PARTICIPATION_COL]).forEach(session => {
+          const id = String(session.date ?? '').trim();
+          if (id) sessions.add(id);
+        });
+      });
+      return sessions;
+    }
+
+    function getRawTableSessionIds(rawTable = rawTableData) {
+      return new Set(rawTable.map(row => String(row['日期'] ?? '')).filter(Boolean));
+    }
+
+    function isSeasonRawStale(season) {
+      const cached = seasonPayloadCache[season];
+      if (!cached?.rawTable?.length) return false;
+      const participationIds = getParticipationSessionIds(season);
+      if (!participationIds.size) return false;
+      const rawIds = getRawTableSessionIds(cached.rawTable);
+      if (rawIds.size < participationIds.size) return true;
+      for (const id of participationIds) {
+        if (!rawIds.has(id)) return true;
+      }
+      return false;
+    }
+
+    function dropSeasonRawCache(season) {
+      delete seasonExtraPromises[`${season}:raw`];
+      jsonFetchCache.delete(getSeasonFiles(season).raw);
+      const cached = seasonPayloadCache[season];
+      if (cached) cached.rawTable = [];
+      if (season === currentSeason) rawTableData = [];
+    }
+
     async function loadSeasonExtraFile(season, kind) {
       const key = `${season}:${kind}`;
       if (seasonExtraPromises[key]) return seasonExtraPromises[key];
@@ -6552,6 +6613,9 @@
     }
 
     async function ensureSeasonRaw(season = currentSeason) {
+      if (isSeasonRawStale(season)) {
+        dropSeasonRawCache(season);
+      }
       const cached = seasonPayloadCache[season];
       if (cached?.rawTable?.length) {
         if (season === currentSeason) rawTableData = cached.rawTable;
