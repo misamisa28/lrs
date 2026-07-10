@@ -326,6 +326,7 @@
     const DATA_DIR = 'data';
     const RULES_FILE = '规则.json';
     const VIDEO_LINKS_FILE = `${DATA_DIR}/链接.json`;
+    const PAGE_LOAD_NONCE = Date.now();
 
     function getSeasonFiles(season) {
       const tag = getSeasonTag(season);
@@ -810,14 +811,20 @@
       $('screenshotBtn').addEventListener('click', captureFullscreenScreenshot);
     }
 
+    function withCacheBust(url) {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}v=${PAGE_LOAD_NONCE}`;
+    }
+
     async function fetchJson(url, { force = false } = {}) {
-      const cacheKey = url.split('?')[0];
+      const requestUrl = withCacheBust(url);
+      const cacheKey = requestUrl.split('?')[0];
       if (!force && jsonFetchCache.has(cacheKey)) {
         return jsonFetchCache.get(cacheKey);
       }
 
       const request = (async () => {
-        const res = await fetch(url, { cache: 'no-cache' });
+        const res = await fetch(requestUrl, { cache: 'no-store' });
         if (!res.ok) throw new Error(`${url} HTTP ${res.status}`);
         return res.json();
       })();
@@ -834,11 +841,11 @@
       }
     }
 
-    async function fetchJsonWithRetry(url, retries = 1) {
+    async function fetchJsonWithRetry(url, retries = 1, { force = false } = {}) {
       let lastErr;
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
-          return await fetchJson(url);
+          return await fetchJson(url, { force });
         } catch (err) {
           lastErr = err;
           if (attempt < retries) {
@@ -2329,14 +2336,22 @@
     }
 
     function getSeatNumberChartItems(seatNumber) {
-      return getMinAppearanceRows()
+      const items = getMinAppearanceRows()
         .map(item => ({
           name: item[NAME_KEY],
           value: getSeatCountForPlayer(item, seatNumber),
         }))
         .filter(item => item.value > 0)
-        .sort((a, b) => a.value - b.value)
-        .slice(-OTHER_SEAT_CHART_TOP);
+        .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name, 'zh-CN'));
+
+      if (items.length <= OTHER_SEAT_CHART_TOP) {
+        return items.slice().reverse();
+      }
+
+      const cutoffValue = items[OTHER_SEAT_CHART_TOP - 1].value;
+      return items
+        .filter(item => item.value >= cutoffValue)
+        .reverse();
     }
 
     function getChartData(column, options = {}) {
@@ -6584,6 +6599,32 @@
       if (season === currentSeason) rawTableData = [];
     }
 
+    function getStatsParticipationFingerprint(stats) {
+      if (!Array.isArray(stats) || !stats.length) return '';
+      let sessionCount = 0;
+      let maxDate = '';
+      stats.forEach(row => {
+        parseGameSessions(row[PARTICIPATION_COL]).forEach(session => {
+          sessionCount += 1;
+          const date = String(session.date ?? '').trim();
+          if (date && date > maxDate) maxDate = date;
+        });
+      });
+      return `${stats.length}:${sessionCount}:${maxDate}`;
+    }
+
+    function invalidateSeasonExtraIfStatsChanged(season, prevStats, nextStats) {
+      const prevFingerprint = getStatsParticipationFingerprint(prevStats);
+      const nextFingerprint = getStatsParticipationFingerprint(nextStats);
+      if (!prevFingerprint || prevFingerprint === nextFingerprint) return;
+      dropSeasonRawCache(season);
+      delete seasonExtraPromises[`${season}:tongbian`];
+      jsonFetchCache.delete(getSeasonFiles(season).tongbian);
+      const cached = seasonPayloadCache[season];
+      if (cached) cached.tongbian = [];
+      if (season === currentSeason) tongbianData = [];
+    }
+
     async function loadSeasonExtraFile(season, kind) {
       const key = `${season}:${kind}`;
       if (seasonExtraPromises[key]) return seasonExtraPromises[key];
@@ -6656,9 +6697,8 @@
     }
 
     async function loadSeasonStatsOnly(season) {
-      if (seasonStats[season]?.length) return seasonStats[season];
       const files = getSeasonFiles(season);
-      const stats = normalizePlayerStatsColumns(await fetchJson(files.stats));
+      const stats = normalizePlayerStatsColumns(await fetchJson(files.stats, { force: true }));
       if (!Array.isArray(stats) || stats.length === 0) {
         throw new Error(`${files.stats} 数据为空或格式不正确`);
       }
@@ -6673,30 +6713,26 @@
     async function loadSeasonData(season, options = {}) {
       const { raw = false, tongbian = false } = options;
       const files = getSeasonFiles(season);
+      const prevStats = seasonPayloadCache[season]?.stats;
 
-      if (!seasonPayloadCache[season]?.stats?.length) {
-        const statsPromise = seasonStats[season]?.length
-          ? Promise.resolve(seasonStats[season])
-          : fetchJsonWithRetry(files.stats).then(rows => normalizePlayerStatsColumns(rows));
+      const [stats, banxing] = await Promise.all([
+        fetchJsonWithRetry(files.stats, 1, { force: true }).then(rows => normalizePlayerStatsColumns(rows)),
+        fetchJsonWithRetry(files.banxing, 1, { force: true }),
+      ]);
 
-        const [stats, banxing] = await Promise.all([
-          statsPromise,
-          fetchJsonWithRetry(files.banxing),
-        ]);
+      const normalizedStats = validateSeasonStats(stats, files);
+      validateSeasonBanxing(banxing, files);
+      invalidateSeasonExtraIfStatsChanged(season, prevStats, normalizedStats);
+      seasonStats[season] = normalizedStats;
 
-        const normalizedStats = validateSeasonStats(stats, files);
-        validateSeasonBanxing(banxing, files);
-        seasonStats[season] = normalizedStats;
-
-        const prev = seasonPayloadCache[season];
-        seasonPayloadCache[season] = {
-          season,
-          stats: normalizedStats,
-          banxing,
-          rawTable: prev?.rawTable || [],
-          tongbian: prev?.tongbian || [],
-        };
-      }
+      const prev = seasonPayloadCache[season];
+      seasonPayloadCache[season] = {
+        season,
+        stats: normalizedStats,
+        banxing,
+        rawTable: prev?.rawTable || [],
+        tongbian: prev?.tongbian || [],
+      };
 
       const extraTasks = [];
       if (raw) extraTasks.push(ensureSeasonRaw(season));
@@ -6718,12 +6754,6 @@
       if (!SEASONS.includes(season)) return;
 
       const seq = ++seasonLoadSeq;
-      if (season === currentSeason && rawData.length > 0 && !needsSeasonExtraLoad(season)) {
-        $('seasonSelect').value = currentSeason;
-        refreshControls();
-        updateChart();
-        return;
-      }
 
       const seasonEl = $('seasonSelect');
       seasonEl.disabled = true;
