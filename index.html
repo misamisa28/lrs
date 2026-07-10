@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20260601p" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20260601q" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -983,6 +983,9 @@
       exiled: '预通被放逐次数',
       didi: '预通被代跳次数',
       didiRecord: '预通滴滴记录',
+      helpDidi: '帮预通滴滴次数',
+      helpDidiRecord: '帮预通滴滴记录',
+      noJump: '预通警上未起跳次数',
       poison: '预通被毒次数',
       blindPoison: '预通被盲毒次数',
       shot: '预通被枪次数',
@@ -5270,46 +5273,62 @@
       return parseValue(player[column], column);
     }
 
-    function formatProphetSummaryText(name) {
+    function prophetSummaryNum(value) {
+      return `<span class="radar-summary-num">${value}</span>`;
+    }
+
+    function formatProphetSummaryHtml(name) {
       const player = getRadarPlayerRecord(name);
       if (!player || !hasProphetSummaryData()) return '';
 
       const counts = {
         games: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.games),
+        noJump: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.noJump),
         badge: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.badge),
         exiled: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.exiled),
         didi: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.didi),
+        helpDidi: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.helpDidi),
         poison: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.poison),
         blindPoison: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.blindPoison),
         shot: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.shot),
         milk: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.milk),
       };
       const didiRecord = String(player[PROPHET_SUMMARY_FIELDS.didiRecord] ?? '').trim();
+      const helpDidiRecord = String(player[PROPHET_SUMMARY_FIELDS.helpDidiRecord] ?? '').trim();
 
-      let text = `预通 ${counts.games} 局，获得警徽 ${counts.badge} 次，被放逐 ${counts.exiled} 次`;
+      let html = `预通 ${prophetSummaryNum(counts.games)} 局，警上未起跳 ${prophetSummaryNum(counts.noJump)} 次，获得警徽 ${prophetSummaryNum(counts.badge)} 次，被放逐 ${prophetSummaryNum(counts.exiled)} 次`;
+
       const extras = [];
+      if (counts.poison > 0) extras.push(`被毒 ${prophetSummaryNum(counts.poison)} 次`);
+      if (counts.blindPoison > 0) extras.push(`被盲毒 ${prophetSummaryNum(counts.blindPoison)} 次`);
+      if (counts.shot > 0) extras.push(`被猎人带走 ${prophetSummaryNum(counts.shot)} 次`);
+      if (counts.milk > 0) extras.push(`被奶死 ${prophetSummaryNum(counts.milk)} 次`);
       if (counts.didi > 0) {
-        let segment = `滴滴 ${counts.didi} 次`;
-        if (didiRecord) segment += `（${didiRecord}）`;
+        let segment = `被好人代跳 ${prophetSummaryNum(counts.didi)} 次`;
+        if (didiRecord) {
+          segment += `<span class="radar-text-count">（${escapeHtml(didiRecord)}）</span>`;
+        }
         extras.push(segment);
       }
-      if (counts.poison > 0) extras.push(`被毒 ${counts.poison} 次`);
-      if (counts.blindPoison > 0) extras.push(`被盲毒 ${counts.blindPoison} 次`);
-      if (counts.shot > 0) extras.push(`被猎人带走 ${counts.shot} 次`);
-      if (counts.milk > 0) extras.push(`被奶死 ${counts.milk} 次`);
-      if (extras.length) {
-        text += extras.map(segment => `、${segment}`).join('');
+      if (counts.helpDidi > 0) {
+        let segment = `代预起跳 ${prophetSummaryNum(counts.helpDidi)} 次`;
+        if (helpDidiRecord) {
+          segment += `<span class="radar-text-count">（${escapeHtml(helpDidiRecord)}）</span>`;
+        }
+        extras.push(segment);
       }
-      return text;
+      if (extras.length) {
+        html += extras.map(segment => `、${segment}`).join('');
+      }
+      return html;
     }
 
     function renderProphetSummaryRow(name) {
-      const text = formatProphetSummaryText(name);
-      if (!text) return '';
-      const valueHtml = wrapRadarParenMeta(escapeHtml(text));
+      const html = formatProphetSummaryHtml(name);
+      if (!html) return '';
       return `<div class="radar-stats-row is-text radar-prophet-summary">
         <span class="col-metric">总结</span>
-        <span class="col-value col-span-detail">${valueHtml}</span>
+        <span class="col-value col-span-detail">${html}</span>
       </div>`;
     }
 
