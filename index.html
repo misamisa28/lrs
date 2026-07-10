@@ -8,7 +8,7 @@
   <meta http-equiv="Expires" content="0">
   <title>大师赛数据统计</title>
   <!-- 样式/脚本更新时请递增 ?v= 版本号 -->
-  <link rel="stylesheet" href="css/style.css?v=20260601q" type="text/css">
+  <link rel="stylesheet" href="css/style.css?v=20260601t" type="text/css">
   <script src="js/echarts.min.js?v=20250622"></script>
   <script src="js/html2canvas.min.js"></script>
 </head>
@@ -5265,7 +5265,9 @@
 
     function hasProphetSummaryData() {
       const row = rawData[0] || {};
-      return PROPHET_SUMMARY_FIELDS.games in row;
+      return PROPHET_SUMMARY_FIELDS.games in row
+        || PROPHET_SUMMARY_FIELDS.didi in row
+        || PROPHET_SUMMARY_FIELDS.helpDidi in row;
     }
 
     function getPlayerStatCount(player, column) {
@@ -5284,7 +5286,6 @@
       const counts = {
         games: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.games),
         noJump: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.noJump),
-        badge: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.badge),
         exiled: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.exiled),
         didi: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.didi),
         helpDidi: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.helpDidi),
@@ -5300,33 +5301,44 @@
       if (counts.noJump > 0) {
         baseParts.push(`警上未起跳 ${prophetSummaryNum(counts.noJump)} 次`);
       }
-      baseParts.push(`获得警徽 ${prophetSummaryNum(counts.badge)} 次`);
       if (counts.exiled > 0) {
         baseParts.push(`被放逐 ${prophetSummaryNum(counts.exiled)} 次`);
       }
       let html = baseParts.join('，');
 
       const extras = [];
-      if (counts.poison > 0) extras.push(`被毒 ${prophetSummaryNum(counts.poison)} 次`);
-      if (counts.blindPoison > 0) extras.push(`被盲毒 ${prophetSummaryNum(counts.blindPoison)} 次`);
-      if (counts.shot > 0) extras.push(`被猎人带走 ${prophetSummaryNum(counts.shot)} 次`);
+      if (counts.poison > 0) {
+        let segment = `被毒 ${prophetSummaryNum(counts.poison)} 次`;
+        if (counts.blindPoison > 0) {
+          segment += `<span class="radar-text-count">（被盲毒 ${prophetSummaryNum(counts.blindPoison)} 次）</span>`;
+        }
+        extras.push(segment);
+      } else if (counts.blindPoison > 0) {
+        extras.push(`被盲毒 ${prophetSummaryNum(counts.blindPoison)} 次`);
+      }
+      if (counts.shot > 0) extras.push(`被枪 ${prophetSummaryNum(counts.shot)} 次`);
       if (counts.milk > 0) extras.push(`被奶死 ${prophetSummaryNum(counts.milk)} 次`);
-      if (counts.didi > 0) {
-        let segment = `被好人代跳 ${prophetSummaryNum(counts.didi)} 次`;
+      if (extras.length) {
+        html += extras.map(segment => `、${segment}`).join('');
+      }
+
+      const tailParts = [];
+      if (counts.didi > 0 || didiRecord) {
+        let segment = `预通被代跳 ${prophetSummaryNum(counts.didi)} 次`;
         if (didiRecord) {
           segment += `<span class="radar-text-count">（${escapeHtml(didiRecord)}）</span>`;
         }
-        extras.push(segment);
+        tailParts.push(segment);
       }
-      if (counts.helpDidi > 0) {
-        let segment = `代预起跳 ${prophetSummaryNum(counts.helpDidi)} 次`;
+      if (counts.helpDidi > 0 || helpDidiRecord) {
+        let segment = `代跳预通 ${prophetSummaryNum(counts.helpDidi)} 次`;
         if (helpDidiRecord) {
           segment += `<span class="radar-text-count">（${escapeHtml(helpDidiRecord)}）</span>`;
         }
-        extras.push(segment);
+        tailParts.push(segment);
       }
-      if (extras.length) {
-        html += extras.map(segment => `、${segment}`).join('');
+      if (tailParts.length) {
+        html += tailParts.map(segment => `、${segment}`).join('');
       }
       return html;
     }
