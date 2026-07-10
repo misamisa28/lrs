@@ -2246,6 +2246,58 @@ body.tongbian-sessions-modal-open {
   .radar-games-content {
     grid-template-columns: 1fr; }
 
+  .radar-seat-wrap {
+    margin-left: -10px;
+    margin-right: -10px;
+    width: calc(100% + 20px);
+    border-radius: 0;
+    border-left: none;
+    border-right: none; }
+
+  .radar-seat-table-scroll {
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 0 12px 10px;
+    overflow-anchor: none; }
+
+  .radar-seat-table th.col-seat,
+  .radar-seat-table td.col-seat {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 3.75rem;
+    padding-left: 12px;
+    padding-right: 10px;
+    background: transparent;
+    border-right: none;
+    box-shadow: none;
+    isolation: isolate;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    transform: translate3d(0, 0, 0); }
+
+  .radar-seat-table th.col-seat::after,
+  .radar-seat-table td.col-seat::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-light);
+    z-index: -1;
+    pointer-events: none; }
+
+  .radar-seat-table th.col-seat {
+    z-index: 3; }
+
+  .radar-seat-table tr.radar-seat-summary td.col-seat::after {
+    background: var(--bg-subtle); }
+
+  .radar-seat-table tbody tr:hover td.col-seat::after {
+    background: var(--bg-muted); }
+
+  .radar-seat-table tr.radar-seat-summary:hover td.col-seat::after {
+    background: var(--bg-subtle); }
+
   #chart {
     min-height: 260px;
     height: auto;

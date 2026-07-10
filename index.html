@@ -223,7 +223,7 @@
         <table class="raw-table radar-seat-table">
           <thead>
             <tr>
-              <th>座位号</th>
+              <th class="col-seat">座位号</th>
               <th>场次</th>
               <th>狼人胜率（次数）</th>
               <th>好人胜率（次数）</th>
@@ -5957,7 +5957,7 @@
         const games = Number(row['场次']) || 0;
         const rowHighlights = highlights[rowIndex] || {};
         return `<tr>
-          <td>${escapeHtml(Number.isFinite(seat) ? `${seat}号位` : String(row['座位号'] ?? ''))}</td>
+          <td class="col-seat">${escapeHtml(Number.isFinite(seat) ? `${seat}号位` : String(row['座位号'] ?? ''))}</td>
           <td>${games}</td>
           <td${seatCellClass(rowHighlights[1])}>${formatRadarRateWithCount(row['狼人胜率'], row['狼人次数'])}</td>
           <td${seatCellClass(rowHighlights[2])}>${formatRadarRateWithCount(row['好人胜率'], row['好人次数'])}</td>
@@ -5967,7 +5967,7 @@
       }).join('') + (() => {
         const avg = summarizePlayerSeatAverages(rows);
         return `<tr class="radar-seat-summary">
-          <td>个人平均</td>
+          <td class="col-seat">个人平均</td>
           <td>${avg.场次}</td>
           <td>${formatRadarRateWithCount(avg.狼人胜率, avg.狼人次数)}</td>
           <td>${formatRadarRateWithCount(avg.好人胜率, avg.好人次数)}</td>
