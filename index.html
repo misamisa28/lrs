@@ -977,6 +977,17 @@
     const APPEARANCE_COMBO_SKILL_WOLF = '技能狼次数';
     const APPEARANCE_COMBO_IDENTITY = '身份次数';
     const APPEARANCE_COMBO_YUTONG = '预通次数';
+    const PROPHET_SUMMARY_FIELDS = {
+      games: '预通次数',
+      badge: '预通获警徽次数',
+      exiled: '预通被放逐次数',
+      didi: '预通被代跳次数',
+      didiRecord: '预通滴滴记录',
+      poison: '预通被毒次数',
+      blindPoison: '预通被盲毒次数',
+      shot: '预通被枪次数',
+      milk: '预通被奶死次数',
+    };
     const YUTONG_RATE_COL = '预通率';
     const APPEARANCE_COMBO_IDENTITY_SEG = '神职次数';
     const APPEARANCE_COMBO_OTHER = '平民';
@@ -1163,7 +1174,6 @@
           '预通率（次数）',
           PROPHET_FIRST_CHECK_COL, FIRST_CHECKED_BY_COL,
           FAKE_GOLD_GIVER_DISPLAY,
-          STAND_WOLF_BADGE_COL,
         ],
       },
       {
@@ -1181,6 +1191,7 @@
         columns: [
           '警徽票正确率（次数）',
           '平民警徽票正确率（次数）',
+          STAND_WOLF_BADGE_COL,
           '放逐票正确率（次数）',
           '平民放逐票正确率（次数）',
           MERGED_NOPROPHT_EXILE_TABLE_LABEL,
@@ -5249,6 +5260,59 @@
       </div>`;
     }
 
+    function hasProphetSummaryData() {
+      const row = rawData[0] || {};
+      return PROPHET_SUMMARY_FIELDS.games in row;
+    }
+
+    function getPlayerStatCount(player, column) {
+      if (!player || !(column in player)) return 0;
+      return parseValue(player[column], column);
+    }
+
+    function formatProphetSummaryText(name) {
+      const player = getRadarPlayerRecord(name);
+      if (!player || !hasProphetSummaryData()) return '';
+
+      const counts = {
+        games: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.games),
+        badge: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.badge),
+        exiled: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.exiled),
+        didi: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.didi),
+        poison: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.poison),
+        blindPoison: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.blindPoison),
+        shot: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.shot),
+        milk: getPlayerStatCount(player, PROPHET_SUMMARY_FIELDS.milk),
+      };
+      const didiRecord = String(player[PROPHET_SUMMARY_FIELDS.didiRecord] ?? '').trim();
+
+      let text = `预通 ${counts.games} 局，获得警徽 ${counts.badge} 次，被放逐 ${counts.exiled} 次`;
+      const extras = [];
+      if (counts.didi > 0) {
+        let segment = `滴滴 ${counts.didi} 次`;
+        if (didiRecord) segment += `（${didiRecord}）`;
+        extras.push(segment);
+      }
+      if (counts.poison > 0) extras.push(`被毒 ${counts.poison} 次`);
+      if (counts.blindPoison > 0) extras.push(`被盲毒 ${counts.blindPoison} 次`);
+      if (counts.shot > 0) extras.push(`被猎人带走 ${counts.shot} 次`);
+      if (counts.milk > 0) extras.push(`被奶死 ${counts.milk} 次`);
+      if (extras.length) {
+        text += extras.map(segment => `、${segment}`).join('');
+      }
+      return text;
+    }
+
+    function renderProphetSummaryRow(name) {
+      const text = formatProphetSummaryText(name);
+      if (!text) return '';
+      const valueHtml = wrapRadarParenMeta(escapeHtml(text));
+      return `<div class="radar-stats-row is-text radar-prophet-summary">
+        <span class="col-metric">总结</span>
+        <span class="col-value col-span-detail">${valueHtml}</span>
+      </div>`;
+    }
+
     function getRadarTableMergedCount(player, column) {
       if (!player || !isRadarTableMergedColumn(column)) return null;
       const { countCol } = RADAR_TABLE_MERGED_BY_LABEL.get(column);
@@ -5306,7 +5370,11 @@
         return;
       }
 
-      body.innerHTML = groups.map(({ title, columns }) => `
+      body.innerHTML = groups.map(({ title, columns }) => {
+        const summaryRow = title === '预言家相关' && hasProphetSummaryData()
+          ? renderProphetSummaryRow(name)
+          : '';
+        return `
         <section class="radar-stats-group">
           ${title ? `<h3 class="radar-stats-group-title">${escapeHtml(title)}</h3>` : ''}
           <div class="radar-stats-group-grid">
@@ -5317,9 +5385,10 @@
               <span class="col-avg">平均</span>
             </div>
             ${columns.map(col => renderRadarTableRow(name, col)).join('')}
+            ${summaryRow}
           </div>
-        </section>
-      `).join('');
+        </section>`;
+      }).join('');
     }
 
     function getRadarTableAverage(column) {

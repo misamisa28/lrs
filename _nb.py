@@ -52,6 +52,8 @@ D1_CHECK_RESULT_COL_LEGACY = 'D1结果'
 
 D1_STATE_COL = 'D1状态'
 
+D1_SHERIFF_BADGE_COL = 'D1警徽'
+
 D1_EXILE_VOTE1_COL = 'D1放逐票1'
 
 YVLHB_BANXING = '预女猎白混'
@@ -285,6 +287,13 @@ def build_statistics_rules():
                 f'{DAOBAO_MASTER_BANXING} 且有 {DAOBAO_MEDIUM_ROLE} 时，'
                 '不计警徽票次数/正确次数及平民警徽票衍生项'
             ),
+            '预通被放逐标记': '身份为预言家或通灵师，任一含「状态」列 = 被放逐',
+            '预通被毒标记': '身份为预言家或通灵师，任一含「状态」列 = 被毒',
+            '预通被枪标记': '身份为预言家或通灵师，任一含「状态」列 = 被枪',
+            '预通获警徽标记': f'身份为预言家或通灵师，{D1_SHERIFF_BADGE_COL} = 该玩家姓名',
+            '预通被奶死标记': '身份为预言家或通灵师，任一含「状态」列 = 同守同救out',
+            '预通被盲毒标记': f'身份为预言家或通灵师，{D1_STATE_COL} = 被毒',
+            '预通被代跳标记': '身份为预言家或通灵师，D1验人 为空，且同局有好人侧 D1验人 有值',
         },
         '悍跳与自爆': {
             '悍跳标记': '狼人侧且 D1验人 非空',
@@ -359,6 +368,7 @@ def build_statistics_rules():
             '接狼人金水': '发金悍跳狼姓名（次数）',
             '拉杆记录': '日期-姓名-验人-结果',
             '警上站狼边': '真预/通灵-悍跳狼',
+            '预通滴滴记录': '预通被代跳局中，同局 D1验人 有值的好人姓名，顿号连接',
             '身份胜率': '各身份出场次数与胜率，格式：身份（次数，胜率），按次数降序',
             '版型胜率': '各版型出场次数与胜率，格式：版型（次数，胜率），按次数降序',
             '版型狼人率': '各版型出场次数与狼人率（阵营为狼人的概率），格式：版型（次数，狼人率），按次数降序',
@@ -2017,6 +2027,72 @@ def summarize_lagan_records(data):
         .rename(columns={'_record': '拉杆记录'})
     )
 
+def _join_unique_names(names):
+    ordered = []
+    seen = set()
+    for name in names:
+        text = str(name).strip()
+        if not text or text in ('', '<NA>', 'nan', 'None'):
+            continue
+        if text not in seen:
+            seen.add(text)
+            ordered.append(text)
+    return '、'.join(ordered)
+
+def assign_prophet_replaced_jump_markers(data):
+    """预通被代跳：真预/通灵未验人，同局有好人侧 D1验人 有值。"""
+    check_col = 'D1验人'
+    game_keys = ['日期', '版型']
+    data['预通被代跳标记'] = 0
+    if check_col not in data.columns:
+        return data
+    role = data['身份']
+    is_prophet = role.isin(PROPHET_FIRST_CHECK_ROLES)
+    is_good = ~data['阵营'].isin(['狼人', '狼人混'])
+    prophet_no_check = is_prophet & ~_is_filled_value(data[check_col])
+    game_has_good_check = (
+        data.assign(_good_check=(is_good & _is_filled_value(data[check_col])).astype(int))
+        .groupby(game_keys)['_good_check']
+        .transform('max')
+        .gt(0)
+    )
+    data['预通被代跳标记'] = (
+        prophet_no_check & game_has_good_check
+    ).fillna(False).astype(int)
+    return data
+
+def summarize_prophet_didi_records(data):
+    """预通滴滴记录：被代跳局中，同局 D1验人 有值的好人姓名（顿号连接）。"""
+    empty = pd.DataFrame({'姓名': pd.Series(dtype=str), '预通滴滴记录': pd.Series(dtype=str)})
+    check_col = 'D1验人'
+    game_keys = ['日期', '版型']
+    if '预通被代跳标记' not in data.columns or check_col not in data.columns:
+        return empty
+    is_good = ~data['阵营'].isin(['狼人', '狼人混'])
+    check_filled = _is_filled_value(data[check_col])
+    prophets = data.loc[
+        data['预通被代跳标记'] == 1,
+        ['姓名', *game_keys],
+    ].drop_duplicates()
+    if prophets.empty:
+        return empty
+    jumpers = (
+        data.loc[is_good & check_filled, [*game_keys, '姓名']]
+        .drop_duplicates(subset=[*game_keys, '姓名'])
+        .rename(columns={'姓名': '_jumper'})
+    )
+    events = prophets.merge(jumpers, on=game_keys, how='inner')
+    if events.empty:
+        return empty
+    events = events.sort_values([*game_keys, '_jumper'])
+    rows = []
+    for name, group in events.groupby('姓名', sort=False):
+        rows.append({
+            '姓名': name,
+            '预通滴滴记录': _join_unique_names(group['_jumper'].tolist()),
+        })
+    return pd.DataFrame(rows)
+
 def _pick_prophet_name_for_game(game):
     """同对局预言家/通灵师姓名（优先起跳预言家标记）。"""
     prophets = game.loc[game['身份'].isin(PROPHET_FIRST_CHECK_ROLES)]
@@ -2481,6 +2557,37 @@ def _assign_sheriff_vote_correct_marker(data, vote_col, marker_col, order_col=No
     data.loc[frame.index[hit], marker_col] = 1
     return data
 
+def assign_prophet_medium_out_markers(data):
+    """预通相关统计标记（按局）。"""
+    role = data['身份']
+    is_prophet = role.isin(PROPHET_FIRST_CHECK_ROLES)
+    data['预通被放逐标记'] = 0
+    data['预通被毒标记'] = 0
+    data['预通被枪标记'] = 0
+    data['预通获警徽标记'] = 0
+    data['预通被奶死标记'] = 0
+    data['预通被盲毒标记'] = 0
+
+    state_cols = [col for col in data.columns if '状态' in col]
+    if state_cols:
+        states = data[state_cols].astype('string').apply(lambda series: series.str.strip())
+        data['预通被放逐标记'] = (is_prophet & states.eq('被放逐').any(axis=1)).fillna(False).astype(int)
+        data['预通被毒标记'] = (is_prophet & states.eq('被毒').any(axis=1)).fillna(False).astype(int)
+        data['预通被枪标记'] = (is_prophet & states.eq('被枪').any(axis=1)).fillna(False).astype(int)
+        data['预通被奶死标记'] = (is_prophet & states.eq('同守同救out').any(axis=1)).fillna(False).astype(int)
+
+    if D1_STATE_COL in data.columns:
+        d1_state = data[D1_STATE_COL].astype('string').str.strip()
+        data['预通被盲毒标记'] = (is_prophet & d1_state.eq('被毒')).fillna(False).astype(int)
+
+    if D1_SHERIFF_BADGE_COL in data.columns:
+        name = data['姓名'].astype('string').str.strip()
+        badge = data[D1_SHERIFF_BADGE_COL].astype('string').str.strip()
+        badge_filled = badge.notna() & (badge != '') & (badge != '<NA>')
+        data['预通获警徽标记'] = (is_prophet & badge_filled & badge.eq(name)).fillna(False).astype(int)
+
+    return assign_prophet_replaced_jump_markers(data)
+
 def add_markers(data):
     """生成玩家级统计标记列。"""
     is_wolf = data['阵营'].isin(['狼人', '狼人混'])
@@ -2493,6 +2600,7 @@ def add_markers(data):
     ).astype(int)
     data['身份标记'] = data['阵营'].isin(['神职', '狼人', '狼人混']).astype(int)
     data['预通标记'] = role.isin(['预言家', '通灵师']).astype(int)
+    data = assign_prophet_medium_out_markers(data)
     data['神职身份标记'] = (data['阵营'] == '神职').astype(int)
     data['机械狼标记'] = role.isin(JIXIE_WOLF_ROLES).astype(int)
     for jixie_role in JIXIE_SUB_ROLES:
@@ -2658,6 +2766,13 @@ def build_player_stats(data, include_non_first_wolf_rate=False):
         好人警下次数=('警下标记', 'sum'),
         身份次数=('身份标记', 'sum'),
         预通次数=('预通标记', 'sum'),
+        预通被放逐次数=('预通被放逐标记', 'sum'),
+        预通被毒次数=('预通被毒标记', 'sum'),
+        预通被枪次数=('预通被枪标记', 'sum'),
+        预通获警徽次数=('预通获警徽标记', 'sum'),
+        预通被奶死次数=('预通被奶死标记', 'sum'),
+        预通被盲毒次数=('预通被盲毒标记', 'sum'),
+        预通被代跳次数=('预通被代跳标记', 'sum'),
         神职身份次数=('神职身份标记', 'sum'),
         狼胜利次数=('狼胜利标记', 'sum'),
         正确放逐票次数=('正确放逐票', 'sum'),
@@ -2696,6 +2811,8 @@ def build_player_stats(data, include_non_first_wolf_rate=False):
     stat['拉杆记录'] = stat['拉杆记录'].fillna('')
     stat = stat.merge(summarize_sheriff_vote_error_records(data), on='姓名', how='left')
     stat['警上站狼边'] = stat['警上站狼边'].fillna('')
+    stat = stat.merge(summarize_prophet_didi_records(data), on='姓名', how='left')
+    stat['预通滴滴记录'] = stat['预通滴滴记录'].fillna('')
     stat = stat.merge(summarize_identity_win_rates(data), on='姓名', how='left')
     stat['身份胜率'] = stat['身份胜率'].fillna('')
     stat = stat.merge(summarize_banxing_win_rates(data), on='姓名', how='left')
