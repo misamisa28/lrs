@@ -5296,7 +5296,15 @@
       const didiRecord = String(player[PROPHET_SUMMARY_FIELDS.didiRecord] ?? '').trim();
       const helpDidiRecord = String(player[PROPHET_SUMMARY_FIELDS.helpDidiRecord] ?? '').trim();
 
-      let html = `预通 ${prophetSummaryNum(counts.games)} 局，警上未起跳 ${prophetSummaryNum(counts.noJump)} 次，获得警徽 ${prophetSummaryNum(counts.badge)} 次，被放逐 ${prophetSummaryNum(counts.exiled)} 次`;
+      const baseParts = [`预通 ${prophetSummaryNum(counts.games)} 局`];
+      if (counts.noJump > 0) {
+        baseParts.push(`警上未起跳 ${prophetSummaryNum(counts.noJump)} 次`);
+      }
+      baseParts.push(`获得警徽 ${prophetSummaryNum(counts.badge)} 次`);
+      if (counts.exiled > 0) {
+        baseParts.push(`被放逐 ${prophetSummaryNum(counts.exiled)} 次`);
+      }
+      let html = baseParts.join('，');
 
       const extras = [];
       if (counts.poison > 0) extras.push(`被毒 ${prophetSummaryNum(counts.poison)} 次`);
