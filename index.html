@@ -5316,7 +5316,7 @@
       } else if (counts.blindPoison > 0) {
         extras.push(`被盲毒 ${prophetSummaryNum(counts.blindPoison)} 次`);
       }
-      if (counts.shot > 0) extras.push(`被枪 ${prophetSummaryNum(counts.shot)} 次`);
+      if (counts.shot > 0) extras.push(`被猎人带走 ${prophetSummaryNum(counts.shot)} 次`);
       if (counts.milk > 0) extras.push(`被奶死 ${prophetSummaryNum(counts.milk)} 次`);
       if (extras.length) {
         html += extras.map(segment => `、${segment}`).join('');
