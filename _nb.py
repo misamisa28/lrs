@@ -158,7 +158,7 @@ GOOD_IDENTITIES = {
 
 DREAM_FIRST_SPECIAL_IDENTITIES = {'狼王', '盗宝猎人'}
 
-RED_WOLF_IDENTITIES = ['狼', '狼王', '黑狼王', '狼术师', '狼美人']
+RED_WOLF_IDENTITIES = ['狼', '狼王', '黑狼王', '狼术师', '狼美人', '诡术师']
 
 D1_WOLF_KNIFE_COL = 'D1狼刀'
 
@@ -2127,7 +2127,7 @@ def summarize_banxing_wolf_rates(data):
     return _summarize_dimension_wolf_rates(data, '版型', '版型狼人率')
 
 def _non_daobao_red_wolf_mask(data):
-    """身份为狼/狼王/狼术师且版型非盗宝大师。"""
+    """身份为狼/狼王/黑狼王/狼术师/狼美人/诡术师且版型非盗宝大师。"""
     banxing = data['版型'].astype('string').str.strip()
     return data['身份'].isin(RED_WOLF_IDENTITIES) & (banxing != DAOBAO_MASTER_BANXING)
 
