@@ -160,6 +160,7 @@
           <button type="button" class="wolf-mode-btn" data-radar-mode="radar">雷达图</button>
           <button type="button" class="wolf-mode-btn" data-radar-mode="winrate">胜率</button>
           <button type="button" class="wolf-mode-btn" data-radar-mode="games">参与场次</button>
+          <button type="button" class="wolf-mode-btn" data-radar-mode="seat">座位号</button>
         </div>
       </div>
       <div id="compareControls" class="control-group" style="display: none;">
@@ -211,6 +212,27 @@
         <div class="radar-table-scroll">
           <div id="radarTableBody" class="radar-stats-cards"></div>
         </div>
+      </div>
+    </div>
+    <div id="radarSeatWrap" class="data-table-wrap radar-seat-wrap" style="display: none;">
+      <div class="radar-seat-header">
+        <h2 id="radarSeatPlayerName" class="radar-stats-player-name"></h2>
+        <p class="radar-seat-note">数据为全部赛季汇总</p>
+      </div>
+      <div class="radar-seat-table-scroll">
+        <table class="raw-table radar-seat-table">
+          <thead>
+            <tr>
+              <th>座位号</th>
+              <th>场次</th>
+              <th>狼人胜率（次数）</th>
+              <th>好人胜率（次数）</th>
+              <th>警徽票正确率（次数）</th>
+              <th>放逐票正确率（次数）</th>
+            </tr>
+          </thead>
+          <tbody id="radarSeatBody"></tbody>
+        </table>
       </div>
     </div>
     <div id="radarGamesWrap" class="data-table-wrap radar-games-wrap" style="display: none;">
@@ -346,6 +368,11 @@
     function getTotalBanxingFile(seriesKey) {
       const tag = getSeriesTag(seriesKey);
       return `${DATA_DIR}/${tag}总版型数据.json`;
+    }
+
+    function getSeatNumberStatsFile(seriesKey) {
+      const tag = getSeriesTag(seriesKey);
+      return `${DATA_DIR}/${tag}座位号数据统计.json`;
     }
 
     let rulesDocumentCache = null;
@@ -1217,6 +1244,8 @@
     let wolfRateBanxingFilter = WOLF_RATE_BANXING_ALL;
     let radarSubMode = 'table';
     let radarWinrateDim = 'banxing';
+    let seatNumberStatsData = [];
+    const seatNumberStatsCache = {};
     let lastRadarGamesPlayer = '';
     let currentSeason = DEFAULT_SEASON;
     let seasonLoadSeq = 0;
@@ -1745,6 +1774,10 @@
         `<option value="${s}">${s}</option>`
       ).join('');
       el.value = season;
+    }
+
+    function isRadarSeatView() {
+      return currentView === 'radar' && radarSubMode === 'seat';
     }
 
     function getCompareColumns(seriesKey) {
@@ -2933,6 +2966,7 @@
       const showRadarWinrateView = isRadar && radarSubMode === 'winrate';
       const showRadarTableView = isRadar && radarSubMode === 'table';
       const showRadarGames = isRadar && radarSubMode === 'games';
+      const showRadarSeat = isRadar && radarSubMode === 'seat';
       const hideVisual = ['table', 'banxing', 'tongbian'].includes(view);
       const visualPanel = $('visualPanel');
 
@@ -2940,9 +2974,10 @@
       $show('radarWinrateControls', showRadarWinrateView, 'block');
       $show('radarMetricControls', showRadarChartView, 'block');
       $show('radarGamesWrap', showRadarGames, 'block');
+      $show('radarSeatWrap', showRadarSeat, 'block');
       $show('radarTableWrap', showRadarTableView, 'block');
 
-      const showVisual = !hideVisual && !showRadarGames;
+      const showVisual = !hideVisual && !showRadarGames && !showRadarSeat;
       visualPanel.style.display = showVisual ? '' : 'none';
       visualPanel.classList.remove('radar-layout');
       visualPanel.classList.toggle('radar-chart-view', showRadarChartView);
@@ -3027,6 +3062,7 @@
       radarSubMode = mode;
       syncModeButtons('[data-radar-mode]', 'radarMode', mode);
       updateRadarPanelsVisibility();
+      updateSeasonSelect();
       if (currentView !== 'radar') return;
       const name = $('nameSelect').value;
       if (mode === 'radar') {
@@ -3038,6 +3074,7 @@
         syncModeButtons('[data-radar-winrate-dim]', 'radarWinrateDim', radarWinrateDim);
         renderRadarWinrateChart(name);
       }
+      else if (mode === 'seat') renderRadarSeatSection(name);
       else renderRadarGamesSection(name);
     }
 
@@ -5765,6 +5802,181 @@
       updateRadarPanelsVisibility();
     }
 
+    function formatRadarRateWithCount(rate, count) {
+      const n = Number(count) || 0;
+      if (n <= 0) {
+        return '<span class="radar-rank-empty">—</span>';
+      }
+      const rateText = rate == null || rate === '' ? '0.0%' : String(rate);
+      return wrapRadarParenMeta(`${rateText}（${n}）`);
+    }
+
+    function getPlayerSeatNumberRows(name) {
+      return seatNumberStatsData
+        .filter(row => row['姓名'] === name)
+        .slice()
+        .sort((a, b) => Number(a['座位号']) - Number(b['座位号']));
+    }
+
+    function hasSeatNumberStatsData() {
+      return seatNumberStatsData.length > 0;
+    }
+
+    function parseSeatRateText(text) {
+      if (text == null || text === '') return null;
+      const match = String(text).trim().match(/^(-?\d+(?:\.\d+)?)%$/);
+      return match ? Number(match[1]) / 100 : null;
+    }
+
+    function summarizePlayerSeatAverages(rows) {
+      let totalGames = 0;
+      let wolfCount = 0;
+      let wolfWinWeighted = 0;
+      let goodCount = 0;
+      let goodWinWeighted = 0;
+      let sheriffCount = 0;
+      let sheriffCorrectWeighted = 0;
+      let exileCount = 0;
+      let exileCorrectWeighted = 0;
+
+      rows.forEach((row) => {
+        const games = Number(row['场次']) || 0;
+        totalGames += games;
+
+        const wolfTimes = Number(row['狼人次数']) || 0;
+        wolfCount += wolfTimes;
+        const wolfRate = parseSeatRateText(row['狼人胜率']);
+        if (wolfTimes > 0 && wolfRate != null) wolfWinWeighted += wolfRate * wolfTimes;
+
+        const goodTimes = Number(row['好人次数']) || 0;
+        goodCount += goodTimes;
+        const goodRate = parseSeatRateText(row['好人胜率']);
+        if (goodTimes > 0 && goodRate != null) goodWinWeighted += goodRate * goodTimes;
+
+        const sheriffTimes = Number(row['警徽票次数']) || 0;
+        sheriffCount += sheriffTimes;
+        const sheriffRate = parseSeatRateText(row['警徽票正确率']);
+        if (sheriffTimes > 0 && sheriffRate != null) {
+          sheriffCorrectWeighted += sheriffRate * sheriffTimes;
+        }
+
+        const exileTimes = Number(row['放逐票次数']) || 0;
+        exileCount += exileTimes;
+        const exileRate = parseSeatRateText(row['放逐票正确率']);
+        if (exileTimes > 0 && exileRate != null) exileCorrectWeighted += exileRate * exileTimes;
+      });
+
+      const weightedRate = (weightedSum, count) => (
+        count > 0 ? formatPercent(weightedSum / count * 100) : '0.0%'
+      );
+
+      return {
+        场次: totalGames,
+        狼人胜率: weightedRate(wolfWinWeighted, wolfCount),
+        狼人次数: wolfCount,
+        好人胜率: weightedRate(goodWinWeighted, goodCount),
+        好人次数: goodCount,
+        警徽票正确率: weightedRate(sheriffCorrectWeighted, sheriffCount),
+        警徽票次数: sheriffCount,
+        放逐票正确率: weightedRate(exileCorrectWeighted, exileCount),
+        放逐票次数: exileCount,
+      };
+    }
+
+    function buildSeatColumnHighlights(rows) {
+      const metrics = [
+        {
+          getValue: (row) => parseSeatRateText(row['狼人胜率']),
+          canCompare: (row) => (Number(row['狼人次数']) || 0) > 0,
+        },
+        {
+          getValue: (row) => parseSeatRateText(row['好人胜率']),
+          canCompare: (row) => (Number(row['好人次数']) || 0) > 0,
+        },
+        {
+          getValue: (row) => parseSeatRateText(row['警徽票正确率']),
+          canCompare: (row) => (Number(row['警徽票次数']) || 0) > 0,
+        },
+        {
+          getValue: (row) => parseSeatRateText(row['放逐票正确率']),
+          canCompare: (row) => (Number(row['放逐票次数']) || 0) > 0,
+        },
+      ];
+      const highlights = rows.map(() => ({}));
+
+      metrics.forEach((metric, metricIndex) => {
+        const colIndex = metricIndex + 1;
+        const entries = rows.flatMap((row, rowIndex) => {
+          if (!metric.canCompare(row)) return [];
+          const value = metric.getValue(row);
+          if (value == null || !Number.isFinite(value)) return [];
+          return [{ rowIndex, value }];
+        });
+        if (entries.length <= 1) return;
+
+        const max = Math.max(...entries.map(entry => entry.value));
+        const min = Math.min(...entries.map(entry => entry.value));
+        if (max === min) return;
+
+        entries.forEach(({ rowIndex, value }) => {
+          if (value === max) highlights[rowIndex][colIndex] = 'high';
+          if (value === min) highlights[rowIndex][colIndex] = 'low';
+        });
+      });
+
+      return highlights;
+    }
+
+    function seatCellClass(highlight) {
+      if (highlight === 'high') return ' class="seat-value-high"';
+      if (highlight === 'low') return ' class="seat-value-low"';
+      return '';
+    }
+
+    function renderRadarSeatSection(name) {
+      const playerEl = document.getElementById('radarSeatPlayerName');
+      const body = document.getElementById('radarSeatBody');
+      if (playerEl) playerEl.textContent = name;
+      if (!body) return;
+
+      if (!hasSeatNumberStatsData()) {
+        body.innerHTML = '<tr><td colspan="6" class="radar-seat-empty">暂无座位号统计数据</td></tr>';
+        return;
+      }
+
+      const rows = getPlayerSeatNumberRows(name);
+      if (!rows.length) {
+        body.innerHTML = '<tr><td colspan="6" class="radar-seat-empty">该玩家暂无座位号数据</td></tr>';
+        return;
+      }
+
+      const highlights = buildSeatColumnHighlights(rows);
+
+      body.innerHTML = rows.map((row, rowIndex) => {
+        const seat = Number(row['座位号']);
+        const games = Number(row['场次']) || 0;
+        const rowHighlights = highlights[rowIndex] || {};
+        return `<tr>
+          <td>${escapeHtml(Number.isFinite(seat) ? `${seat}号位` : String(row['座位号'] ?? ''))}</td>
+          <td>${games}</td>
+          <td${seatCellClass(rowHighlights[1])}>${formatRadarRateWithCount(row['狼人胜率'], row['狼人次数'])}</td>
+          <td${seatCellClass(rowHighlights[2])}>${formatRadarRateWithCount(row['好人胜率'], row['好人次数'])}</td>
+          <td${seatCellClass(rowHighlights[3])}>${formatRadarRateWithCount(row['警徽票正确率'], row['警徽票次数'])}</td>
+          <td${seatCellClass(rowHighlights[4])}>${formatRadarRateWithCount(row['放逐票正确率'], row['放逐票次数'])}</td>
+        </tr>`;
+      }).join('') + (() => {
+        const avg = summarizePlayerSeatAverages(rows);
+        return `<tr class="radar-seat-summary">
+          <td>个人平均</td>
+          <td>${avg.场次}</td>
+          <td>${formatRadarRateWithCount(avg.狼人胜率, avg.狼人次数)}</td>
+          <td>${formatRadarRateWithCount(avg.好人胜率, avg.好人次数)}</td>
+          <td>${formatRadarRateWithCount(avg.警徽票正确率, avg.警徽票次数)}</td>
+          <td>${formatRadarRateWithCount(avg.放逐票正确率, avg.放逐票次数)}</td>
+        </tr>`;
+      })();
+    }
+
     function renderRadarGamesSection(name, options = {}) {
       const content = document.getElementById('radarGamesContent');
       if (!hasParticipationData()) {
@@ -6152,6 +6364,7 @@
           renderRadarChart(name);
         } else if (radarSubMode === 'table') renderRadarPersonalTable(name);
         else if (radarSubMode === 'winrate') renderRadarWinrateChart(name);
+        else if (radarSubMode === 'seat') renderRadarSeatSection(name);
         else renderRadarGamesSection(name);
       }
     }
@@ -6219,10 +6432,16 @@
         seasonEl.innerHTML = '<option value="">—</option>';
         seasonEl.value = '';
         seasonEl.disabled = false;
+        seasonEl.removeAttribute('title');
         return;
       }
-      seasonEl.disabled = false;
       refreshSeasonSelectOptions();
+      seasonEl.disabled = isRadarSeatView();
+      if (isRadarSeatView()) {
+        seasonEl.title = '座位号数据为当前系列全部赛季汇总，不可切换赛季';
+      } else {
+        seasonEl.removeAttribute('title');
+      }
     }
 
     function getBarChartColumns() {
@@ -6473,6 +6692,7 @@
       $('tongbianNameSelect').addEventListener('change', updateChart);
       $('seriesSelect').addEventListener('change', async () => {
         const seriesKey = getCurrentSeriesKey();
+        await loadSeatNumberStats(seriesKey, { force: true });
         if (currentView === 'compare') {
           refreshCompareControls();
           updateChart();
@@ -6484,6 +6704,9 @@
         }
         refreshSeasonSelectOptions();
         await setSeason(getSeriesSeason(seriesKey, null));
+        if (currentView === 'radar' && radarSubMode === 'seat') {
+          renderRadarSeatSection($('nameSelect').value);
+        }
       });
       $('compareNameSelect').addEventListener('change', updateChart);
       $('compareMetricSelect').addEventListener('change', updateChart);
@@ -6493,7 +6716,7 @@
       });
       $('seasonSelect').addEventListener('change', (e) => {
         const season = e.target.value;
-        if (!season || currentView === 'compare' || currentView === 'banxing') return;
+        if (!season || currentView === 'compare' || currentView === 'banxing' || isRadarSeatView()) return;
         setSeason(season);
       });
       bindBanxingSort();
@@ -6742,6 +6965,22 @@
       return seasonPayloadCache[season];
     }
 
+    async function loadSeatNumberStats(seriesKey, { force = false } = {}) {
+      if (!force && seatNumberStatsCache[seriesKey]) {
+        seatNumberStatsData = seatNumberStatsCache[seriesKey];
+        return seatNumberStatsData;
+      }
+      const file = getSeatNumberStatsFile(seriesKey);
+      try {
+        const rows = await fetchJsonWithRetry(file, 1, { force });
+        seatNumberStatsCache[seriesKey] = Array.isArray(rows) ? rows : [];
+      } catch (_) {
+        seatNumberStatsCache[seriesKey] = [];
+      }
+      seatNumberStatsData = seatNumberStatsCache[seriesKey];
+      return seatNumberStatsData;
+    }
+
     async function loadTotalBanxingData(seriesKey) {
       const file = getTotalBanxingFile(seriesKey);
       totalBanxingData = await fetchJson(file);
@@ -6778,7 +7017,7 @@
         updateChart();
       } finally {
         if (seq === seasonLoadSeq) {
-          seasonEl.disabled = false;
+          seasonEl.disabled = isRadarSeatView();
         }
       }
     }
@@ -6790,6 +7029,7 @@
         document.getElementById('seriesSelect').value = DEFAULT_SERIES_KEY;
         refreshSeasonSelectOptions();
         applySeasonPayload(await loadSeasonData(DEFAULT_SEASON));
+        await loadSeatNumberStats(getCurrentSeriesKey());
         updateSeasonSelect();
         refreshControls();
         updateChart();

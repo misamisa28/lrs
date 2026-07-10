@@ -977,6 +977,48 @@ h1 {
 .radar-games-wrap {
   margin-top: 16px; }
 
+.radar-seat-wrap {
+  margin-top: 16px; }
+
+.radar-seat-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-subtle); }
+
+.radar-seat-note {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted); }
+
+.radar-seat-table-scroll {
+  overflow-x: auto;
+  padding: 0 14px 14px; }
+
+.radar-seat-table th,
+.radar-seat-table td {
+  text-align: center;
+  white-space: nowrap; }
+
+.radar-seat-table td:first-child,
+.radar-seat-table th:first-child {
+  text-align: left; }
+
+.radar-seat-empty {
+  text-align: center !important;
+  color: var(--text-muted);
+  padding: 18px 12px !important; }
+
+.radar-seat-table tr.radar-seat-summary td {
+  font-weight: 600;
+  background: var(--bg-subtle);
+  border-top: 2px solid var(--border-light); }
+
+.radar-seat-table td.seat-value-high {
+  background: var(--rank-top-bg); }
+
+.radar-seat-table td.seat-value-low {
+  background: var(--rank-bottom-bg); }
+
 .radar-games-header {
   padding: 10px 14px;
   border-bottom: 1px solid var(--border-light);

@@ -1447,6 +1447,13 @@ def summarize_player_game_lists(data):
     )
     return participation.merge(wins, on='姓名', how='left')
 
+def assign_seat_numbers(data):
+    """每局按行顺序依次为 1 号位起，写入「座位号」列。"""
+    game_keys = ['日期', '版型']
+    data = data.copy()
+    data['座位号'] = data.groupby(game_keys, sort=False).cumcount() + 1
+    return data
+
 def summarize_seat_number_counts(data):
     """按姓名汇总各座位号出场次数：1号（次数）、2号（次数）、…"""
     empty = pd.DataFrame({'姓名': pd.Series(dtype=str), '座位号次数': pd.Series(dtype=str)})
@@ -1454,8 +1461,7 @@ def summarize_seat_number_counts(data):
     required = [*game_keys, '姓名']
     if not all(col in data.columns for col in required):
         return empty
-    frame = data[required].copy()
-    frame['_座位号'] = frame.groupby(game_keys, sort=False).cumcount() + 1
+    frame = assign_seat_numbers(data[required])
     def format_seat_counts(seats):
         counts = seats.value_counts().sort_index()
         return '、'.join(
@@ -1463,10 +1469,57 @@ def summarize_seat_number_counts(data):
             for seat, cnt in counts.items()
         )
     return (
-        frame.groupby('姓名')['_座位号']
+        frame.groupby('姓名')['座位号']
         .apply(format_seat_counts)
         .reset_index(name='座位号次数')
     )
+
+def build_seat_number_stats(data):
+    """按姓名×座位号汇总场次、狼/好人胜率及警徽/放逐票指标。"""
+    columns = [
+        '姓名', '座位号', '场次', '狼人次数', '狼人胜率', '好人次数', '好人胜率',
+        '警徽票次数', '警徽票正确率', '放逐票次数', '放逐票正确率',
+    ]
+    required = {
+        '日期', '版型', '姓名', '狼标记', '狼胜利标记', '好人标记', '好人胜利标记',
+        '警徽票标记', '警徽票正确标记', '放逐票次数', '正确放逐票',
+    }
+    if not required.issubset(data.columns):
+        return pd.DataFrame(columns=columns)
+    frame = assign_seat_numbers(data)
+    stat = frame.groupby(['姓名', '座位号'], as_index=False).agg(
+        场次=('姓名', 'count'),
+        狼人次数=('狼标记', 'sum'),
+        狼胜利次数=('狼胜利标记', 'sum'),
+        好人次数=('好人标记', 'sum'),
+        好人胜利次数=('好人胜利标记', 'sum'),
+        警徽票次数=('警徽票标记', 'sum'),
+        警徽票正确次数=('警徽票正确标记', 'sum'),
+        放逐票次数=('放逐票次数', 'sum'),
+        正确放逐票次数=('正确放逐票', 'sum'),
+    )
+    stat['狼人胜率'] = (
+        stat['狼胜利次数'] / stat['狼人次数'].replace(0, pd.NA)
+    ).fillna(0)
+    stat['好人胜率'] = (
+        stat['好人胜利次数'] / stat['好人次数'].replace(0, pd.NA)
+    ).fillna(0)
+    stat['警徽票正确率'] = (
+        stat['警徽票正确次数'] / stat['警徽票次数'].replace(0, pd.NA)
+    ).fillna(0)
+    stat['放逐票正确率'] = (
+        stat['正确放逐票次数'] / stat['放逐票次数'].replace(0, pd.NA)
+    ).fillna(0)
+    stat = stat.drop(
+        columns=['狼胜利次数', '好人胜利次数', '警徽票正确次数', '正确放逐票次数']
+    )
+    rate_cols = ['狼人胜率', '好人胜率', '警徽票正确率', '放逐票正确率']
+    stat[rate_cols] = stat[rate_cols].map(lambda x: f'{x:.1%}')
+    count_cols = [
+        '场次', '狼人次数', '好人次数', '警徽票次数', '放逐票次数',
+    ]
+    stat[count_cols] = stat[count_cols].astype(int)
+    return stat[columns].sort_values(['姓名', '座位号']).reset_index(drop=True)
 
 def assign_dream_first_wolf_markers(data):
     """摄梦人 D1夜目标1：非好人计首摄狼人；狼王/盗宝猎人计首摄狼王/盗宝猎人。"""
@@ -2875,7 +2928,7 @@ def export_sheet(excel_file, prefix, sheet):
         if os.path.exists(path):
             os.remove(path)
         frame.to_excel(path, index=False)
-    return stat_df, banxing_df, tongbian_df
+    return stat_df, banxing_df, tongbian_df, df
 
 # ---------- 主流程 ----------
 
@@ -2885,9 +2938,23 @@ sheet_results = {}
 
 for excel_file, prefix, sheets in DATASETS:
     season_banxing_frames = []
+    marked_frames = []
     for sheet in sheets:
-        sheet_results[f'{prefix}{sheet}'] = export_sheet(excel_file, prefix, sheet)
-        season_banxing_frames.append(sheet_results[f'{prefix}{sheet}'][1])
+        stat_df, banxing_df, tongbian_df, marked_df = export_sheet(excel_file, prefix, sheet)
+        sheet_results[f'{prefix}{sheet}'] = (stat_df, banxing_df, tongbian_df)
+        season_banxing_frames.append(banxing_df)
+        marked_frames.append(marked_df)
+    seat_number_df = build_seat_number_stats(pd.concat(marked_frames, ignore_index=True))
+    seat_number_tag = f'{prefix}座位号数据统计'
+    seat_number_xlsx = os.path.join(DATA_DIR, f'{seat_number_tag}.xlsx')
+    seat_number_json = os.path.join(DATA_DIR, f'{seat_number_tag}.json')
+    if os.path.exists(seat_number_xlsx):
+        try:
+            os.remove(seat_number_xlsx)
+        except OSError:
+            pass
+    seat_number_df.to_excel(seat_number_xlsx, index=False)
+    seat_number_df.to_json(seat_number_json, orient='records', force_ascii=False, indent=4)
     total_banxing_df = merge_banxing_stats(season_banxing_frames)
     total_tag = f'{prefix}总'
     total_banxing_df.to_json(
