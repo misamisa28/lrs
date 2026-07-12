@@ -1063,6 +1063,14 @@
     const GOOD_SHERIFF_BELOW_RATE_COL = '好人警下率';
     const GOOD_COUNT_COL = '好人次数';
     const CHART_MIN_APPEARANCES = 9;
+    const CHART_NO_MIN_APPEARANCE_MODES = new Set([
+      'wolf:jixie',
+      'wolf:lagan',
+      'other:blind',
+      'other:first',
+      'other:model',
+      'other:fake',
+    ]);
     const WOLF_COMBO_TOTAL = '狼次数';
     const WOLF_COMBO_HJT = '悍跳次数';
     const WOLF_COMBO_SELF = '自爆次数';
@@ -1951,8 +1959,13 @@
       return Number.isInteger(num) ? String(num) : num.toFixed(1);
     }
 
-    function getColumnAverage(column) {
-      const rows = getMinAppearanceRows();
+    function getChartSourceRows(options = {}) {
+      const { minAppearances = shouldApplyMinAppearanceFilter() } = options;
+      return minAppearances ? getMinAppearanceRows() : rawData;
+    }
+
+    function getColumnAverage(column, options = {}) {
+      const rows = getChartSourceRows(options);
       if (!rows.length) return 0;
       const sum = rows.reduce((acc, item) => acc + parseValue(item[column], column), 0);
       return sum / rows.length;
@@ -2341,7 +2354,7 @@
     }
 
     function getBlindPoisonedComboItems() {
-      return getMinAppearanceRows()
+      return rawData
         .map(item => {
           const blind = parseValue(item[BLIND_POISON_COL], BLIND_POISON_COL);
           const nonWolf = parseValue(item[NON_WOLF_BLIND_POISON_COL], NON_WOLF_BLIND_POISON_COL);
@@ -2403,7 +2416,8 @@
 
     function getChartData(column, options = {}) {
       const { excludeZero = false, requirePositiveCol = null } = options;
-      return getMinAppearanceRows()
+      const source = getChartSourceRows(options);
+      return source
         .filter(item => (
           !requirePositiveCol
           || parseValue(item[requirePositiveCol], requirePositiveCol) > 0
@@ -2486,6 +2500,18 @@
 
     function hasMinAppearances(item) {
       return parseValue(item['出场次数'], '出场次数') >= CHART_MIN_APPEARANCES;
+    }
+
+    function getCurrentBarSubModeKey() {
+      const col = $('columnSelect')?.value;
+      if (col === WOLF_DATA_KEY) return `wolf:${wolfSubMode}`;
+      if (col === OTHER_DATA_KEY) return `other:${otherSubMode}`;
+      return null;
+    }
+
+    function shouldApplyMinAppearanceFilter() {
+      const key = getCurrentBarSubModeKey();
+      return !(key && CHART_NO_MIN_APPEARANCE_MODES.has(key));
     }
 
     function filterSeasonByMinAppearances(data) {
@@ -2816,7 +2842,7 @@
     }
 
     function getJixieWolfComboItems() {
-      return getMinAppearanceRows()
+      return rawData
         .map(item => {
           const total = parseValue(item[JIXIE_WOLF_TOTAL_COL], JIXIE_WOLF_TOTAL_COL);
           const civilian = parseValue(item[JIXIE_CIVILIAN_COL], JIXIE_CIVILIAN_COL);
@@ -3004,11 +3030,12 @@
     }
 
     function updatePageMetaBar(view, showRadarChartView, showRadarWinrateView, showRadarTableView) {
-      const showNotice = view === 'bar'
+      const showNotice = (view === 'bar'
         || view === 'compare'
         || showRadarChartView
         || showRadarWinrateView
-        || showRadarTableView;
+        || showRadarTableView)
+        && shouldApplyMinAppearanceFilter();
       $show('pageMetaBar', true, 'flex');
       $show('chartDataNotice', showNotice, 'block');
       $('pageMetaBar').classList.toggle('page-meta-bar-link-only', !showNotice);
@@ -3596,8 +3623,13 @@
     }
 
     function renderMetricBarChart(column, options = {}) {
-      const { excludeZero = false, requirePositiveCol = null, items: overrideItems = null } = options;
-      const items = overrideItems ?? getChartData(column, { excludeZero, requirePositiveCol });
+      const {
+        excludeZero = false,
+        requirePositiveCol = null,
+        items: overrideItems = null,
+        minAppearances = shouldApplyMinAppearanceFilter(),
+      } = options;
+      const items = overrideItems ?? getChartData(column, { excludeZero, requirePositiveCol, minAppearances });
       const isWolfRateChart = column === WOLF_RATE_COL;
       const isNonFirstWolfRateChart = column === NON_FIRST_WOLF_RATE_COL;
       const isWolfRateLikeChart = isWolfRateChart || isNonFirstWolfRateChart;
@@ -3607,7 +3639,7 @@
       const isRateColumn = column.includes('率');
       const average = overrideItems
         ? (items.length ? items.reduce((sum, d) => sum + d.value, 0) / items.length : 0)
-        : getColumnAverage(column);
+        : getColumnAverage(column, { minAppearances });
       const layout = getChartLayout();
 
       setChartHeight(items.length);
@@ -3742,7 +3774,7 @@
       }
       const column = getOtherDataColumn();
       renderMetricBarChart(column, {
-        excludeZero: OTHER_ZERO_EXCLUDE_COLS.has(column)
+        excludeZero: OTHER_ZERO_EXCLUDE_COLS.has(column),
       });
     }
 
@@ -3816,7 +3848,7 @@
       setChartHeight(Math.max(items.length, 1));
 
       if (!items.length) {
-        renderWolfDataEmptyChart('暂无出场次数>=9且被盲毒次数>0的玩家');
+        renderWolfDataEmptyChart('暂无被盲毒次数>0的玩家');
         return;
       }
 
@@ -4988,7 +5020,7 @@
           backgroundColor: 'transparent',
           title: {
             subtext: hasJixieWolfComboData()
-              ? '暂无出场次数>=9且机械狼次数>0的玩家'
+              ? '暂无机械狼次数>0的玩家'
               : '当前赛季数据暂无机械狼统计字段',
             left: 'center',
             top: 'center',
