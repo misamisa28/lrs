@@ -5356,14 +5356,14 @@
 
       const tailParts = [];
       if (counts.didi > 0 || didiRecord) {
-        let segment = `预通被代跳 ${prophetSummaryNum(counts.didi)} 次`;
+        let segment = `被代跳 ${prophetSummaryNum(counts.didi)} 次`;
         if (didiRecord) {
           segment += `<span class="radar-text-count">（${escapeHtml(didiRecord)}）</span>`;
         }
         tailParts.push(segment);
       }
       if (counts.helpDidi > 0 || helpDidiRecord) {
-        let segment = `代跳预通 ${prophetSummaryNum(counts.helpDidi)} 次`;
+        let segment = `代跳 ${prophetSummaryNum(counts.helpDidi)} 次`;
         if (helpDidiRecord) {
           segment += `<span class="radar-text-count">（${escapeHtml(helpDidiRecord)}）</span>`;
         }
