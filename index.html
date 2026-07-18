@@ -253,7 +253,7 @@
       <p class="radar-games-legend">
         <span class="radar-games-legend-item">
           <span class="radar-games-legend-swatch is-win" aria-hidden="true"></span>
-          淡色底为胜利场次
+          淡蓝色底为胜利场次
         </span>
       </p>
     </div>
@@ -5354,7 +5354,7 @@
         html += extras.map(segment => `、${segment}`).join('');
       }
 
-      const tailParts = [];
+    /*  const tailParts = [];
       if (counts.didi > 0 || didiRecord) {
         let segment = `被代跳 ${prophetSummaryNum(counts.didi)} 次`;
         if (didiRecord) {
@@ -5371,7 +5371,7 @@
       }
       if (tailParts.length) {
         html += tailParts.map(segment => `、${segment}`).join('');
-      }
+      }*/
       return html;
     }
 
