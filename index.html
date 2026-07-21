@@ -99,7 +99,7 @@
           <button type="button" class="wolf-mode-btn active" data-wolf-mode="rate">狼人率</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="hjt">悍跳</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="self">自爆</button>
-          <button type="button" class="wolf-mode-btn" data-wolf-mode="knife">自刀</button>
+          <button type="button" class="wolf-mode-btn" data-wolf-mode="knife">首夜自刀</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="witchknife">首刀女巫</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="jixie">机械狼</button>
           <button type="button" class="wolf-mode-btn" data-wolf-mode="lagan">拉杆</button>
@@ -1014,7 +1014,7 @@
     const STAND_WOLF_BADGE_DATA_COL = '警上站狼边';
     const STAND_WOLF_BADGE_COL = '警徽错票（预通-悍跳）';
     const FAKE_GOLD_COUNT_DISPLAY = '接狼金次数';
-    const FAKE_GOLD_GIVER_DISPLAY = '接狼金';
+    const FAKE_GOLD_GIVER_DISPLAY = '接狼金（次数）';
     const BLIND_POISON_WOLVES_DISPLAY = '盲毒狼记录';
     const HUNTER_SKILL_RECORD_DISPLAY = '开枪记录';
     const MERGED_BLIND_POISON_RATE_LABEL = '盲毒狼率（次数）';
@@ -1082,6 +1082,7 @@
     const NON_FIRST_APPEARANCE_COL = '非首局出场次数';
     const RED_WOLF_COL = '红狼次数（非盗宝版型）';
     const SELF_KNIFE_COL = '自刀次数';
+    const SELF_KNIFE_DISPLAY = '首夜自刀次数';
     const SELF_KNIFE_GREEN = CHART_GREEN_DARK;
     const TEAMMATE_SELF_KNIFE_COL = '狼队友自刀次数';
     const FIRST_KNIFE_WITCH_COL = '首刀女巫次数';
@@ -1338,6 +1339,9 @@
       const displayLabels = {
         [FAKE_GOLD_COL]: FAKE_GOLD_GIVER_DISPLAY,
         [FAKE_GOLD_GIVER_COL]: FAKE_GOLD_GIVER_DISPLAY,
+        [PROPHET_FIRST_CHECK_COL]: '首验（次数）',
+        [MIXED_BLOOD_RECORD_COL]: '混血儿记录（阵营、次数）',
+        [SELF_KNIFE_COL]: SELF_KNIFE_DISPLAY,
         [BLIND_POISON_WOLVES_COL]: BLIND_POISON_WOLVES_DISPLAY,
         [BLIND_POISON_WOLF_RATE_COL]: '盲毒',
         [HUNTER_SKILL_RECORD_COL]: HUNTER_SKILL_RECORD_DISPLAY,
@@ -3032,6 +3036,9 @@
       if (pageUsesAvgColorJudgment()) {
         items.push('蓝色为高于均值，绿色低于均值');
       }
+      if (currentView === 'radar' && radarSubMode === 'table') {
+        items.push('绿底为排行前三，红底为排行后三');
+      }
       return items;
     }
 
@@ -4088,7 +4095,7 @@
           if (hasSelfKnifeComboData()) {
             renderSelfKnifeComboChart();
           } else {
-            renderWolfDataEmptyChart('当前赛季数据暂无自刀统计字段');
+            renderWolfDataEmptyChart('当前赛季数据暂无首夜自刀统计字段');
           }
         } else if (wolfSubMode === 'witchknife') {
           if (hasFirstKnifeWitchComboData()) {
@@ -4791,7 +4798,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: buildChartLegend([RED_WOLF_COL, SELF_KNIFE_COL, TEAMMATE_SELF_KNIFE_COL], layout),
+        legend: buildChartLegend([RED_WOLF_COL, SELF_KNIFE_DISPLAY, TEAMMATE_SELF_KNIFE_COL], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -4805,7 +4812,7 @@
             return [
               name,
               `${RED_WOLF_COL}：${row.redWolf}`,
-              `${SELF_KNIFE_COL}：${row.selfKnife}`,
+              `${SELF_KNIFE_DISPLAY}：${row.selfKnife}`,
               `${TEAMMATE_SELF_KNIFE_COL}：${row.teammateKnife}`
             ].join('<br/>');
           }
@@ -4835,7 +4842,7 @@
             }
           },
           {
-            name: SELF_KNIFE_COL,
+            name: SELF_KNIFE_DISPLAY,
             type: 'bar',
             stack: 'selfKnife',
             data: items.map(d => d.selfKnife),
