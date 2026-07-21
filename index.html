@@ -1075,6 +1075,7 @@
     const WOLF_COMBO_TOTAL = '狼次数';
     const WOLF_COMBO_HJT = '悍跳次数';
     const WOLF_COMBO_SELF = '自爆次数';
+    const WOLF_COMBO_SELF_BASE = '红狼次数（非狼美）';
     const WOLF_COMBO_SELF_GREEN = CHART_GREEN;
     const WOLF_RATE_COL = '狼人率';
     const NON_FIRST_WOLF_RATE_COL = '非首局狼人率';
@@ -2649,15 +2650,19 @@
         const total = parseValue(item[WOLF_COMBO_TOTAL], WOLF_COMBO_TOTAL);
         const hjt = parseValue(item[WOLF_COMBO_HJT], WOLF_COMBO_HJT);
         const self = parseValue(item[WOLF_COMBO_SELF], WOLF_COMBO_SELF);
-        const selfRate = total > 0 ? (self / total) * 100 : 0;
+        const selfBase = WOLF_COMBO_SELF_BASE in item
+          ? parseValue(item[WOLF_COMBO_SELF_BASE], WOLF_COMBO_SELF_BASE)
+          : total;
+        const selfRate = selfBase > 0 ? (self / selfBase) * 100 : 0;
         return {
           name: item[NAME_KEY],
           total,
+          selfBase,
           hjt,
           self,
           selfRate,
           hjtOther: Math.max(0, total - hjt),
-          selfOther: Math.max(0, total - self)
+          selfOther: Math.max(0, selfBase - self)
         };
       });
       const sortDesc = (primaryA, primaryB, totalA, totalB) => {
@@ -2665,7 +2670,9 @@
         return totalA - totalB;
       };
       if (mode === 'self') {
-        return items.sort((a, b) => sortDesc(a.selfRate, b.selfRate, a.total, b.total));
+        return items
+          .filter(item => item.selfBase > 0)
+          .sort((a, b) => sortDesc(a.selfRate, b.selfRate, a.selfBase, b.selfBase));
       }
       return items.sort((a, b) => sortDesc(a.hjt, b.hjt, a.total, b.total));
     }
@@ -4912,7 +4919,7 @@
       const items = getWolfComboItems(wolfSubMode);
       const layout = getChartLayout();
       const accentCol = isHjtMode ? WOLF_COMBO_HJT : WOLF_COMBO_SELF;
-      const accentLabel = isHjtMode ? '悍跳数据' : '自爆数据';
+      const baseCol = isHjtMode ? WOLF_COMBO_TOTAL : WOLF_COMBO_SELF_BASE;
       const accentColor = isHjtMode ? WOLF_COLOR : WOLF_COMBO_SELF_GREEN;
 
       setChartHeight(Math.max(items.length, 1));
@@ -4921,7 +4928,9 @@
         chart.setOption({
           backgroundColor: 'transparent',
           title: {
-            subtext: '暂无出场次数>=9的玩家',
+            subtext: isHjtMode
+              ? '暂无出场次数>=9的玩家'
+              : `暂无出场次数>=9且${WOLF_COMBO_SELF_BASE}>0的玩家`,
             left: 'center',
             top: 'center',
             subtextStyle: { color: CHART_AXIS, fontSize: 12 }
@@ -4934,7 +4943,7 @@
 
       const option = {
         backgroundColor: 'transparent',
-        legend: buildChartLegend([accentCol, WOLF_COMBO_TOTAL], layout),
+        legend: buildChartLegend([accentCol, baseCol], layout),
         tooltip: {
           trigger: 'axis',
           axisPointer: { type: 'shadow' },
@@ -4947,7 +4956,7 @@
             const row = items[idx];
             const lines = [
               name,
-              `${WOLF_COMBO_TOTAL}：${row.total}`,
+              `${baseCol}：${isHjtMode ? row.total : row.selfBase}`,
               `${WOLF_COMBO_SELF}：${row.self}`,
             ];
             if (isHjtMode) {
@@ -4986,7 +4995,7 @@
             }
           },
           {
-            name: WOLF_COMBO_TOTAL,
+            name: baseCol,
             type: 'bar',
             stack: 'wolf',
             data: items.map(d => (isHjtMode ? d.hjtOther : d.selfOther)),
@@ -5013,7 +5022,7 @@
 
       finalizeBarChartOption(option, items, layout, {
         showRightLabel: layout.showBarLabel,
-        getPeak: (rows) => Math.max(...rows.map(r => r.total)),
+        getPeak: (rows) => Math.max(...rows.map(r => (isHjtMode ? r.total : r.selfBase))),
         labelPeak: !isHjtMode && items.length
           ? Math.max(...items.map(r => r.selfRate))
           : null,
