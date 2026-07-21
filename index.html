@@ -114,7 +114,6 @@
           <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-exile">平民放逐票</button>
           <button type="button" class="wolf-mode-btn" data-vote-mode="noprophet">生推放逐票</button>
         </div>
-        <p id="voteChartNote" class="chart-sub-note" style="display: none;"></p>
         <div id="otherSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-other-mode="blind">被盲毒</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="first">被首验</button>
@@ -286,7 +285,7 @@
     <div id="error" class="error" style="display: none;"></div>
     <div id="linkMissingToast" class="link-missing-toast" role="alert" aria-live="polite" hidden>无对应链接</div>
     <footer id="pageMetaBar" class="page-meta-bar">
-      <p id="chartDataNotice" class="page-meta-note" style="display: none;">仅统计出场 ≥9 的玩家</p>
+      <p id="chartDataNotice" class="page-meta-note" style="display: none;"></p>
       <span class="page-meta-text">misamisa28.github.io/lrs</span>
     </footer>
   </div>
@@ -1081,7 +1080,7 @@
     const NON_FIRST_WOLF_RATE_COL = '非首局狼人率';
     const NON_FIRST_WOLF_COUNT_COL = '非首局狼次数';
     const NON_FIRST_APPEARANCE_COL = '非首局出场次数';
-    const RED_WOLF_COL = '非盗宝红狼次数';
+    const RED_WOLF_COL = '红狼次数（非盗宝版型）';
     const SELF_KNIFE_COL = '自刀次数';
     const SELF_KNIFE_GREEN = CHART_GREEN_DARK;
     const TEAMMATE_SELF_KNIFE_COL = '狼队友自刀次数';
@@ -2982,23 +2981,64 @@
       return { countCol: VOTE_EXILE_COUNT, rateCol: VOTE_EXILE_RATE, label: '放逐票' };
     }
 
-    function updateVoteChartNote() {
-      const noteEl = $('voteChartNote');
-      if (!noteEl) return;
+    function pageUsesAvgColorJudgment() {
+      if (currentView === 'radar' && radarSubMode === 'winrate') return true;
+      if (currentView !== 'bar') return false;
+      const col = $('columnSelect')?.value;
+      if (!col) return false;
+      if (col === WOLF_DATA_KEY) return wolfSubMode === 'rate';
+      if (col === OTHER_DATA_KEY) return otherSubMode === 'rate';
+      if (col === WIN_RATE_DATA_KEY) {
+        return winRateSubMode === 'identity' || winRateSubMode === 'banxing';
+      }
+      if (
+        col === VOTE_DATA_KEY
+        || col === SKILL_DATA_KEY
+        || isWolfComboColumn(col)
+        || isAppearanceComboColumn(col)
+      ) {
+        return false;
+      }
+      return String(col).includes('率');
+    }
+
+    function getPageMetaRuleItems() {
+      const items = [];
+      if (shouldApplyMinAppearanceFilter()) {
+        items.push('仅显示出场 ≥9 的玩家');
+      }
+      if (getCurrentSeriesKey() === 'yuexiao') {
+        items.push('未统计6+6活动、狼美骑版型');
+      } else {
+        items.push('未统计6+6活动');
+      }
       const showVote = currentView === 'bar'
         && $('columnSelect')?.value === VOTE_DATA_KEY
         && hasVoteData();
-      if (!showVote) {
-        noteEl.style.display = 'none';
-        noteEl.textContent = '';
-        return;
+      if (showVote) {
+        items.push('弃票、错票归类为错票');
+        if (['exile', 'civilian-exile', 'noprophet'].includes(voteSubMode)) {
+          items.push('诡术之境版型中，放逐狼人或放逐的好人在诡术师当天换口（狼人-好人）中均归为正确放逐票');
+        }
+        items.push('虚线为均值');
       }
-      const notes = ['弃票、错票都统计为错票'];
-      if (['exile', 'civilian-exile', 'noprophet'].includes(voteSubMode)) {
-        notes.push('诡术之境版型中，放逐狼人或放逐诡术师当天换口（狼人-好人）中的好人都统计为正确放逐票');
+      const showWinRateCamp = currentView === 'bar'
+        && $('columnSelect')?.value === WIN_RATE_DATA_KEY
+        && winRateSubMode === 'camp'
+        && hasWinRateData();
+      if (showWinRateCamp) {
+        items.push('虚线为均值');
       }
-      noteEl.textContent = notes.join('；');
-      noteEl.style.display = 'block';
+      if (pageUsesAvgColorJudgment()) {
+        items.push('蓝色为高于均值，绿色低于均值');
+      }
+      return items;
+    }
+
+    function formatPageMetaRules(items) {
+      if (!items.length) return '';
+      if (items.length === 1) return `注：${items[0]}`;
+      return `注：\n${items.map((text, idx) => `${idx + 1}、${text}`).join('\n')}`;
     }
 
     function updateChartFootnotes() {
@@ -3021,7 +3061,6 @@
       const showOtherSeat = isBar && col === OTHER_DATA_KEY && otherSubMode === 'seat' && hasSeatNumberData();
       $show('otherSeatFiltersRow', showOtherSeat);
       $show('otherSeatControls', showOtherSeat);
-      updateVoteChartNote();
       updateRadarPanelsVisibility();
     }
 
@@ -3058,12 +3097,17 @@
     }
 
     function updatePageMetaBar(view, showRadarChartView, showRadarWinrateView, showRadarTableView) {
-      const showNotice = (view === 'bar'
+      const inMetaView = view === 'bar'
         || view === 'compare'
         || showRadarChartView
         || showRadarWinrateView
-        || showRadarTableView)
-        && shouldApplyMinAppearanceFilter();
+        || showRadarTableView;
+      const ruleItems = inMetaView ? getPageMetaRuleItems() : [];
+      const noticeEl = $('chartDataNotice');
+      const showNotice = ruleItems.length > 0;
+      if (noticeEl) {
+        noticeEl.textContent = formatPageMetaRules(ruleItems);
+      }
       $show('pageMetaBar', true, 'flex');
       $show('chartDataNotice', showNotice, 'block');
       $('pageMetaBar').classList.toggle('page-meta-bar-link-only', !showNotice);
@@ -4741,7 +4785,7 @@
       setChartHeight(Math.max(items.length, 1));
 
       if (!items.length) {
-        renderWolfDataEmptyChart('暂无出场次数>=9且非盗宝红狼次数>0的玩家');
+        renderWolfDataEmptyChart(`暂无出场次数>=9且${RED_WOLF_COL}>0的玩家`);
         return;
       }
 
@@ -4839,7 +4883,7 @@
       setChartHeight(Math.max(items.length, 1));
 
       if (!items.length) {
-        renderWolfDataEmptyChart('暂无出场次数>=9且非盗宝红狼次数>0的玩家');
+        renderWolfDataEmptyChart(`暂无出场次数>=9且${RED_WOLF_COL}>0的玩家`);
         return;
       }
 

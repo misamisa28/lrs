@@ -69,7 +69,7 @@ header {
 
 .page-meta-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   margin-top: 8px;
@@ -85,17 +85,21 @@ header {
   font-size: 0.6875rem;
   font-weight: 400;
   color: #c8c8c8;
-  line-height: 1.35;
+  line-height: 1.45;
   letter-spacing: 0.01em;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   user-select: none; }
 
 .page-meta-note {
-  flex: 0 1 auto; }
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: pre-line; }
 
 .page-meta-text {
-  margin-left: auto; }
+  margin-left: auto;
+  flex-shrink: 0;
+  padding-top: 0.1em; }
 
 .header-actions {
   flex-shrink: 0;
@@ -574,15 +578,6 @@ h1 {
   align-items: center;
   flex-wrap: wrap;
   gap: 5px; }
-
-.chart-sub-note {
-  flex: 1 1 100%;
-  margin: 2px 0 0;
-  padding: 0 2px;
-  font-size: 0.75rem;
-  font-weight: 400;
-  color: #94a3b8;
-  line-height: 1.45; }
 
 .filter-mode-btn {
   display: inline-flex;
@@ -2054,7 +2049,6 @@ body.tongbian-sessions-modal-open {
   .bar-controls-wrap #winRateFiltersRow,
   .bar-controls-wrap #wolfRateFiltersRow,
   .bar-controls-wrap #otherSeatFiltersRow,
-  .bar-controls-wrap #voteChartNote,
   .radar-controls #radarSubControls,
   #banxingControls {
     grid-column: 1 / -1; }
@@ -2067,8 +2061,7 @@ body.tongbian-sessions-modal-open {
   #barControls .wolf-sub-controls,
   #barControls #winRateFiltersRow,
   #barControls #wolfRateFiltersRow,
-  #barControls #otherSeatFiltersRow,
-  #barControls #voteChartNote {
+  #barControls #otherSeatFiltersRow {
     flex: 1 1 100%;
     width: 100%; }
 
