@@ -114,6 +114,7 @@
           <button type="button" class="wolf-mode-btn" data-vote-mode="civilian-exile">平民放逐票</button>
           <button type="button" class="wolf-mode-btn" data-vote-mode="noprophet">生推放逐票</button>
         </div>
+        <p id="voteChartNote" class="chart-sub-note" style="display: none;"></p>
         <div id="otherSubControls" class="wolf-sub-controls" style="display: none;">
           <button type="button" class="wolf-mode-btn active" data-other-mode="blind">被盲毒</button>
           <button type="button" class="wolf-mode-btn" data-other-mode="first">被首验</button>
@@ -1012,7 +1013,7 @@
     const VOTE_NO_PROPHET_EXILE_CORRECT_COUNT = '无预通正确放逐票次数';
     const VOTE_NO_PROPHET_EXILE_RATE = '无预通放逐票正确率';
     const STAND_WOLF_BADGE_DATA_COL = '警上站狼边';
-    const STAND_WOLF_BADGE_COL = '警徽票站狼（预通-悍跳）';
+    const STAND_WOLF_BADGE_COL = '警徽错票（预通-悍跳）';
     const FAKE_GOLD_COUNT_DISPLAY = '接狼金次数';
     const FAKE_GOLD_GIVER_DISPLAY = '接狼金';
     const BLIND_POISON_WOLVES_DISPLAY = '盲毒狼记录';
@@ -2974,6 +2975,25 @@
       return { countCol: VOTE_EXILE_COUNT, rateCol: VOTE_EXILE_RATE, label: '放逐票' };
     }
 
+    function updateVoteChartNote() {
+      const noteEl = $('voteChartNote');
+      if (!noteEl) return;
+      const showVote = currentView === 'bar'
+        && $('columnSelect')?.value === VOTE_DATA_KEY
+        && hasVoteData();
+      if (!showVote) {
+        noteEl.style.display = 'none';
+        noteEl.textContent = '';
+        return;
+      }
+      const notes = ['弃票、错票都统计为错票'];
+      if (['exile', 'civilian-exile', 'noprophet'].includes(voteSubMode)) {
+        notes.push('诡术之境版型中，放逐狼人或放逐诡术师当天换口（狼人-好人）中的好人都统计为正确放逐票');
+      }
+      noteEl.textContent = notes.join('；');
+      noteEl.style.display = 'block';
+    }
+
     function updateChartFootnotes() {
       const col = $('columnSelect').value;
       const isBar = currentView === 'bar';
@@ -2994,6 +3014,7 @@
       const showOtherSeat = isBar && col === OTHER_DATA_KEY && otherSubMode === 'seat' && hasSeatNumberData();
       $show('otherSeatFiltersRow', showOtherSeat);
       $show('otherSeatControls', showOtherSeat);
+      updateVoteChartNote();
       updateRadarPanelsVisibility();
     }
 
@@ -3052,7 +3073,7 @@
       }
     );
     const setVoteSubMode = makeBarSubModeSetter(
-      m => { voteSubMode = m; }, '[data-vote-mode]', 'voteMode', VOTE_DATA_KEY
+      m => { voteSubMode = m; }, '[data-vote-mode]', 'voteMode', VOTE_DATA_KEY, updateChartFootnotes
     );
     const setOtherSubMode = makeBarSubModeSetter(
       m => { otherSubMode = m; }, '[data-other-mode]', 'otherMode', OTHER_DATA_KEY, updateChartFootnotes

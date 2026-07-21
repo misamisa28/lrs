@@ -575,6 +575,15 @@ h1 {
   flex-wrap: wrap;
   gap: 5px; }
 
+.chart-sub-note {
+  flex: 1 1 100%;
+  margin: 2px 0 0;
+  padding: 0 2px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #94a3b8;
+  line-height: 1.45; }
+
 .filter-mode-btn {
   display: inline-flex;
   align-items: center;
@@ -2045,6 +2054,7 @@ body.tongbian-sessions-modal-open {
   .bar-controls-wrap #winRateFiltersRow,
   .bar-controls-wrap #wolfRateFiltersRow,
   .bar-controls-wrap #otherSeatFiltersRow,
+  .bar-controls-wrap #voteChartNote,
   .radar-controls #radarSubControls,
   #banxingControls {
     grid-column: 1 / -1; }
@@ -2057,7 +2067,8 @@ body.tongbian-sessions-modal-open {
   #barControls .wolf-sub-controls,
   #barControls #winRateFiltersRow,
   #barControls #wolfRateFiltersRow,
-  #barControls #otherSeatFiltersRow {
+  #barControls #otherSeatFiltersRow,
+  #barControls #voteChartNote {
     flex: 1 1 100%;
     width: 100%; }
 
