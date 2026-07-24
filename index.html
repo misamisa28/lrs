@@ -68,18 +68,19 @@
         </div>
         <div class="toolbar-divider" aria-hidden="true"></div>
         <div class="toolbar-group toolbar-group-extra">
-          <button type="button" class="view-btn" data-view="banxing">
-            <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
-              <path fill="currentColor" d="M2 2h4.5v4.5H2V2zm7.5 0H14v4.5H9.5V2zM2 9.5h4.5V14H2V9.5zm7.5 0H14V14H9.5V9.5z"/>
-            </svg>
-            版型统计
-          </button>
           <button type="button" class="view-btn" data-view="tongbian">
             <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
               <path fill="currentColor" d="M5.5 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm5 1a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5zM1.5 13.5c0-2 1.8-3.5 4-3.5s4 1.5 4 3.5v.5H1.5v-.5zm7 0c0-1.5 1.2-2.5 2.5-2.5 1.1 0 2 .7 2.3 1.7l-1.1.3c-.2-.5-.6-.8-1.2-.8-.9 0-1.5.6-1.5 1.5v.5H8.5v-.5z"/>
             </svg>
             同边数据
           </button>
+          <button type="button" class="view-btn" data-view="banxing">
+            <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+              <path fill="currentColor" d="M2 2h4.5v4.5H2V2zm7.5 0H14v4.5H9.5V2zM2 9.5h4.5V14H2V9.5zm7.5 0H14V14H9.5V9.5z"/>
+            </svg>
+            版型统计
+          </button>
+
           <button type="button" class="view-btn" data-view="table">
             <svg class="view-btn-icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
               <path fill="currentColor" d="M2 2.5h12v1.5H2V2.5zm0 3.5h12v1H2V6zm0 3h12v1H2V9zm0 3h8v1H2v-1z"/>
@@ -1246,6 +1247,7 @@
     let rawTableData = [];
     let banxingData = [];
     let totalBanxingData = [];
+    const totalBanxingCache = {};
     let tongbianData = [];
     let tongbianRenderedRows = [];
     let currentTongbianModalRow = null;
@@ -5414,9 +5416,7 @@
       if (counts.noJump > 0) {
         baseParts.push(`警上未起跳 ${prophetSummaryNum(counts.noJump)} 次`);
       }
-      if (counts.exiled > 0) {
-        baseParts.push(`被放逐 ${prophetSummaryNum(counts.exiled)} 次`);
-      }
+      baseParts.push(`被放逐 ${prophetSummaryNum(counts.exiled)} 次`);
       let html = baseParts.join('，');
 
       const extras = [];
@@ -6284,26 +6284,34 @@
       return isValidSessionDayKey(day) ? day : '';
     }
 
-    function collectSeasonSessionDayKeys() {
+    function collectSeasonSessionDayKeys(season = currentSeason) {
       const days = new Set();
       const addDay = (sessionDate) => {
         const day = parseSessionDayKey(sessionDate);
         if (isValidSessionDayKey(day)) days.add(day);
       };
 
-      if (rawTableData.length) {
+      if (season === currentSeason && rawTableData.length) {
         rawTableData.forEach(row => addDay(row['日期']));
-      } else if (hasParticipationData()) {
-        rawData.forEach(player => {
-          parseGameSessions(player[PARTICIPATION_COL]).forEach(session => addDay(session.date));
-        });
+      } else {
+        const rows = seasonStats[season]?.length
+          ? seasonStats[season]
+          : (season === currentSeason ? rawData : []);
+        if (rows.length && PARTICIPATION_COL in (rows[0] || {})) {
+          rows.forEach(player => {
+            parseGameSessions(player[PARTICIPATION_COL]).forEach(session => addDay(session.date));
+          });
+        } else if (season === currentSeason && hasParticipationData()) {
+          rawData.forEach(player => {
+            parseGameSessions(player[PARTICIPATION_COL]).forEach(session => addDay(session.date));
+          });
+        }
       }
 
       return [...days].sort((a, b) => Number(a) - Number(b));
     }
 
-    function getSeasonDataDayRange() {
-      const days = collectSeasonSessionDayKeys();
+    function getDayRangeFromKeys(days) {
       if (!days.length) return null;
       const start = days[0];
       const end = days[days.length - 1];
@@ -6311,17 +6319,30 @@
       return { start, end };
     }
 
+    function getSeasonDataDayRange(season = currentSeason) {
+      return getDayRangeFromKeys(collectSeasonSessionDayKeys(season));
+    }
+
+    function getSeriesDataDayRange(seriesKey = getCurrentSeriesKey()) {
+      const days = new Set();
+      getCompareSeasonList(seriesKey).forEach(season => {
+        collectSeasonSessionDayKeys(season).forEach(day => days.add(day));
+      });
+      return getDayRangeFromKeys([...days].sort((a, b) => Number(a) - Number(b)));
+    }
+
     function updateDataRangeBar() {
       const bar = document.getElementById('dataRangeBar');
       const textEl = document.getElementById('dataRangeText');
       if (!bar || !textEl) return;
 
-      if (currentView !== 'bar' && currentView !== 'radar') {
-        bar.hidden = true;
-        return;
+      let range = null;
+      if (currentView === 'bar' || currentView === 'radar' || currentView === 'tongbian') {
+        range = getSeasonDataDayRange();
+      } else if (currentView === 'banxing') {
+        range = getSeriesDataDayRange();
       }
 
-      const range = getSeasonDataDayRange();
       if (!range) {
         bar.hidden = true;
         return;
@@ -6620,8 +6641,12 @@
         return;
       }
       if (view === 'banxing') {
+        const seriesKey = getCurrentSeriesKey();
+        await Promise.allSettled(
+          getCompareSeasonList(seriesKey).map(season => loadSeasonStatsOnly(season))
+        );
+        await loadBanxingView(seriesKey);
         updateDataRangeBar();
-        await loadBanxingView(getCurrentSeriesKey());
         return;
       }
       const seriesKey = getCurrentSeriesKey();
@@ -6913,14 +6938,18 @@
       $('tongbianNameSelect').addEventListener('change', updateChart);
       $('seriesSelect').addEventListener('change', async () => {
         const seriesKey = getCurrentSeriesKey();
-        await loadSeatNumberStats(seriesKey, { force: true });
+        await loadSeatNumberStats(seriesKey);
         if (currentView === 'compare') {
           refreshCompareControls();
           updateChart();
           return;
         }
         if (currentView === 'banxing') {
+          await Promise.allSettled(
+            getCompareSeasonList(seriesKey).map(season => loadSeasonStatsOnly(season))
+          );
           await loadBanxingView(seriesKey, { refreshFootnotes: false });
+          updateDataRangeBar();
           return;
         }
         refreshSeasonSelectOptions();
@@ -7141,8 +7170,14 @@
     }
 
     async function loadSeasonStatsOnly(season) {
+      if (seasonStats[season]?.length) return seasonStats[season];
+      const cachedPayload = seasonPayloadCache[season];
+      if (cachedPayload?.stats?.length) {
+        seasonStats[season] = cachedPayload.stats;
+        return cachedPayload.stats;
+      }
       const files = getSeasonFiles(season);
-      const stats = normalizePlayerStatsColumns(await fetchJson(files.stats, { force: true }));
+      const stats = normalizePlayerStatsColumns(await fetchJson(files.stats));
       if (!Array.isArray(stats) || stats.length === 0) {
         throw new Error(`${files.stats} 数据为空或格式不正确`);
       }
@@ -7151,31 +7186,38 @@
     }
 
     async function prefetchSeasonStats(seasons = SEASONS) {
-      await Promise.allSettled(seasons.map(season => loadSeasonStatsOnly(season)));
+      await Promise.allSettled(seasons.map(season => loadSeasonData(season)));
     }
 
     async function loadSeasonData(season, options = {}) {
-      const { raw = false, tongbian = false } = options;
+      const { raw = false, tongbian = false, force = false } = options;
       const files = getSeasonFiles(season);
-      const prevStats = seasonPayloadCache[season]?.stats;
-
-      const [stats, banxing] = await Promise.all([
-        fetchJsonWithRetry(files.stats, 1, { force: true }).then(rows => normalizePlayerStatsColumns(rows)),
-        fetchJsonWithRetry(files.banxing, 1, { force: true }),
-      ]);
-
-      const normalizedStats = validateSeasonStats(stats, files);
-      validateSeasonBanxing(banxing, files);
-      invalidateSeasonExtraIfStatsChanged(season, prevStats, normalizedStats);
-      seasonStats[season] = normalizedStats;
-
       const prev = seasonPayloadCache[season];
+      const prevStats = prev?.stats;
+
+      let normalizedStats;
+      let banxing;
+      if (!force && prev?.stats?.length && Array.isArray(prev.banxing) && prev.banxing.length) {
+        normalizedStats = prev.stats;
+        banxing = prev.banxing;
+      } else {
+        const [stats, banxingRows] = await Promise.all([
+          fetchJsonWithRetry(files.stats, 1, { force }).then(rows => normalizePlayerStatsColumns(rows)),
+          fetchJsonWithRetry(files.banxing, 1, { force }),
+        ]);
+        normalizedStats = validateSeasonStats(stats, files);
+        validateSeasonBanxing(banxingRows, files);
+        banxing = banxingRows;
+        invalidateSeasonExtraIfStatsChanged(season, prevStats, normalizedStats);
+      }
+
+      seasonStats[season] = normalizedStats;
       seasonPayloadCache[season] = {
         season,
         stats: normalizedStats,
         banxing,
-        rawTable: prev?.rawTable || [],
-        tongbian: prev?.tongbian || [],
+        rawTable: seasonPayloadCache[season]?.rawTable || [],
+        tongbian: seasonPayloadCache[season]?.tongbian || [],
       };
 
       const extraTasks = [];
@@ -7203,20 +7245,32 @@
     }
 
     async function loadTotalBanxingData(seriesKey) {
+      if (totalBanxingCache[seriesKey]?.length) {
+        totalBanxingData = totalBanxingCache[seriesKey];
+        return totalBanxingData;
+      }
       const file = getTotalBanxingFile(seriesKey);
       totalBanxingData = await fetchJson(file);
       if (!Array.isArray(totalBanxingData) || totalBanxingData.length === 0) {
         throw new Error(`${file} 数据为空或格式不正确`);
       }
+      totalBanxingCache[seriesKey] = totalBanxingData;
+      return totalBanxingData;
     }
 
     async function setSeason(season) {
       if (!SEASONS.includes(season)) return;
 
       const seq = ++seasonLoadSeq;
-
+      const hasCachedPayload = Boolean(
+        seasonPayloadCache[season]?.stats?.length
+        && seasonPayloadCache[season]?.banxing?.length
+      );
+      const needsExtra = needsSeasonExtraLoad(season);
       const seasonEl = $('seasonSelect');
-      seasonEl.disabled = true;
+      if (!hasCachedPayload || needsExtra) {
+        seasonEl.disabled = true;
+      }
 
       try {
         const payload = await loadSeasonData(season, getSeasonLoadOptions());
@@ -7271,6 +7325,11 @@
 
         const otherSeasons = SEASONS.filter(season => season !== DEFAULT_SEASON);
         prefetchSeasonStats(otherSeasons);
+        Object.keys(COMPARE_SERIES).forEach(seriesKey => {
+          if (seriesKey === DEFAULT_SERIES_KEY) return;
+          loadSeatNumberStats(seriesKey);
+          loadTotalBanxingData(seriesKey).catch(() => {});
+        });
 
         window.addEventListener('resize', () => {
           clearTimeout(resizeTimer);
