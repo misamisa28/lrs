@@ -3180,7 +3180,7 @@
       }
     }
 
-    function setRadarSubMode(mode) {
+    async function setRadarSubMode(mode) {
       radarSubMode = mode;
       syncModeButtons('[data-radar-mode]', 'radarMode', mode);
       updateRadarPanelsVisibility();
@@ -3196,7 +3196,10 @@
         syncModeButtons('[data-radar-winrate-dim]', 'radarWinrateDim', radarWinrateDim);
         renderRadarWinrateChart(name);
       }
-      else if (mode === 'seat') renderRadarSeatSection(name);
+      else if (mode === 'seat') {
+        await loadSeatNumberStats(getCurrentSeriesKey());
+        renderRadarSeatSection($('nameSelect').value);
+      }
       else renderRadarGamesSection(name);
     }
 
@@ -6033,8 +6036,9 @@
     }
 
     function getPlayerSeatNumberRows(name) {
+      const target = String(name ?? '').trim();
       return seatNumberStatsData
-        .filter(row => row['姓名'] === name)
+        .filter(row => String(row['姓名'] ?? '').trim() === target)
         .slice()
         .sort((a, b) => Number(a['座位号']) - Number(b['座位号']));
     }
@@ -7229,9 +7233,18 @@
     }
 
     async function loadSeatNumberStats(seriesKey, { force = false } = {}) {
+      // 仅当加载的是当前系列时才写入 seatNumberStatsData，
+      // 避免预取其他系列时覆盖当前展示数据（否则个人座位号会大量显示「暂无数据」）。
+      const activateIfCurrent = (rows) => {
+        if (seriesKey === getCurrentSeriesKey()) {
+          seatNumberStatsData = rows;
+        }
+      };
+
       if (!force && seatNumberStatsCache[seriesKey]) {
-        seatNumberStatsData = seatNumberStatsCache[seriesKey];
-        return seatNumberStatsData;
+        const cached = seatNumberStatsCache[seriesKey];
+        activateIfCurrent(cached);
+        return cached;
       }
       const file = getSeatNumberStatsFile(seriesKey);
       try {
@@ -7240,8 +7253,9 @@
       } catch (_) {
         seatNumberStatsCache[seriesKey] = [];
       }
-      seatNumberStatsData = seatNumberStatsCache[seriesKey];
-      return seatNumberStatsData;
+      const loaded = seatNumberStatsCache[seriesKey];
+      activateIfCurrent(loaded);
+      return loaded;
     }
 
     async function loadTotalBanxingData(seriesKey) {
