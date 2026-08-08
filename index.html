@@ -3023,6 +3023,7 @@
         && hasVoteData();
       if (showVote) {
         items.push('弃票、错票归类为错票');
+        items.push('不包含狼人阵营、通灵师、预言家的玩家票型');
         if (['exile', 'civilian-exile', 'noprophet'].includes(voteSubMode)) {
           items.push('诡术之境版型中，放逐狼人或放逐的好人在诡术师当天换口（狼人-好人）中均归为正确放逐票');
         }
